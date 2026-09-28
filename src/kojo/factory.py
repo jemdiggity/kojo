@@ -1,4 +1,4 @@
-"""One sequential Luna build chain, one fresh review, one fresh follow-up."""
+"""Bounded build chains and one independent review/follow-up, with explicit model roles."""
 import argparse
 import fcntl
 import shutil
@@ -34,7 +34,7 @@ def stage_prompt(experiment, role, checkpoint=5, feedback=None):
     if role == 'fix':
         if not feedback or not feedback.strip():
             raise ValueError('A completed review is required before follow-up')
-        specs += '\n\n# Feedback from the independent Luna reviewer\n' + feedback
+        specs += '\n\n# Feedback from the independent reviewer\n' + feedback
     return specs
 
 
@@ -42,7 +42,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['audit', 'run'])
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--build-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
+    parser.add_argument('--review-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
+    parser.add_argument('--no-review', action='store_true')
+    parser.add_argument('--source-run', help='Reuse only this run’s frozen final builder source for a paired review')
+    parser.add_argument('--monitor-only', action='store_true', help='Explicit user-authorized waiver of the weekly floor for this bounded run')
     args = parser.parse_args(argv)
+    if args.source_run and (args.no_review or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.source_run)):
+        parser.error('source-run needs a review and a valid run ID')
+    models={'build':args.build_model,'review':args.review_model,'fix':args.build_model}
     if not args.run_id or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.run_id):
         parser.error('Use lowercase letters, digits and hyphens')
     cfg, manifest = preflight()
@@ -52,10 +60,10 @@ def main(argv=None):
     backend = ChainBackend(cfg, manifest, data, output)
     experiment = Experiment(backend)
     if args.action == 'audit':
-        for role in ('build', 'review', 'fix'):
+        for role in (('build',) if args.no_review else ('build', 'review', 'fix')):
             probe = root / 'offline-audit' / role
             audit(probe, instructions(backend, role), backend.runtime, None, True,
-                  stage_prompt(experiment, role, 1 if role == 'build' else 5, 'Offline review placeholder.'), persist=True)
+                  stage_prompt(experiment, role, 1 if role == 'build' else 5, 'Offline review placeholder.'), persist=True, model=models[role])
         print('All three role requests and native isolation verified without inference.', flush=True)
         return
     data.mkdir(parents=True, exist_ok=True)
@@ -67,8 +75,9 @@ def main(argv=None):
         save(output / 'manifest.json', {
             'run_id':args.run_id, 'problem':'code_search', 'condition':'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'quota':read(BASE / 'configs/quota.json'),
-            'max_sessions':7, 'seconds_per_session':300, 'review_loops':1, 'skills':None,
-            'sequence':'five incremental build checkpoints, one review of final code, one follow-up',
+            'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else 2), 'seconds_per_session':300, 'review_loops':0 if args.no_review else 1, 'skills':None,
+            'models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
+            'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else ', one review, one follow-up'),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
             'scope':'Exploratory same-task workflow test, not held-out learning or a compute-matched comparison.',
         })
@@ -90,7 +99,7 @@ def main(argv=None):
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
             print(f'Starting {role} checkpoint {n}', flush=True)
             run_session(run, instructions(backend, role), prompt, 300, backend.runtime,
-                        None, prior, isolated_src=True)
+                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only)
             for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt']:
                 shutil.copy2(run/filename, dest/filename)
             if role != 'review':
@@ -105,12 +114,20 @@ def main(argv=None):
             return run
 
         try:
-            for n in range(1,6):
-                previous=session('build',n,previous)/'submission'
-            review=session('review',5,previous)
-            if read(review/'run.json')['status'] != 'complete':
-                raise RuntimeError('Reviewer did not complete; refusing partial review follow-up')
-            session('fix',5,previous,(review/'answer.txt').read_text())
+            if args.source_run:
+                original=BASE/'results/runs'/args.source_run/'build/checkpoint_5'
+                if hashes(original/'submission') != read(original/'snapshot.json'):
+                    raise RuntimeError('Reused builder snapshot mismatch')
+                previous=original/'submission'
+                save(output/'reused-builder.json',{'run_id':args.source_run,'files':hashes(previous)})
+            else:
+                for n in range(1,6):
+                    previous=session('build',n,previous)/'submission'
+            if not args.no_review:
+                review=session('review',5,previous)
+                if read(review/'run.json')['status'] != 'complete':
+                    raise RuntimeError('Reviewer did not complete; refusing partial review follow-up')
+                session('fix',5,previous,(review/'answer.txt').read_text())
         except BaseException as error:
             failure=error
             save(output/'STOPPED.json',{'reason':str(error),'time':time.time()})

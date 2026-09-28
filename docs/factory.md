@@ -23,3 +23,9 @@ KOJO_NATIVE_TESTS=1 PYTHONPATH=src python3.12 -m unittest discover -s tests -q
 ```
 
 The test first reproduces the old heredoc failure, then verifies the repaired write/compile/run flow and empty source directory. On 2026-09-27 all 28 tests and all three factory role audits passed without model calls. Historical benchmark scores are unchanged; no factory rerun was launched for this repair.
+
+## Authorized Luna/Astra comparison
+
+`python3.12 scripts/factory_compare.py` prints the fixed plan; add `--run` to execute it. Run IDs are single-use. Sequence: five fresh Luna builds + Luna review + Luna follow-up; five fresh Astra-low builds without review; Astra-low review of the **same frozen Luna builder source** + a separate fresh Luna follow-up. The Astra reviewer never sees the Luna review or its follow-up. All roles have 300 seconds, no learned guidance, the same public-spec prompts and repaired sandbox. This is 14 sessions total, no retries. The review feedback heading is model-neutral in both arms. Builder-model comparisons have equal five-checkpoint budgets; review arms share their initial source and have equal budgets. These remain single-sample exploratory results.
+
+For this explicitly authorized batch, `--monitor-only` records quota throughout but waives the old weekly floor, following the user's instruction not to worry about the guard. The default factory still enforces the guard. No API keys or paid-credit resets are used. CLI subscription cash cost is unknown. Estimated API-equivalent cost before launch was $2–$6, with a hard execution cap of 14 × 300 seconds and no direct API billing. Dollar equivalents use standard short-context rates: Luna $0.10/$0.01/$0.50 and Astra $10/$1/$50 per million input/cached/output tokens ([official Astra pricing](https://developers.openai.com/api/docs/models/gpt-6-astra)). They are estimates, not subscription charges or exact long-context/service-tier billing.

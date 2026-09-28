@@ -116,7 +116,9 @@ def audit_shell_writes(sandbox, work):
             raise RuntimeError("Heredoc content was corrupted")
 
 
-def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False):
+def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna"):
+    if model not in ("gpt-6-luna", "gpt-6-astra"):
+        raise ValueError("Unsupported experiment model")
     work = run / ("src" if isolated_src else "work")
     work.mkdir(parents=True, exist_ok=True)
     if skill is not None:
@@ -126,6 +128,7 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     instruction_path = (run if isolated_src else work) / "instructions.md"
     instruction_path.write_text(instructions)
     args = overrides(ignore_user_config=True)
+    args += ["-c", "model=" + json.dumps(model)]
     args += [
         "-c",
         "features.shell_tool=true",
@@ -157,8 +160,8 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     ]
 
 
-def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False):
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist)
+def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna"):
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model)
     received = queue.Queue()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -210,6 +213,8 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
             process.stdin.close()
             payload = received.get(timeout=30)
             save(run / "audit-request.json", payload)
+            if payload.get("model") != model:
+                raise RuntimeError("Requested model missing from audited request")
             serialized = json.dumps(payload)
             if any(
                 x in serialized
@@ -350,10 +355,11 @@ def usage_from_events(path):
     return turns[-1]["usage"] if turns else None
 
 
-def cost(usage):
+def cost(usage, model="gpt-6-luna"):
+    multiplier = {"gpt-6-luna": 1, "gpt-6-astra": 100}[model]
     if usage is None:
         return None
-    return (
+    return multiplier * (
         (usage["input_tokens"] - usage.get("cached_input_tokens", 0)) * 0.10
         + usage.get("cached_input_tokens", 0) * 0.01
         + usage["output_tokens"] * 0.50
@@ -361,12 +367,12 @@ def cost(usage):
 
 
 def run_session(
-    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True
+    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False
 ):
     if (run / "run.json").exists():
         raise RuntimeError("Attempt already exists; refusing automatic retry")
-    audit(run, instructions, runtime, skill, isolated_src, prompt)
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript)
+    audit(run, instructions, runtime, skill, isolated_src, prompt, model=model)
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model)
     cfg = json.loads((BASE / "configs/quota.json").read_text())
     observations = []
     process = None
@@ -374,7 +380,8 @@ def run_session(
     started = time.monotonic()
     row = {
         "status": "started",
-        "model": "gpt-6-luna",
+        "model": model,
+        "quota_monitor_only": monitor_only,
         "reasoning": "low",
         "max_seconds": seconds,
         "fresh_conversation": True,
@@ -384,7 +391,8 @@ def run_session(
     try:
         meta = Metadata()
         observations.append(meta.usage())
-        enforce(observations[-1], cfg, [*prior_observations, *observations], True)
+        if not monitor_only:
+            enforce(observations[-1], cfg, [*prior_observations, *observations], True)
         row["skills_audit"] = meta.audit_skills(run / ("src" if isolated_src else "work"))
         env = {
             k: v
@@ -428,12 +436,10 @@ def run_session(
                 except subprocess.TimeoutExpired:
                     observations.append(meta.usage())
                     save(run / "quota.json", observations)
-                    enforce(
-                        observations[-1],
-                        cfg,
-                        [*prior_observations, *observations],
-                        True,
-                    )
+                    if not monitor_only:
+                        enforce(
+                            observations[-1], cfg, [*prior_observations, *observations], True,
+                        )
             if row["status"] == "started":
                 row["status"] = "complete" if process.returncode == 0 else "cli_failure"
             row["returncode"] = process.returncode
@@ -447,7 +453,7 @@ def run_session(
     finally:
         row["elapsed_seconds"] = time.monotonic() - started
         row["usage"] = usage_from_events(run / "events.jsonl")
-        row["api_price_equivalent_usd"] = cost(row["usage"])
+        row["api_price_equivalent_usd"] = cost(row["usage"], model)
         save(run / "run.json", row)
         if meta:
             try:
