@@ -12,12 +12,11 @@ SlopCodeBench, benchmark repositories, and task-specific solution searches.
 Ordinary dependency downloads and documentation lookups are inventoried without
 automatically being classified as contamination.
 
-A flagged or missing/malformed transcript writes `VALIDITY.json` with
-`excluded_pending_review`, then stops the chain before another model call.
-Existing snapshots may still be scored for diagnosis; those scores do not clear
-the exclusion. Confirmed retrieval of external task solutions or hidden grading
-tests invalidates the experiment. A failed targeted request is evidence of an
-attempt, not proof the answer was retrieved; inspect the cited tool output.
+Auditing is report-only. Findings, missing/malformed evidence and audit errors
+are recorded without stopping model calls, excluding results or assigning a
+validity verdict. `review_suggested` highlights evidence for the user to inspect.
+The user decides whether the model cheated. A failed targeted request is evidence
+of an attempt, not proof the answer was retrieved; inspect the cited tool output.
 
 ## Standalone check
 
@@ -25,7 +24,7 @@ attempt, not proof the answer was retrieved; inspect the cited tool output.
 PYTHONPATH=src python3.12 -m kojo.external_access   intermediate/runs/RUN/gauntlet/training-build/code_search/checkpoint_1/transcript.jsonl   --output intermediate/audits/RUN-checkpoint-1.json
 ```
 
-Exit status 2 means review is required. This command makes no model calls.
+A successfully written report exits 0 even when findings are flagged. This command makes no model calls.
 Raw transcripts stay under ignored `intermediate/`; compact audit receipts
 accompany frozen results.
 
@@ -47,4 +46,4 @@ contamination. URLs in outputs can be references rather than fetched resources.
 Generated/encoded scripts, redirects, transitive package downloads, missing tool
 outputs and truncation can conceal destinations. Coverage notes are retained;
 `no_benchmark_access_observed` is deliberately not an automatic validity verdict.
-The gate runs after the current session, not in the middle of a network request.
+Reports are written after each session; findings never gate execution.

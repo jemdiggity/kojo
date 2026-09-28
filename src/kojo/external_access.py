@@ -62,7 +62,7 @@ def redacted_excerpt(text):
 def audit_external_sources(path):
     path=Path(path)
     if not path.exists():
-        return {'status':'incomplete_evidence','review_required':True,'events':[], 'limitations':['Native transcript is missing.']}
+        return {'status':'incomplete_evidence','review_suggested':True,'events':[], 'limitations':['Native transcript is missing.']}
     rows=[];errors=[]
     for number,line in enumerate(path.read_text().splitlines(),1):
         if not line.strip():continue
@@ -106,13 +106,13 @@ def audit_external_sources(path):
         if suspicion:flags.append(number)
     if not calls:unclassified.append({'reason':'No tool actions observed in the supplied transcript.'})
     status='suspected_benchmark_access' if flags else ('incomplete_evidence' if errors else 'no_benchmark_access_observed')
-    return {'schema_version':1,'status':status,'review_required':bool(flags or errors),
+    return {'schema_version':2,'status':status,'review_suggested':bool(flags or errors),
             'transcript_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'records':len(rows),
             'tool_calls':len(calls),'events':events,'flagged_records':flags,'parse_or_coverage_errors':errors,
             'coverage_notes':unclassified,
             'limitations':['Heuristic transcript audit, not a complete egress log or proof of no contamination.',
                            'Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.',
-                           'No automatic clean/valid verdict. Suspected benchmark access is excluded pending human review; confirmed external task solutions/tests invalidate the run.']}
+                           'Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment.']}
 
 
 def main():
@@ -123,8 +123,8 @@ def main():
     report=audit_external_sources(args.transcript)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,indent=2)+'\n')
-    print(json.dumps({'status':report['status'],'events':len(report['events']),'review_required':report['review_required']}))
-    raise SystemExit(2 if report['review_required'] else 0)
+    print(json.dumps({'status':report['status'],'events':len(report['events']),'review_suggested':report['review_suggested']}))
+    # Findings are data, not a process failure or experiment validity decision.
 
 
 if __name__=='__main__':main()

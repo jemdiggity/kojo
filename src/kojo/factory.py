@@ -93,7 +93,7 @@ def main(argv=None):
             'run_id':args.run_id, 'problem':'code_search', 'condition':'checkpoint-review-factory' if args.review_scope == 'checkpoint' else 'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'harness_sha256':harness_digest(), 'role_instruction_sha256':factory_instruction_hashes(), 'quota':read(BASE / 'configs/quota.json'),
             'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else (10 if args.review_scope == 'checkpoint' else 2)), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else (5 if args.review_scope == 'checkpoint' else 1), 'review_scope':args.review_scope, 'review_loops_per_checkpoint':0 if args.no_review else (1 if args.review_scope == 'checkpoint' else None), 'skills':None,
-            'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,'network_enabled':not args.no_network,'dependency_policy':'requirements.txt rebuilt in a fresh grading venv; install report and freeze recorded' if not args.no_network else 'historical pinned runtime only','external_access_policy':'native transcript audit after every session; suspected benchmark access excludes the run pending review',
+            'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,'network_enabled':not args.no_network,'dependency_policy':'requirements.txt rebuilt in a fresh grading venv; install report and freeze recorded' if not args.no_network else 'historical pinned runtime only','external_access_policy':'report-only native transcript audit after every session; validity judged by the user',
             'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else (', each followed by one review and one fix; fixed code carries forward' if args.review_scope == 'checkpoint' else ', one final review, one follow-up')),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
             'scope':'Exploratory same-task workflow test, not held-out learning or a compute-matched comparison.',
@@ -140,12 +140,14 @@ def main(argv=None):
             else:
                 save(dest/'source-changes.json',{'before':hashes(source),'after':hashes(work, exclude_generated=True),
                                                'carry_forward':'Only answer.txt; no reviewer workspace changes.'})
-            external=audit_external_sources(run/'transcript.jsonl')
+            try:
+                external=audit_external_sources(run/'transcript.jsonl')
+            except Exception as error:
+                external={'status':'audit_error','review_suggested':True,'events':[],
+                          'error_type':type(error).__name__,
+                          'limitations':['External-source audit failed; inspect the raw transcript.']}
             save(run/'external-access.json',external)
             save(dest/'external-access.json',external)
-            if external['review_required']:
-                save(output/'VALIDITY.json',{'status':'excluded_pending_review','role':role,'checkpoint':n,'reason':external['status'],'evidence':str(dest/'external-access.json')})
-                raise RuntimeError('External-source audit requires review; run excluded pending review. No further model calls permitted.')
             print(f'Finished {role} checkpoint {n}', flush=True)
             return run
 

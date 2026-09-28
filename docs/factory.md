@@ -61,7 +61,7 @@ protocol hash including them. Instruction-only experiments therefore produce
 instruction-only source changes and an unchanged harness hash.
 
 See [external-source auditing](external-access-audit.md) for the per-session
-transcript inventory, contamination gate, dependency receipts and limitations.
+transcript inventory, report-only findings, dependency receipts and limitations.
 Network access is configured using Codex's
 [permissions setting](https://learn.chatgpt.com/docs/permissions).
 These changes have been verified without new model inference; earlier results
