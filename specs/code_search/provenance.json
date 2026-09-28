@@ -1,0 +1,11 @@
+{
+  "source": "Exact rendered SPEC.md files supplied to fresh baseline; entry command includes local Python path",
+  "problem_commit": "38d627ecf668a88f88f8d260f8df8df6116e9b03",
+  "sha256": {
+    "1": "83a2efdb2fb3fc92a501575d07e8cf490c68c02aa56d282601d3dbbb6e9e8c9e",
+    "2": "2604d7e9c3f7df5e1286cb2db8706cd527f2c23063ead1c00f2a05fd28188ee6",
+    "3": "3ad044ab40f9f530e089973b48df5ad20cb05498cc678814408c1868e8f87c84",
+    "4": "e2e606664bc16851e2cbc196e1834c324b3db6c37d8b35653d8ed65038155aaa",
+    "5": "a078d6c4c1033ea6ac6ada6cd79217a5e954997c983d57fd3e924da3fd4e9c29"
+  }
+}

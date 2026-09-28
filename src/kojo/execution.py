@@ -10,6 +10,7 @@ import signal
 import subprocess
 import sys
 import threading
+import tempfile
 import time
 
 from kojo.catalog import BASE
@@ -45,8 +46,11 @@ def session_paths(root):
             yield path
 
 
-def permission_args(work, runtime=None, readonly_skill=False):
+def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False):
     paths = {str(BASE): "deny", str(work): "write"}
+    if isolated_src:
+        paths.update({":root": "deny", ":minimal": "read", ":tmpdir": "deny", ":slash_tmp": "deny"})
+        paths[str(Path(sys._base_executable).resolve().parents[1])] = "read"
     if runtime:
         paths[str(runtime)] = "read"
     if readonly_skill:
@@ -66,13 +70,15 @@ def permission_args(work, runtime=None, readonly_skill=False):
     ]
 
 
-def command(run, instructions, runtime=None, skill=None):
-    work = run / "work"
+def command(run, instructions, runtime=None, skill=None, isolated_src=False):
+    work = run / ("src" if isolated_src else "work")
     work.mkdir(parents=True, exist_ok=True)
     if skill is not None:
-        (work / "SKILL.md").write_text(skill)
+        if not isolated_src:
+            (work / "SKILL.md").write_text(skill)
         instructions += "\n\n# Designated reusable instructions\n" + skill
-    (work / "instructions.md").write_text(instructions)
+    instruction_path = (run if isolated_src else work) / "instructions.md"
+    instruction_path.write_text(instructions)
     args = overrides(ignore_user_config=True)
     args += [
         "-c",
@@ -82,9 +88,12 @@ def command(run, instructions, runtime=None, skill=None):
         "-c",
         "features.code_mode_host=true",
         "-c",
-        "model_instructions_file=" + json.dumps(str(work / "instructions.md")),
+        "model_instructions_file=" + json.dumps(str(instruction_path)),
     ]
-    args += permission_args(work, runtime, skill is not None)
+    args += permission_args(work, runtime, skill is not None and not isolated_src, isolated_src)
+    if isolated_src:
+        args += ["-c", "permissions.scb.network.enabled=false", "-c",
+                 "shell_environment_policy.set=" + "{" + ",".join(json.dumps(k)+"="+json.dumps(v) for k,v in {"TMPDIR":str(work), "TMP":str(work), "TEMP":str(work), "PYTHONDONTWRITEBYTECODE":"1"}.items()) + "}"]
     return [
         "codex",
         "exec",
@@ -102,8 +111,8 @@ def command(run, instructions, runtime=None, skill=None):
     ]
 
 
-def audit(run, instructions, runtime=None, skill=None):
-    cmd = command(run, instructions, runtime, skill)
+def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None):
+    cmd = command(run, instructions, runtime, skill, isolated_src)
     received = queue.Queue()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -151,7 +160,7 @@ def audit(run, instructions, runtime=None, skill=None):
                 stderr=err,
                 text=True,
             )
-            process.stdin.write("Inspect the supplied working files.")
+            process.stdin.write(prompt or "Inspect the supplied working files.")
             process.stdin.close()
             payload = received.get(timeout=30)
             save(run / "audit-request.json", payload)
@@ -171,19 +180,22 @@ def audit(run, instructions, runtime=None, skill=None):
             ]
             if "exec_command" not in json.dumps(catalog):
                 raise RuntimeError("Shell tool absent")
-            work = run / "work"
+            work = run / ("src" if isolated_src else "work")
             sandbox = [
                 "codex",
                 "sandbox",
-                *permission_args(work, runtime, skill is not None),
+                *permission_args(work, runtime, skill is not None and not isolated_src, isolated_src),
                 "-P",
                 "scb",
                 "-C",
                 str(work),
             ]
+            probe = work / ".audit-public"
+            probe.write_text("public probe")
             public = subprocess.run(
-                sandbox + ["/bin/cat", "instructions.md"], capture_output=True
+                sandbox + ["/bin/cat", str(probe)], capture_output=True
             )
+            probe.unlink()
             if public.returncode or not public.stdout:
                 raise RuntimeError("Working-directory read failed")
             write = subprocess.run(
@@ -217,13 +229,38 @@ def audit(run, instructions, runtime=None, skill=None):
                         "Pinned runtime not accessible inside sandbox: "
                         + check.stderr.decode()[-1000:]
                     )
-            if skill is not None:
+            if skill is not None and not isolated_src:
                 changed = subprocess.run(
                     sandbox + ["/bin/sh", "-c", "echo changed >> SKILL.md"],
                     capture_output=True,
                 )
                 if changed.returncode == 0:
                     raise RuntimeError("Solver can modify designated skill artifact")
+            if isolated_src:
+                # Check representative private paths without returning file contents.
+                blocked = [BASE / "README.md", BASE / "results/code-search-fresh/checkpoints/checkpoint_5/submission/code_search", Path.home() / ".codex/config.toml", run / "instructions.md"]
+                for path in blocked:
+                    check = subprocess.run(sandbox + [str(Path(sys._base_executable).resolve()), "-c", "from pathlib import Path; Path(" + repr(str(path)) + ").open().read(1)"], capture_output=True)
+                    if check.returncode == 0:
+                        raise RuntimeError("Private read allowed: " + str(path))
+                with tempfile.NamedTemporaryFile(prefix="kojo-private-canary-", dir="/private/tmp") as private:
+                    private.write(b"private canary"); private.flush()
+                    check = subprocess.run(sandbox + ["/bin/cat", private.name], capture_output=True)
+                    if check.returncode == 0:
+                        raise RuntimeError("Global temporary files readable")
+                network = subprocess.run(sandbox + [str(Path(sys._base_executable).resolve()), "-c", "import socket; socket.create_connection(('127.0.0.1', " + str(server.server_port) + "), timeout=1)"], capture_output=True)
+                if network.returncode == 0:
+                    raise RuntimeError("Tool network access allowed")
+                link = work / ".audit-link"
+                link.symlink_to(BASE / "README.md")
+                try:
+                    check = subprocess.run(sandbox + ["/bin/cat", str(link)], capture_output=True)
+                    if check.returncode == 0:
+                        raise RuntimeError("Symlink escaped src")
+                finally:
+                    link.unlink()
+                if prompt and prompt not in json.dumps(payload, ensure_ascii=False) and not any(prompt == item.get("text") for msg in payload.get("input", []) for item in msg.get("content", []) if isinstance(item, dict)):
+                    raise RuntimeError("Exact task prompt missing from audited request")
             save(run / "audit-request.json", payload)
             save(
                 run / "verification.json",
@@ -231,6 +268,7 @@ def audit(run, instructions, runtime=None, skill=None):
                     "inference_calls": 0,
                     "ambient_skills": False,
                     "private_files_blocked": True,
+                    "isolated_src": isolated_src,
                     "designated_skill_sha256": hashlib.sha256(
                         (skill or "").encode()
                     ).hexdigest(),
@@ -271,12 +309,12 @@ def cost(usage):
 
 
 def run_session(
-    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=()
+    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False
 ):
     if (run / "run.json").exists():
         raise RuntimeError("Attempt already exists; refusing automatic retry")
-    audit(run, instructions, runtime, skill)
-    cmd = command(run, instructions, runtime, skill)
+    audit(run, instructions, runtime, skill, isolated_src, prompt)
+    cmd = command(run, instructions, runtime, skill, isolated_src)
     cfg = json.loads((BASE / "configs/quota.json").read_text())
     observations = []
     process = None
@@ -295,7 +333,7 @@ def run_session(
         meta = Metadata()
         observations.append(meta.usage())
         enforce(observations[-1], cfg, [*prior_observations, *observations], True)
-        row["skills_audit"] = meta.audit_skills(run / "work")
+        row["skills_audit"] = meta.audit_skills(run / ("src" if isolated_src else "work"))
         env = {
             k: v
             for k, v in os.environ.items()

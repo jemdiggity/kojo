@@ -4,14 +4,16 @@ A small experiment in whether persistent, reusable instructions help a cheap cod
 model solve unseen software tasks. Learning here means revising skill documents;
 there is no model training or fine-tuning.
 
-**Latest run:** a fresh Luna `code_search` baseline completed all five checkpoints,
-fully passing 2/5 and ending at 63/104 tests. [Report](results/code-search-fresh/RESULTS.md).
+**Latest run:** Luna with explicit verification guidance finished `code_search` at
+76/104 tests, still fully passing 2/5 checkpoints. [Comparison with baseline](results/runs/20260927-code-search-guided-01/RESULTS.md).
 
 **Previous status:** the Docker-free SCB baseline is complete. GPT-6 Luna passed
 2 of 5 `code_search` checkpoints completely, ending with 83/104 tests passing.
 The baseline / initial-skills / learned-skills gauntlet is now prepared and awaits
 paid-run approval. [Protocol, budget, and commands](docs/gauntlet.md).
 
+- [Run registry and exact prompts](results/runs/README.md)
+- [Public code_search specifications](specs/code_search/checkpoint_1.md)
 - [Results and accounting](results/scb-code-search/RESULTS.md)
 - [Setup, execution, and reproduction](docs/reproduction.md)
 - [Protocol and context isolation](docs/protocol.md)
