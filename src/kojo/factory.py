@@ -4,19 +4,17 @@ import fcntl
 import shutil
 import time
 
-from kojo.catalog import BASE, protocol_digest
+from kojo.catalog import BASE, protocol_digest, harness_digest, factory_instruction_hashes
 from kojo.execution import audit, run_session, save, session_paths
 from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read
 from kojo.run_chain import ChainBackend, compose_prompt
 
 
 def instructions(backend, role):
-    # These are task requests, never replacement Codex base instructions.
-    return {
-        'build': '',
-        'review': 'Review the supplied code against the specifications and give actionable feedback. You may run checks in this disposable copy. Do not implement fixes. Your final response is the review that will be passed to a fresh developer. Identify concrete issues, locations and evidence; distinguish verified defects from suspicions.',
-        'fix': 'Follow up on the supplied code review. Inspect the code and specifications, assess the feedback, implement justified fixes, and verify the result. This is the only follow-up; summarize changes and checks.',
-    }[role]
+    # User-level role requests only; the model's stock base prompt stays intact.
+    if role not in ('build', 'review', 'fix'):
+        raise ValueError('Unknown factory role: ' + role)
+    return (BASE/'configs/factory-prompts'/f'{role}.md').read_text().strip()
 
 
 def stage_prompt(experiment, role, checkpoint=5, feedback=None):
@@ -90,7 +88,7 @@ def main(argv=None):
         output.mkdir(parents=True)
         save(output / 'manifest.json', {
             'run_id':args.run_id, 'problem':'code_search', 'condition':'checkpoint-review-factory' if args.review_scope == 'checkpoint' else 'single-review-factory',
-            'pins':cfg, 'protocol_sha256':backend.protocol, 'quota':read(BASE / 'configs/quota.json'),
+            'pins':cfg, 'protocol_sha256':backend.protocol, 'harness_sha256':harness_digest(), 'role_instruction_sha256':factory_instruction_hashes(), 'quota':read(BASE / 'configs/quota.json'),
             'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else (10 if args.review_scope == 'checkpoint' else 2)), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else (5 if args.review_scope == 'checkpoint' else 1), 'review_scope':args.review_scope, 'review_loops_per_checkpoint':0 if args.no_review else (1 if args.review_scope == 'checkpoint' else None), 'skills':None,
             'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
             'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else (', each followed by one review and one fix; fixed code carries forward' if args.review_scope == 'checkpoint' else ', one final review, one follow-up')),

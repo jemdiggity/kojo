@@ -112,10 +112,12 @@ def check_repositories(cfg):
             raise RuntimeError(f"Dirty repository: {directory.name}")
 
 
-def protocol_digest():
+def protocol_digest(*, include_factory_instructions=True):
     paths = sorted((BASE / "src/kojo").glob("*.py"))
     paths += sorted(p for p in (BASE / "configs").iterdir() if p.is_file())
     paths += sorted((BASE / "skills/prompts").glob("*.md"))
+    if include_factory_instructions:
+        paths += sorted((BASE / "configs/factory-prompts").glob("*.md"))
     paths += [
         BASE / "scripts/kojo.py",
         BASE / "pyproject.toml",
@@ -128,3 +130,13 @@ def protocol_digest():
             {str(p.relative_to(BASE)): digest(p) for p in paths}, sort_keys=True
         ).encode()
     ).hexdigest()
+
+
+def harness_digest():
+    """Code/config identity excluding the independently versioned role prompts."""
+    return protocol_digest(include_factory_instructions=False)
+
+
+def factory_instruction_hashes():
+    return {role: digest(BASE/'configs/factory-prompts'/f'{role}.md')
+            for role in ('build', 'review', 'fix')}

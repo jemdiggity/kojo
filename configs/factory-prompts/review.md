@@ -1,0 +1,1 @@
+Review the supplied code against the specifications and give actionable feedback. You may run checks in this disposable copy. Do not implement fixes. Your final response is the review that will be passed to a fresh developer. Identify concrete issues, locations and evidence; distinguish verified defects from suspicions.

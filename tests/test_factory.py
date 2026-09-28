@@ -48,6 +48,20 @@ class FactoryTests(unittest.TestCase):
             for n in [1,2,3]:self.assertIn(f'PUBLIC SPEC {n}',prompt)
             for n in [4,5]:self.assertNotIn(f'PUBLIC SPEC {n}',prompt)
 
+    def test_role_prompt_edit_changes_protocol_but_not_harness_hash(self):
+        from kojo import catalog, factory
+        with tempfile.TemporaryDirectory() as directory:
+            base=Path(directory);prompts=base/'configs/factory-prompts';prompts.mkdir(parents=True)
+            for role in ['build','review','fix']:(prompts/f'{role}.md').write_text('')
+            for name in ['scripts/kojo.py','pyproject.toml','uv.lock','.python-version']:
+                path=base/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text('fixture')
+            with patch.object(catalog,'BASE',base), patch.object(factory,'BASE',base):
+                before=catalog.protocol_digest();harness=catalog.harness_digest()
+                (prompts/'review.md').write_text('A changed reviewer request.\n')
+                self.assertEqual(factory.instructions(None,'review'),'A changed reviewer request.')
+                self.assertNotEqual(catalog.protocol_digest(),before)
+                self.assertEqual(catalog.harness_digest(),harness)
+
     def test_model_override_and_cost_do_not_use_luna_for_astra(self):
         with tempfile.TemporaryDirectory() as d:
             cmd=command(Path(d),'instructions',isolated_src=True,model='gpt-6-astra')

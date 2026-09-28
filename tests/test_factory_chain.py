@@ -16,6 +16,9 @@ class FactoryChainTests(unittest.TestCase):
     def test_repaired_code_and_environment_flow_forward_without_reviewer_edits(self):
         with tempfile.TemporaryDirectory() as directory:
             base=Path(directory);(base/'configs').mkdir();(base/'configs/quota.json').write_text('{}')
+            prompts=base/'configs/factory-prompts';prompts.mkdir()
+            for role in ['build','review','fix']:
+                (prompts/f'{role}.md').write_text(factory.instructions(None,role))
             calls=[];graded=[]
             backend=SimpleNamespace(protocol='fixed',runtime=base/'runtime',python='/python')
             def inference(run,instructions,prompt,seconds,*args,work_path,**kwargs):
