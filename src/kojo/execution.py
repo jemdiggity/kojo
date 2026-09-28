@@ -70,7 +70,7 @@ def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False
     ]
 
 
-def command(run, instructions, runtime=None, skill=None, isolated_src=False):
+def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False):
     work = run / ("src" if isolated_src else "work")
     work.mkdir(parents=True, exist_ok=True)
     if skill is not None:
@@ -99,7 +99,7 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False):
         "exec",
         "--ignore-user-config",
         "--ignore-rules",
-        "--ephemeral",
+        *([] if persist else ["--ephemeral"]),
         "--skip-git-repo-check",
         "--json",
         *args,
@@ -111,8 +111,8 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False):
     ]
 
 
-def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None):
-    cmd = command(run, instructions, runtime, skill, isolated_src)
+def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False):
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist)
     received = queue.Queue()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -152,11 +152,11 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
     ]
     process = None
     try:
-        with (run / "audit-stderr.log").open("w") as err:
+        with (run / "audit-stderr.log").open("w") as err, (run / "audit-events.jsonl").open("w") as audit_out:
             process = subprocess.Popen(
                 cmd[:-1] + extra + ["-"],
                 stdin=subprocess.PIPE,
-                stdout=subprocess.DEVNULL,
+                stdout=audit_out,
                 stderr=err,
                 text=True,
             )
@@ -284,6 +284,10 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                 process.wait()
         server.shutdown()
         server.server_close()
+    if persist:
+        from kojo.transcripts import capture
+        instruction_path = (run if isolated_src else run / 'work') / 'instructions.md'
+        capture(run, instruction_path.read_text(), prompt or 'Inspect the supplied working files.', skill or '', audit=True)
 
 
 def usage_from_events(path):
@@ -309,12 +313,12 @@ def cost(usage):
 
 
 def run_session(
-    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False
+    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True
 ):
     if (run / "run.json").exists():
         raise RuntimeError("Attempt already exists; refusing automatic retry")
     audit(run, instructions, runtime, skill, isolated_src, prompt)
-    cmd = command(run, instructions, runtime, skill, isolated_src)
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript)
     cfg = json.loads((BASE / "configs/quota.json").read_text())
     observations = []
     process = None
@@ -405,6 +409,16 @@ def run_session(
                 save(run / "quota.json", observations)
         else:
             save(run / "quota.json", observations)
+        if capture_transcript and process is not None:
+            from kojo.transcripts import capture
+            instruction_path = (run if isolated_src else run / 'work') / 'instructions.md'
+            try:
+                row['transcript'] = capture(run, instruction_path.read_text(), prompt, skill or '')
+            except Exception as error:
+                row['transcript_error'] = str(error)
+            save(run / 'run.json', row)
+    if row.get('transcript_error'):
+        raise RuntimeError('Transcript capture failed; stop before another model call: ' + row['transcript_error'])
     if row["status"] == "cli_failure":
         raise RuntimeError("CLI infrastructure failure; inspect before resuming")
     return row

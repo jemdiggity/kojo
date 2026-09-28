@@ -54,7 +54,7 @@ def main(argv=None):
     )
     if args.action == 'audit':
         probe = BASE / 'intermediate/runs' / args.run_id / 'offline-audit'
-        audit(probe, instructions, backend.runtime, guidance, True, compose_prompt(experiment, 1))
+        audit(probe, instructions, backend.runtime, guidance, True, compose_prompt(experiment, 1), persist=True)
         if list((probe / 'src').iterdir()):
             raise RuntimeError('Audit polluted initial src')
         print('Exact request and strict src isolation passed; no model calls')
@@ -74,6 +74,7 @@ def main(argv=None):
             'guidance_sha256': digest(output / 'guidance.md'), 'pins': cfg,
             'quota': read(BASE / 'configs/quota.json'),
             'comparison': 'Exploratory same-task rerun after analyzing baseline failures; not held-out learning evidence. Prompt delivery and read isolation also changed.',
+            'transcript_capture': 'native CLI session log; instructions and prompt checked after each session',
             'guidance_author': 'Stronger supervising assistant; no writer inference session. Authoring cost separately unmetered.',
         }
         save(output / 'manifest.json', identity)
@@ -100,7 +101,7 @@ def main(argv=None):
                 copy_code(run / 'src', run / 'submission')
                 save(run / 'snapshot.json', {'skill_sha256': hashlib.sha256(guidance.encode()).hexdigest(), 'files': hashes(run / 'submission')})
                 shutil.copytree(run / 'submission', dest / 'submission')
-                for filename in ['run.json', 'quota.json', 'snapshot.json', 'verification.json']:
+                for filename in ['run.json', 'quota.json', 'snapshot.json', 'verification.json', 'transcript-verification.json']:
                     shutil.copy2(run / filename, dest / filename)
                 rows.append({'name':'code_search', 'checkpoint':n, 'run':run})
                 previous = run / 'submission'

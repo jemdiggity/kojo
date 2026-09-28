@@ -4,8 +4,9 @@ A small experiment in whether persistent, reusable instructions help a cheap cod
 model solve unseen software tasks. Learning here means revising skill documents;
 there is no model training or fine-tuning.
 
-**Latest run:** Luna with explicit verification guidance finished `code_search` at
-76/104 tests, still fully passing 2/5 checkpoints. [Comparison with baseline](results/runs/20260927-code-search-guided-01/RESULTS.md).
+**Latest run:** Luna with a task-specific cheat sheet finished `code_search` at
+91/104 tests, still fully passing 2/5 checkpoints. All five native session transcripts
+verify the supplied guidance. [Results and transcripts](results/runs/20260927-code-search-cheatsheet-01/RESULTS.md).
 
 **Previous status:** the Docker-free SCB baseline is complete. GPT-6 Luna passed
 2 of 5 `code_search` checkpoints completely, ending with 83/104 tests passing.
