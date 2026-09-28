@@ -114,7 +114,7 @@ def main(argv=None):
                 save(dest/'snapshot.json',hashes(run/'submission'))
                 frozen.append({'name':'code_search','checkpoint':n,'run':run,'role':role})
             else:
-                save(dest/'source-changes.json',{'before':hashes(source),'after':hashes(work),
+                save(dest/'source-changes.json',{'before':hashes(source),'after':hashes(work, exclude_generated=True),
                                                'carry_forward':'Only answer.txt; no reviewer workspace changes.'})
             print(f'Finished {role} checkpoint {n}', flush=True)
             return run

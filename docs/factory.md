@@ -40,3 +40,9 @@ Tool subprocesses set both TMPDIR and zsh's independent TMPPREFIX inside their w
 Earlier factory runs used cumulative specs and a replacement base prompt. They are **nonstandard diagnostics**, not stock Codex / standard SCB measurements. Preserve their manifests, prompts and outputs unchanged. The old `run_chain run` path and canceled `factory_compare.py --run` launcher are disabled to prevent accidental reuse. Older gauntlet code is historical and is not the active stock factory path.
 
 The canceled comparison used seven Luna sessions plus an Astra chain that was stopped before final results were frozen. Astra review never started. Its quota-floor waiver applied to that batch; the default factory still enforces its configured quota guard. No retries or new model calls were made while correcting this protocol.
+
+## 2026-09-28 authorized stock comparison
+
+The user subsequently authorized a new four-condition batch: Luna builder; Luna review with Luna follow-up; Astra-low builder; Astra-low review with Luna follow-up. Both review arms start from the identical new Luna checkpoint-5 snapshot. `python3.12 scripts/stock_compare.py` prints the plan; `--run` spends subscription usage. This is a distinct authorization and new IDs, not a resumption of the canceled historical batch.
+
+Maximum 14 sessions, 300 seconds each, no retries. Estimated $2–$6 standard-short-context API-equivalent; subscription cash cost unknown. Quota monitoring continues with the previously authorized floor waiver. Snapshot validation now excludes generated environments before rejecting source symlinks, so normal `.venv/bin/python` links do not break checkpoint capture; source symlink escapes remain rejected. Builders use stock base instructions and current-only specs. Reviews are the explicit custom intervention and receive the full public contract. All roles use low reasoning and the same native tools/runtime restrictions.

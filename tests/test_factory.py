@@ -7,6 +7,7 @@ from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from kojo.factory import instructions, stage_prompt
 from kojo.execution import command, cost
+from kojo.gauntlet import copy_code, hashes
 import tempfile
 
 class FactoryTests(unittest.TestCase):
@@ -32,6 +33,16 @@ class FactoryTests(unittest.TestCase):
                 self.assertEqual(cmd[cmd.index('-C')+1],str(work))
                 self.assertNotIn('resume',cmd)
                 self.assertEqual((work/'.venv/marker').read_text(),'environment persists')
+
+    def test_snapshot_excludes_venv_symlinks_but_rejects_source_symlinks(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);work=root/'work';(work/'.venv/bin').mkdir(parents=True)
+            (work/'.venv/bin/python').symlink_to(sys.executable)
+            (work/'code_search').write_text('pass')
+            copy_code(work,root/'snapshot')
+            self.assertEqual(list(hashes(root/'snapshot')),['code_search'])
+            (work/'leak').symlink_to('/etc/hosts')
+            with self.assertRaises(RuntimeError):copy_code(work,root/'blocked')
 
     def test_stock_command_does_not_override_base_instructions(self):
         with tempfile.TemporaryDirectory() as d:

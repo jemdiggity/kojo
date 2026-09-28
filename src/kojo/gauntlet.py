@@ -58,9 +58,11 @@ def skill_valid(text, cfg):
     return text
 
 
-def hashes(directory):
+def hashes(directory, exclude_generated=False):
     result = {}
     for path in sorted(directory.rglob("*")):
+        if exclude_generated and (any(part in EXCLUDED for part in path.relative_to(directory).parts) or path.name.endswith(".pyc")):
+            continue
         if path.is_symlink():
             raise RuntimeError("Symlinks are not allowed in frozen submissions")
         if path.is_file():
@@ -73,7 +75,7 @@ def copy_code(source, target):
         return [n for n in names if n in EXCLUDED or n.endswith(".pyc")]
 
     if source:
-        hashes(source)
+        hashes(source, exclude_generated=True)
         shutil.copytree(source, target, ignore=ignore)
     else:
         target.mkdir(parents=True)
