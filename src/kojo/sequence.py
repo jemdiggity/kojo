@@ -10,7 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parent
 BASE = ROOT.parents[1]
-DATA = BASE / "intermediate/scb-sequence"
+DATA = BASE / "intermediate/runs/20260927-code-search-continuation-01"
 PROBLEMS = BASE / "intermediate/vendor/scb-problems"
 IGNORE = shutil.ignore_patterns(
     "__pycache__", "*.pyc", ".git", ".venv", ".pytest_cache"
@@ -18,14 +18,14 @@ IGNORE = shutil.ignore_patterns(
 
 
 def snapshot(n):
-    return BASE / f"results/scb-code-search/checkpoints/checkpoint_{n}/submission"
+    return BASE / f"results/runs/20260927-code-search-continuation-01/checkpoints/checkpoint_{n}/submission"
 
 
 def generate():
     DATA.mkdir(parents=True, exist_ok=True)
     if not snapshot(1).exists():
         raise RuntimeError(
-            "Missing frozen checkpoint-1 seed; preserve results/scb-code-search/checkpoints/checkpoint_1"
+            "Missing frozen checkpoint-1 seed; preserve results/runs/20260927-code-search-continuation-01/checkpoints/checkpoint_1"
         )
     for n in range(2, 6):
         run = DATA / f"checkpoint_{n}"
@@ -91,7 +91,7 @@ def grade():
         "PYTEST_ADDOPTS": ".evaluation_tests",
     }
     for n in range(1, 6):
-        dest = BASE / f"results/scb-code-search/checkpoints/checkpoint_{n}/grading"
+        dest = BASE / f"results/runs/20260927-code-search-continuation-01/checkpoints/checkpoint_{n}/grading"
         if dest.exists():
             raise RuntimeError(f"Grading output already exists: {dest}")
         command = [

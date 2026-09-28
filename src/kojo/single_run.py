@@ -8,8 +8,8 @@ from kojo.catalog import BASE, protocol_digest
 from kojo.execution import save, session_paths
 from kojo.gauntlet import Backend, Experiment, preflight, read
 
-DATA = BASE / 'intermediate/code-search-fresh/gauntlet'
-OUTPUT = BASE / 'results/code-search-fresh'
+DATA = BASE / 'intermediate/runs/20260927-code-search-baseline-01/gauntlet'
+OUTPUT = BASE / 'results/runs/20260927-code-search-baseline-01'
 
 
 class SingleBackend(Backend):

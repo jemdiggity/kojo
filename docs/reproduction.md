@@ -56,9 +56,9 @@ python3.12 scripts/kojo.py report
 ```
 
 Generation continues the seed at
-`results/scb-code-search/checkpoints/checkpoint_1/submission`. Preserve checkpoint 1.
+`results/runs/20260927-code-search-continuation-01/checkpoints/checkpoint_1/submission`. Preserve checkpoint 1.
 For a fresh continuation, move checkpoints 2–5 and their local attempt directories
-(`intermediate/scb-sequence/checkpoint_2` through `checkpoint_5`) out of the way in
+(`intermediate/runs/20260927-code-search-continuation-01/checkpoint_2` through `checkpoint_5`) out of the way in
 that separate checkout. Completed attempts are skipped; ambiguous retries fail closed.
 Grading refuses existing grading folders; preserve them before regrading. Generation
 spends allowance; grading/reporting do not call models. Detaching tmux leaves a run
@@ -70,7 +70,7 @@ For fresh problems and the three-condition learning experiment, use the separate
 
 ## Recorded provenance
 
-`results/scb-code-search/pins.json` records dependency revisions and retained input
+`results/runs/20260927-code-search-continuation-01/pins.json` records dependency revisions and retained input
 hashes. Every frozen submission has its own hash manifest, checked by
 `tests/test_artifacts.py`. Original paths in recorded logs remain unchanged. The old
 harnesses were deleted at user request; Git tracks the maintained implementation.

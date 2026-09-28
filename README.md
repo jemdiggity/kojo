@@ -14,7 +14,7 @@ paid-run approval. [Protocol, budget, and commands](docs/gauntlet.md).
 
 - [Run registry and exact prompts](results/runs/README.md)
 - [Public code_search specifications](specs/code_search/checkpoint_1.md)
-- [Results and accounting](results/scb-code-search/RESULTS.md)
+- [Results and accounting](results/runs/20260927-code-search-continuation-01/RESULTS.md)
 - [Setup, execution, and reproduction](docs/reproduction.md)
 - [Protocol and context isolation](docs/protocol.md)
 

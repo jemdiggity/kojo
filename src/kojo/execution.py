@@ -238,7 +238,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                     raise RuntimeError("Solver can modify designated skill artifact")
             if isolated_src:
                 # Check representative private paths without returning file contents.
-                blocked = [BASE / "README.md", BASE / "results/code-search-fresh/checkpoints/checkpoint_5/submission/code_search", Path.home() / ".codex/config.toml", run / "instructions.md"]
+                blocked = [BASE / "README.md", BASE / "results/runs/20260927-code-search-baseline-01/checkpoints/checkpoint_5/submission/code_search", Path.home() / ".codex/config.toml", run / "instructions.md"]
                 for path in blocked:
                     check = subprocess.run(sandbox + [str(Path(sys._base_executable).resolve()), "-c", "from pathlib import Path; Path(" + repr(str(path)) + ").open().read(1)"], capture_output=True)
                     if check.returncode == 0:

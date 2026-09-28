@@ -8,7 +8,7 @@ import time
 from kojo.execution import session_paths
 
 BASE = Path(__file__).resolve().parents[2]
-DATA = BASE / "intermediate/scb-sequence"
+DATA = BASE / "intermediate/runs/20260927-code-search-continuation-01"
 
 
 def read(path, default=None):
@@ -23,14 +23,14 @@ def runs(data):
         return [
             (str(p.parent.relative_to(data)), p.parent) for p in session_paths(data)
         ]
-    first = data.parent / "scb-one"
+    first = data / "checkpoint_1"
     candidates = [(1, first)] + [(n, data / f"checkpoint_{n}") for n in range(2, 6)]
     return [
         (
             n,
             path
             if (path / "run.json").exists()
-            else BASE / f"results/scb-code-search/checkpoints/checkpoint_{n}",
+            else BASE / f"results/runs/20260927-code-search-continuation-01/checkpoints/checkpoint_{n}",
         )
         for n, path in candidates
     ]

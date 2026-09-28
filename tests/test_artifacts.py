@@ -6,13 +6,18 @@ from pathlib import Path
 import unittest
 
 BASE = Path(__file__).resolve().parents[1]
-RESULTS = BASE / "results/scb-code-search"
+RESULTS = BASE / "results/runs/20260927-code-search-continuation-01"
 
 
 class ArtifactTests(unittest.TestCase):
     def test_recorded_dependency_and_seed_hashes(self):
         pins = json.loads((RESULTS / "pins.json").read_text())
+        migrations = json.loads((BASE / "results/runs/relocations.json").read_text())["moves"]
         for name, expected in pins["sha256"].items():
+            for move in migrations:
+                if name.startswith(move["from"] + "/"):
+                    name = move["to"] + name[len(move["from"]):]
+                    break
             with self.subTest(path=name):
                 self.assertEqual(
                     hashlib.sha256((BASE / name).read_bytes()).hexdigest(), expected

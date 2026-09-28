@@ -24,7 +24,7 @@
   Missing counters or a different weekly reset fail closed. Rounded account-wide
   counters do not provide an exact dollar cap.
 
-See [recorded results](../results/scb-code-search/RESULTS.md) for limitations and
+See [recorded results](../results/runs/20260927-code-search-continuation-01/RESULTS.md) for limitations and
 cost accounting. The hosted model alias cannot pin backend weights. The SCB static
 quality analyzer did not recognize the extensionless entry file; no quality score
 is claimed.

@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 BASE = ROOT.parents[1]
-ROOT = BASE / "results/scb-code-search"
+ROOT = BASE / "results/runs/20260927-code-search-continuation-01"
 
 
 def prices(usage):
@@ -148,7 +148,7 @@ def main():
         "",
         "This is a baseline harness pilot, not evidence of reusable skill learning. No skill updater, validation selection, paired skill conditions, or repetitions ran; learning cost and break-even are not estimable. The CLI is pinned, but the hosted model alias does not pin model weights. No SCB static-quality score is claimed for the extensionless entry file.",
         "",
-        "[Published API rates](https://developers.openai.com/api/docs/models/gpt-6-luna). See `../../docs/reproduction.md` for reproduction and isolation details.",
+        "[Published API rates](https://developers.openai.com/api/docs/models/gpt-6-luna). See `../../../docs/reproduction.md` for reproduction and isolation details.",
     ]
     (ROOT / "RESULTS.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))

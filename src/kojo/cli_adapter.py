@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent
 BASE = ROOT.parents[1]
 CHECKPOINT = int(os.environ.get("SCB_CHECKPOINT", "2"))
 assert 2 <= CHECKPOINT <= 5
-RUN = BASE / f"intermediate/scb-sequence/checkpoint_{CHECKPOINT}"
+RUN = BASE / f"intermediate/runs/20260927-code-search-continuation-01/checkpoint_{CHECKPOINT}"
 WORK = RUN / "work"
 REPO = BASE / "intermediate/vendor/scb-problems"
 COMMIT = "38d627ecf668a88f88f8d260f8df8df6116e9b03"
