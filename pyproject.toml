@@ -1,0 +1,9 @@
+[project]
+name = "kojo"
+version = "0.1.0"
+description = "Reproducible experiments in coding-agent skill learning"
+requires-python = "==3.12.*"
+dependencies = []
+
+[tool.uv]
+package = false

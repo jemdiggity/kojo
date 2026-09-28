@@ -1,0 +1,11 @@
+type: local
+name: python312-no-docker
+environment:
+  include_os_env: true
+setup:
+  commands: []
+  eval_commands: []
+commands:
+  entry_file: "{entry_file}"
+  command: /usr/local/bin/python3.12
+  agent_command: /usr/local/bin/python3.12

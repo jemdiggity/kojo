@@ -1,0 +1,10 @@
+# Local runs, provider payloads, dependency checkouts, and virtual environments
+/intermediate/
+/.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+!.env.example
+/.ruff_cache/

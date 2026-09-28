@@ -1,0 +1,3 @@
+# Preserve byte-for-byte historical inputs and generated benchmark evidence.
+results/** -whitespace linguist-generated
+configs/grader.lock linguist-generated
