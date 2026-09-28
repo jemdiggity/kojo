@@ -29,7 +29,7 @@ def main():
         if protocol_digest() != protocol:
             raise RuntimeError('Common harness changed during comparison')
         cmd = [sys.executable, '-u', '-m', 'kojo.factory', 'run', '--run-id', rid,
-               '--seconds-per-session', '600', '--review-scope', 'checkpoint', '--monitor-only', *flags]
+               '--seconds-per-session', '600', '--review-scope', 'checkpoint', '--monitor-only','--no-network', *flags]
         print(' '.join(cmd), flush=True)
         if args.run:
             subprocess.run(cmd, cwd=BASE, env={**os.environ, 'PYTHONPATH': str(BASE/'src')}, check=True)

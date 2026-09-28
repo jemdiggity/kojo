@@ -9,6 +9,7 @@ from pathlib import Path
 import random
 import re
 import shutil
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -167,6 +168,23 @@ def plan(cfg, manifest):
     }
 
 
+def evaluation_environment(python, dependency_report=None):
+    """SCB local setup; network runs rebuild declared dependencies per snapshot."""
+    commands=[]
+    entry=str(python)
+    if dependency_report is not None:
+        report=shlex.quote(str(dependency_report))
+        frozen=shlex.quote(str(dependency_report.with_name('dependency-freeze.txt')))
+        commands=[shlex.quote(str(python))+' -m venv .venv',
+                  'if [ -f requirements.txt ]; then .venv/bin/python -m pip install --disable-pip-version-check --no-input --no-cache-dir --report '+report+' -r requirements.txt; fi',
+                  '.venv/bin/python -m pip freeze > '+frozen]
+        commands = ['/bin/sh -c ' + shlex.quote(command) for command in commands]
+        entry='.venv/bin/python'
+    return {'type':'local','name':'gauntlet-python312','environment':{'include_os_env':True},
+            'setup':{'commands':[],'eval_commands':commands},
+            'commands':{'entry_file':'{entry_file}','command':entry}}
+
+
 class Backend:
     simulated = False
 
@@ -242,11 +260,9 @@ class Backend:
             return evaluation_score(read(dest / "evaluation.json"))
         config = self.data / "local.yaml"
         config.parent.mkdir(parents=True, exist_ok=True)
-        config.write_text(
-            'type: local\nname: gauntlet-python312\nenvironment:\n  include_os_env: true\nsetup:\n  commands: []\n  eval_commands: []\ncommands:\n  entry_file: "{entry_file}"\n  command: '
-            + json.dumps(str(self.python))
-            + "\n"
-        )
+        install_dependencies=getattr(self,'install_dependencies',False)
+        dependency_report=dest.parent/'dependency-install.json' if install_dependencies else None
+        config.write_text(json.dumps(evaluation_environment(self.python,dependency_report),indent=2)+'\n')
         env = {
             **os.environ,
             "MSWEA_GLOBAL_CONFIG_DIR": str(self.data / "mswea"),
@@ -257,6 +273,8 @@ class Backend:
             "PYTEST_ADDOPTS": ".evaluation_tests",
             "PYTHONPATH": str(self.runtime / "lib/python3.12/site-packages"),
         }
+        if install_dependencies:
+            env.pop('PYTHONPATH',None)
         cmd = [
             str(BASE / "intermediate/scb-runner-venv/bin/slop-code"),
             "--quiet",

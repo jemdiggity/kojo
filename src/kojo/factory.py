@@ -6,6 +6,7 @@ import time
 
 from kojo.catalog import BASE, protocol_digest, harness_digest, factory_instruction_hashes
 from kojo.execution import audit, run_session, save, session_paths
+from kojo.external_access import audit_external_sources
 from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read
 from kojo.run_chain import ChainBackend, compose_prompt
 
@@ -53,6 +54,7 @@ def main(argv=None):
     parser.add_argument('--build-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
     parser.add_argument('--review-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
     parser.add_argument('--no-review', action='store_true')
+    parser.add_argument('--no-network', action='store_true', help='Historical restricted-network diagnostic; default permits network access')
     parser.add_argument('--review-scope', choices=['checkpoint','final'], default='checkpoint', help='One review/fix loop per checkpoint (default); final preserves historical runs')
     parser.add_argument('--seconds-per-session', type=int, default=600, help='Time limit for each builder, reviewer, and fixer session (default: 600)')
     parser.add_argument('--source-run', help='Reuse only this run’s frozen final builder source for a paired review')
@@ -72,12 +74,13 @@ def main(argv=None):
     data = root / 'gauntlet'
     output = BASE / 'results/runs' / args.run_id
     backend = ChainBackend(cfg, manifest, data, output)
+    backend.install_dependencies=not args.no_network
     experiment = Experiment(backend)
     if args.action == 'audit':
         for role in (('build',) if args.no_review else ('build', 'review', 'fix')):
             probe = root / 'offline-audit' / role
             audit(probe, None, backend.runtime, None, True,
-                  stage_prompt(experiment, role, 1 if role == 'build' else 5, 'Offline review placeholder.'), persist=True, model=models[role])
+                  stage_prompt(experiment, role, 1 if role == 'build' else 5, 'Offline review placeholder.'), persist=True, model=models[role], network_enabled=not args.no_network)
         print('All three role requests and native isolation verified without inference.', flush=True)
         return
     data.mkdir(parents=True, exist_ok=True)
@@ -90,7 +93,7 @@ def main(argv=None):
             'run_id':args.run_id, 'problem':'code_search', 'condition':'checkpoint-review-factory' if args.review_scope == 'checkpoint' else 'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'harness_sha256':harness_digest(), 'role_instruction_sha256':factory_instruction_hashes(), 'quota':read(BASE / 'configs/quota.json'),
             'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else (10 if args.review_scope == 'checkpoint' else 2)), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else (5 if args.review_scope == 'checkpoint' else 1), 'review_scope':args.review_scope, 'review_loops_per_checkpoint':0 if args.no_review else (1 if args.review_scope == 'checkpoint' else None), 'skills':None,
-            'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
+            'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,'network_enabled':not args.no_network,'dependency_policy':'requirements.txt rebuilt in a fresh grading venv; install report and freeze recorded' if not args.no_network else 'historical pinned runtime only','external_access_policy':'native transcript audit after every session; suspected benchmark access excludes the run pending review',
             'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else (', each followed by one review and one fix; fixed code carries forward' if args.review_scope == 'checkpoint' else ', one final review, one follow-up')),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
             'scope':'Exploratory same-task workflow test, not held-out learning or a compute-matched comparison.',
@@ -124,7 +127,7 @@ def main(argv=None):
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
             print(f'Starting {role} checkpoint {n}', flush=True)
             run_session(run, None, prompt, args.seconds_per_session, backend.runtime,
-                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work)
+                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work, network_enabled=not args.no_network)
             for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt','stock-instructions.md']:
                 if filename == 'answer.txt' and not (run/filename).exists():
                     continue  # A timed-out session may have no final answer; preserve its code/receipts.
@@ -137,6 +140,12 @@ def main(argv=None):
             else:
                 save(dest/'source-changes.json',{'before':hashes(source),'after':hashes(work, exclude_generated=True),
                                                'carry_forward':'Only answer.txt; no reviewer workspace changes.'})
+            external=audit_external_sources(run/'transcript.jsonl')
+            save(run/'external-access.json',external)
+            save(dest/'external-access.json',external)
+            if external['review_required']:
+                save(output/'VALIDITY.json',{'status':'excluded_pending_review','role':role,'checkpoint':n,'reason':external['status'],'evidence':str(dest/'external-access.json')})
+                raise RuntimeError('External-source audit requires review; run excluded pending review. No further model calls permitted.')
             print(f'Finished {role} checkpoint {n}', flush=True)
             return run
 
@@ -167,6 +176,10 @@ def main(argv=None):
         for row in frozen:
             score=experiment.score([row])[0]; score['role']=row['role']; scores.append(score)
             shutil.copy2(row['run']/'grading/evaluation.json',output/row['role']/f"checkpoint_{row['checkpoint']}"/'evaluation.json')
+            for filename in ['dependency-install.json','dependency-freeze.txt']:
+                receipt=row['run']/filename
+                if receipt.exists():
+                    shutil.copy2(receipt,output/row['role']/f"checkpoint_{row['checkpoint']}"/filename)
             save(output/'scores.json',scores)
             print(f"Graded {row['role']} checkpoint {row['checkpoint']}: {score['passed']}/{score['total']}",flush=True)
         if failure:

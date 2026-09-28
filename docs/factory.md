@@ -25,7 +25,7 @@ KOJO_NATIVE_TESTS=1 PYTHONPATH=src python3.12 -m unittest discover -s tests -q
 
 ## Explicit environment differences
 
-This remains a Dockerless macOS execution adapter, not an identical upstream container. Python/CLI/dataset/evaluator versions are pinned. The current local profile exposes the framework Python and pinned libraries, denies outside task-data reads, and disables tool network/package downloads. Virtual environments can persist in the builder workspace; these runtime constraints can still differ from an upstream benchmark image. Do not present results as interchangeable with official SCB leaderboard numbers. The per-session budget and configurable model/low reasoning are experiment settings. New factory invocations default to 600 seconds (10 minutes) for each builder, reviewer, and fixer. Override with `--seconds-per-session N`. This limit is recorded in the run manifest and passed to the execution deadline. The historical comparison launcher explicitly retains its original 300-second limit for reproduction.
+This remains a Dockerless macOS execution adapter, not an identical upstream container. Python/CLI/dataset/evaluator versions are pinned. The current local profile exposes framework Python, denies outside task-data reads, and enables tool network access and package downloads. Grading rebuilds declared requirements in a fresh virtual environment and records install/freeze receipts. The fixed PYTHONPATH override is disabled in network mode so it cannot shadow installed dependencies. Use `--no-network` only to reproduce the earlier restricted-network diagnostics; historical batch launchers select it explicitly. Virtual environments can persist in the builder workspace; these runtime constraints can still differ from an upstream benchmark image. Do not present results as interchangeable with official SCB leaderboard numbers. The per-session budget and configurable model/low reasoning are experiment settings. New factory invocations default to 600 seconds (10 minutes) for each builder, reviewer, and fixer. Override with `--seconds-per-session N`. This limit is recorded in the run manifest and passed to the execution deadline. The historical comparison launcher explicitly retains its original 300-second limit for reproduction.
 
 The upstream references inspected are `agent_runner/runner.py` (current-only spec render and `finish_checkpoint(reset_context=True)`), `evaluation/config.py::get_checkpoint_spec`, and `configs/prompts/just-solve.jinja`, at runner commit `31ceea3add480edb33431e70475c4c70597e6b31`.
 
@@ -33,7 +33,7 @@ The upstream references inspected are `agent_runner/runner.py` (current-only spe
 
 Tool subprocesses set both TMPDIR and zsh's independent TMPPREFIX inside their writable source directory. Setting only TMPDIR left heredocs trying to write `/tmp/zsh`. Every isolated preflight now writes nested fixtures and a Python program using heredocs, compiles and runs it, tests Python temporary files, and cleans up. The controller's own TMPDIR stays unchanged so the `:tmpdir` deny rule cannot accidentally deny src.
 
-[Official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference) documents tool environment settings. Private-file/global-temp/symlink/network denial checks remain active.
+[Official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference) documents tool environment settings. Private-file/global-temp/symlink denial checks remain active. The network probe checks reachability in network mode and denial with `--no-network`.
 
 ## Historical experiments
 
@@ -50,3 +50,19 @@ Maximum 14 sessions, 300 seconds each, no retries. Estimated $2–$6 standard-sh
 ## Subsequent time-budget change
 
 After the completed comparison, the user requested a 10-minute session limit. The factory default is now 600 seconds; no new inference runs were launched by this change. Existing results retain their actual 300-second budgets. The subsequent user clarification moved the loop inside each checkpoint. The default reviewed chain is now five build → review → fix cycles (15 sessions maximum), with each session capped at 600 seconds. Baselines still use five builder sessions. The historical comparison launcher explicitly selects final-only review and 300 seconds. No rerun or failed-checkpoint retry was launched by these changes.
+
+## Versioned instructions and external sources
+
+Factory role requests live in `configs/factory-prompts/{build,review,fix}.md`.
+The builder file is deliberately empty: upstream SCB supplies its prompt.
+The extraction commit preserves the previous text exactly. Manifests record
+individual instruction hashes, a harness hash excluding those files, and a full
+protocol hash including them. Instruction-only experiments therefore produce
+instruction-only source changes and an unchanged harness hash.
+
+See [external-source auditing](external-access-audit.md) for the per-session
+transcript inventory, contamination gate, dependency receipts and limitations.
+Network access is configured using Codex's
+[permissions setting](https://learn.chatgpt.com/docs/permissions).
+These changes have been verified without new model inference; earlier results
+remain restricted-network diagnostics.

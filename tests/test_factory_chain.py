@@ -13,7 +13,7 @@ from kojo import factory
 
 
 class FactoryChainTests(unittest.TestCase):
-    def test_repaired_code_and_environment_flow_forward_without_reviewer_edits(self):
+    def exercise_chain(self, blocked=False):
         with tempfile.TemporaryDirectory() as directory:
             base=Path(directory);(base/'configs').mkdir();(base/'configs/quota.json').write_text('{}')
             prompts=base/'configs/factory-prompts';prompts.mkdir()
@@ -23,6 +23,7 @@ class FactoryChainTests(unittest.TestCase):
             backend=SimpleNamespace(protocol='fixed',runtime=base/'runtime',python='/python')
             def inference(run,instructions,prompt,seconds,*args,work_path,**kwargs):
                 self.assertEqual(seconds,600)
+                self.assertTrue(kwargs['network_enabled'])
                 role=run.parents[1].name.removeprefix('training-');n=int(run.name.split('_')[-1])
                 code=work_path/'code_search';text=code.read_text() if code.exists() else ''
                 calls.append((role,n,text))
@@ -40,15 +41,27 @@ class FactoryChainTests(unittest.TestCase):
                 (run/'answer.txt').write_text(f'feedback {n}')
                 (run/'stock-instructions.md').write_text('stock')
             def score(rows):
-                self.assertEqual(len(calls),15)  # No grade-driven feedback between sessions.
+                self.assertEqual(len(calls),1 if blocked else 15)  # No grade-driven feedback between sessions.
                 row=rows[0];graded.append((row['role'],row['checkpoint']))
                 (row['run']/'grading').mkdir();(row['run']/'grading/evaluation.json').write_text('{}')
                 return [{'passed':1,'total':1,'checkpoint':row['checkpoint']}]
             experiment=SimpleNamespace(score=score)
             with contextlib.ExitStack() as stack:
-                for name,value in [('BASE',base),('protocol_digest',lambda:'fixed'),('preflight',lambda:({},{})),('ChainBackend',lambda *a:backend),('Experiment',lambda *a:experiment),('stage_prompt',lambda *a:f'prompt'),('run_session',inference)]:
+                for name,value in [('BASE',base),('protocol_digest',lambda:'fixed'),('preflight',lambda:({},{})),('ChainBackend',lambda *a:backend),('Experiment',lambda *a:experiment),('audit_external_sources',lambda *a:{'review_required':blocked,'status':'suspected_benchmark_access' if blocked else 'no_benchmark_access_observed'}),('stage_prompt',lambda *a:f'prompt'),('run_session',inference)]:
                     stack.enter_context(patch.object(factory,name,value))
-                with contextlib.redirect_stdout(io.StringIO()):factory.main(['run','--run-id','test-chain'])
+                with contextlib.redirect_stdout(io.StringIO()):
+                    if blocked:
+                        with self.assertRaisesRegex(RuntimeError,'External-source audit'):
+                            factory.main(['run','--run-id','test-chain'])
+                    else:
+                        factory.main(['run','--run-id','test-chain'])
+            if blocked:
+                self.assertEqual([(r,n) for r,n,_ in calls],[('build',1)])
+                root=base/'results/runs/test-chain'
+                self.assertEqual(json.loads((root/'VALIDITY.json').read_text())['status'],'excluded_pending_review')
+                self.assertEqual(json.loads((root/'accounting.json').read_text())['sessions_reserved'],1)
+                self.assertTrue((root/'build/checkpoint_1/external-access.json').exists())
+                return
             self.assertEqual([(r,n) for r,n,_ in calls],[(r,n) for n in range(1,6) for r in ['build','review','fix']])
             self.assertEqual(len(graded),10)
             root=base/'results/runs/test-chain'
@@ -56,3 +69,9 @@ class FactoryChainTests(unittest.TestCase):
             self.assertEqual(manifest['max_sessions'],15)
             self.assertEqual(manifest['seconds_per_session'],600)
             self.assertEqual((root/'fix/checkpoint_5/submission/code_search').read_text(), ''.join(f'build-{n}\nfix-{n}\n' for n in range(1,6)))
+
+    def test_repaired_code_and_environment_flow_forward_without_reviewer_edits(self):
+        self.exercise_chain()
+
+    def test_external_access_flag_stops_before_another_model_call(self):
+        self.exercise_chain(blocked=True)

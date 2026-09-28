@@ -56,3 +56,10 @@ intermediate/  Ignored local traces, scratch data, vendor checkouts, and environ
 Raw traces, credentials, virtual environments, and vendored repositories are not
 committed. Dependency pins and frozen evidence live under `results`; the maintained
 harness lives under `src/kojo`. No new model runs were made during repository cleanup.
+
+The current factory enables network access and audits external-source evidence
+after each session. Role instructions are separate versioned Markdown files.
+See [factory protocol](docs/factory.md),
+[audit policy](docs/external-access-audit.md), and
+[no-inference verification](results/harness/network-enabled-v1/REPORT.md).
+Previous benchmark results remain restricted-network diagnostics.

@@ -48,7 +48,7 @@ def session_paths(root):
             yield path
 
 
-def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False):
+def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False, network_enabled=False):
     paths = {str(BASE): "deny", str(work): "write"}
     if isolated_src:
         paths.update({":root": "deny", ":minimal": "read", ":tmpdir": "deny", ":slash_tmp": "deny"})
@@ -67,6 +67,8 @@ def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False
         'default_permissions="scb"',
         "-c",
         'permissions.scb.extends=":workspace"',
+        '-c',
+        'permissions.scb.network.enabled=' + str(network_enabled).lower(),
         "-c",
         "permissions.scb.filesystem=" + value,
     ]
@@ -117,7 +119,7 @@ def audit_shell_writes(sandbox, work):
             raise RuntimeError("Heredoc content was corrupted")
 
 
-def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna", work_path=None):
+def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False):
     run.mkdir(parents=True, exist_ok=True)
     if model not in ("gpt-6-luna", "gpt-6-astra"):
         raise ValueError("Unsupported experiment model")
@@ -144,9 +146,9 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     ]
     if instructions is not None:
         args += ["-c", "model_instructions_file=" + json.dumps(str(instruction_path))]
-    args += permission_args(work, runtime, skill is not None and not isolated_src, isolated_src)
+    args += permission_args(work, runtime, skill is not None and not isolated_src, isolated_src, network_enabled)
     if isolated_src:
-        args += ["-c", "permissions.scb.network.enabled=false", "-c",
+        args += ["-c",
                  "shell_environment_policy.set=" + "{" + ",".join(json.dumps(k)+"="+json.dumps(v) for k,v in shell_environment(work).items()) + "}"]
     return [
         "codex",
@@ -165,8 +167,8 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     ]
 
 
-def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None):
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path)
+def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False):
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path, network_enabled)
     received = queue.Queue()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -242,7 +244,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
             sandbox = [
                 "codex",
                 "sandbox",
-                *permission_args(work, runtime, skill is not None and not isolated_src, isolated_src),
+                *permission_args(work, runtime, skill is not None and not isolated_src, isolated_src, network_enabled),
                 "-P",
                 "scb",
                 "-C",
@@ -308,8 +310,8 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                     if check.returncode == 0:
                         raise RuntimeError("Global temporary files readable")
                 network = subprocess.run(sandbox + [str(Path(sys._base_executable).resolve()), "-c", "import socket; socket.create_connection(('127.0.0.1', " + str(server.server_port) + "), timeout=1)"], capture_output=True)
-                if network.returncode == 0:
-                    raise RuntimeError("Tool network access allowed")
+                if (network.returncode == 0) != network_enabled:
+                    raise RuntimeError("Native network policy does not match the requested setting")
                 link = work / ".audit-link"
                 link.symlink_to(BASE / "README.md")
                 try:
@@ -329,6 +331,8 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                     "private_files_blocked": True,
                     "isolated_src": isolated_src,
                     "shell_write_smoke": isolated_src,
+                    "network_enabled": network_enabled,
+                    "network_probe": "loopback reachable" if network_enabled else "loopback blocked",
                     "designated_skill_sha256": hashlib.sha256(
                         (skill or "").encode()
                     ).hexdigest(),
@@ -374,12 +378,12 @@ def cost(usage, model="gpt-6-luna"):
 
 
 def run_session(
-    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False, work_path=None
+    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False, work_path=None, network_enabled=False
 ):
     if (run / "run.json").exists():
         raise RuntimeError("Attempt already exists; refusing automatic retry")
-    audit(run, instructions, runtime, skill, isolated_src, prompt, persist=instructions is None, model=model, work_path=work_path)
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model, work_path=work_path)
+    audit(run, instructions, runtime, skill, isolated_src, prompt, persist=instructions is None, model=model, work_path=work_path, network_enabled=network_enabled)
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model, work_path=work_path, network_enabled=network_enabled)
     cfg = json.loads((BASE / "configs/quota.json").read_text())
     observations = []
     process = None
@@ -392,6 +396,7 @@ def run_session(
         "reasoning": "low",
         "max_seconds": seconds,
         "fresh_conversation": True,
+        "network_enabled": network_enabled,
         "skill_sha256": hashlib.sha256((skill or "").encode()).hexdigest(),
     }
     save(run / "run.json", row)
@@ -413,7 +418,9 @@ def run_session(
                 "OPENAI_PROJECT_ID",
             ]
         }
-        if runtime:
+        if network_enabled:
+            env.pop("PYTHONPATH",None)
+        elif runtime:
             env["PYTHONPATH"] = str(runtime / "lib/python3.12/site-packages")
         with (
             (run / "events.jsonl").open("w") as out,
