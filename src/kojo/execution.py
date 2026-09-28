@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import shlex
 import signal
 import subprocess
 import sys
@@ -70,6 +71,51 @@ def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False
     ]
 
 
+def shell_environment(work):
+    """Tool-only overrides; do not change the controller's :tmpdir resolution."""
+    return {
+        "TMPDIR": str(work), "TMP": str(work), "TEMP": str(work),
+        # zsh uses TMPPREFIX for heredocs independently of TMPDIR.
+        "TMPPREFIX": str(work / ".kojo-zsh"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+
+
+def audit_shell_writes(sandbox, work):
+    """Exercise actual zsh writes under the native sandbox, without inference."""
+    with tempfile.TemporaryDirectory(prefix=".audit-shell-", dir=work) as directory:
+        probe = Path(directory)
+        program = (
+            "import os, pathlib, tempfile\n"
+            "root = pathlib.Path(os.environ['TMPDIR']).resolve()\n"
+            "with tempfile.TemporaryFile() as f:\n"
+            "    f.write(b'hello'); f.seek(0); assert f.read() == b'hello'\n"
+            "with tempfile.NamedTemporaryFile() as f:\n"
+            "    assert pathlib.Path(f.name).resolve().is_relative_to(root)\n"
+            "assert pathlib.Path('fixtures/nested/value.txt').read_text() == 'fixture\\n'\n"
+            "print('shell-write-smoke-ok')\n"
+        )
+        script = (
+            "set -eu\ncd " + shlex.quote(str(probe)) + "\n"
+            "mkdir -p fixtures/nested\ncat > fixtures/nested/value.txt <<'KOJO_FIXTURE'\n"
+            "fixture\nKOJO_FIXTURE\ncat > probe.py <<'KOJO_PROGRAM'\n"
+            + program + "KOJO_PROGRAM\n"
+            + shlex.quote(str(Path(sys._base_executable).resolve())) + " -m py_compile probe.py\n"
+            + shlex.quote(str(Path(sys._base_executable).resolve())) + " probe.py\n"
+        )
+        # Apply overrides after Codex resolves :tmpdir from its parent environment,
+        # exactly as shell_environment_policy.set applies to a tool subprocess.
+        result = subprocess.run(
+            sandbox + ["/usr/bin/env", *[f"{k}={v}" for k, v in shell_environment(work).items()],
+                       "/bin/zsh", "-lc", script],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode or result.stdout.strip() != "shell-write-smoke-ok" or result.stderr:
+            raise RuntimeError("Native shell write smoke failed: " + result.stderr[-2000:])
+        if (probe / "probe.py").read_text() != program:
+            raise RuntimeError("Heredoc content was corrupted")
+
+
 def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False):
     work = run / ("src" if isolated_src else "work")
     work.mkdir(parents=True, exist_ok=True)
@@ -93,7 +139,7 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     args += permission_args(work, runtime, skill is not None and not isolated_src, isolated_src)
     if isolated_src:
         args += ["-c", "permissions.scb.network.enabled=false", "-c",
-                 "shell_environment_policy.set=" + "{" + ",".join(json.dumps(k)+"="+json.dumps(v) for k,v in {"TMPDIR":str(work), "TMP":str(work), "TEMP":str(work), "PYTHONDONTWRITEBYTECODE":"1"}.items()) + "}"]
+                 "shell_environment_policy.set=" + "{" + ",".join(json.dumps(k)+"="+json.dumps(v) for k,v in shell_environment(work).items()) + "}"]
     return [
         "codex",
         "exec",
@@ -237,6 +283,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                 if changed.returncode == 0:
                     raise RuntimeError("Solver can modify designated skill artifact")
             if isolated_src:
+                audit_shell_writes(sandbox, work)
                 # Check representative private paths without returning file contents.
                 blocked = [BASE / "README.md", BASE / "results/runs/20260927-code-search-baseline-01/checkpoints/checkpoint_5/submission/code_search", Path.home() / ".codex/config.toml", run / "instructions.md"]
                 for path in blocked:
@@ -269,6 +316,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                     "ambient_skills": False,
                     "private_files_blocked": True,
                     "isolated_src": isolated_src,
+                    "shell_write_smoke": isolated_src,
                     "designated_skill_sha256": hashlib.sha256(
                         (skill or "").encode()
                     ).hexdigest(),
