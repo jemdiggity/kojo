@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shlex
 import signal
 import subprocess
@@ -116,17 +117,21 @@ def audit_shell_writes(sandbox, work):
             raise RuntimeError("Heredoc content was corrupted")
 
 
-def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna"):
+def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna", work_path=None):
+    run.mkdir(parents=True, exist_ok=True)
     if model not in ("gpt-6-luna", "gpt-6-astra"):
         raise ValueError("Unsupported experiment model")
-    work = run / ("src" if isolated_src else "work")
+    work = Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work")
     work.mkdir(parents=True, exist_ok=True)
+    if instructions is None and skill is not None:
+        raise ValueError("Stock mode accepts guidance in task messages, not a base-prompt override")
     if skill is not None:
         if not isolated_src:
             (work / "SKILL.md").write_text(skill)
         instructions += "\n\n# Designated reusable instructions\n" + skill
     instruction_path = (run if isolated_src else work) / "instructions.md"
-    instruction_path.write_text(instructions)
+    if instructions is not None:
+        instruction_path.write_text(instructions)
     args = overrides(ignore_user_config=True)
     args += ["-c", "model=" + json.dumps(model)]
     args += [
@@ -136,9 +141,9 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
         "features.unified_exec=true",
         "-c",
         "features.code_mode_host=true",
-        "-c",
-        "model_instructions_file=" + json.dumps(str(instruction_path)),
     ]
+    if instructions is not None:
+        args += ["-c", "model_instructions_file=" + json.dumps(str(instruction_path))]
     args += permission_args(work, runtime, skill is not None and not isolated_src, isolated_src)
     if isolated_src:
         args += ["-c", "permissions.scb.network.enabled=false", "-c",
@@ -160,8 +165,8 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     ]
 
 
-def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna"):
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model)
+def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None):
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path)
     received = queue.Queue()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -216,9 +221,11 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
             if payload.get("model") != model:
                 raise RuntimeError("Requested model missing from audited request")
             serialized = json.dumps(payload)
-            if any(
-                x in serialized
-                for x in ["Available skills", "/.agents/skills/", "/.codex/skills/"]
+            # Stock instructions explain skills generically; that is not a catalog.
+            texts = [c.get("text", "") for m in payload.get("input", [])
+                     for c in m.get("content", []) if isinstance(c, dict)]
+            if any(x in serialized for x in ["/.agents/skills/", "/.codex/skills/"]) or any(
+                re.search(r"(?m)^### Available skills\s*$", t) for t in texts
             ):
                 raise RuntimeError("Ambient skill catalog present")
             if skill and json.dumps(skill.strip())[1:-1] not in serialized:
@@ -231,7 +238,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
             ]
             if "exec_command" not in json.dumps(catalog):
                 raise RuntimeError("Shell tool absent")
-            work = run / ("src" if isolated_src else "work")
+            work = Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work")
             sandbox = [
                 "codex",
                 "sandbox",
@@ -340,7 +347,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
     if persist:
         from kojo.transcripts import capture
         instruction_path = (run if isolated_src else run / 'work') / 'instructions.md'
-        capture(run, instruction_path.read_text(), prompt or 'Inspect the supplied working files.', skill or '', audit=True)
+        capture(run, instruction_path.read_text() if instructions is not None else None, prompt or 'Inspect the supplied working files.', skill or '', audit=True)
 
 
 def usage_from_events(path):
@@ -367,12 +374,12 @@ def cost(usage, model="gpt-6-luna"):
 
 
 def run_session(
-    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False
+    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False, work_path=None
 ):
     if (run / "run.json").exists():
         raise RuntimeError("Attempt already exists; refusing automatic retry")
-    audit(run, instructions, runtime, skill, isolated_src, prompt, model=model)
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model)
+    audit(run, instructions, runtime, skill, isolated_src, prompt, persist=instructions is None, model=model, work_path=work_path)
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model, work_path=work_path)
     cfg = json.loads((BASE / "configs/quota.json").read_text())
     observations = []
     process = None
@@ -393,7 +400,7 @@ def run_session(
         observations.append(meta.usage())
         if not monitor_only:
             enforce(observations[-1], cfg, [*prior_observations, *observations], True)
-        row["skills_audit"] = meta.audit_skills(run / ("src" if isolated_src else "work"))
+        row["skills_audit"] = meta.audit_skills(Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work"))
         env = {
             k: v
             for k, v in os.environ.items()
@@ -467,7 +474,7 @@ def run_session(
             from kojo.transcripts import capture
             instruction_path = (run if isolated_src else run / 'work') / 'instructions.md'
             try:
-                row['transcript'] = capture(run, instruction_path.read_text(), prompt, skill or '')
+                row['transcript'] = capture(run, instruction_path.read_text() if instructions is not None else None, prompt, skill or '')
             except Exception as error:
                 row['transcript_error'] = str(error)
             save(run / 'run.json', row)

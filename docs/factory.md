@@ -1,31 +1,42 @@
-# One-review software factory
+# Stock Codex and SCB checkpoint protocol
 
-Run `PYTHONPATH=src python3.12 -m kojo.factory audit --run-id YOUR-ID` for three offline request/isolation audits (no inference), then replace `audit` with `run` to spend quota.
+Testing is canceled. The historical comparison launcher refuses to resume. A new inference run requires explicit authorization and a new run ID.
 
-The pinned Luna/low CLI builds code_search checkpoints 1–5 in separate fresh conversations, carrying only its preceding source. A sixth fresh Luna reviews a disposable copy of the final source against all five public specs. A seventh fresh Luna receives the original final builder source, all specs, and the reviewer's final answer. Reviewer edits are discarded. There is exactly one review/follow-up cycle. No learned skills, cheat sheet, previous attempt outcomes, or hidden tests enter these conversations.
+## Active factory behavior
 
-Every session has 300 seconds and the existing native filesystem/network isolation. Subscription quota is checked before and during every call, with the existing 78% remaining floor plus a conservative safety buffer. No automatic retries or resumes. Maximum seven inference sessions. Full native CLI transcripts remain under intermediate/runs; exact input verification receipts, prompts, frozen source and results are retained under results/runs.
+`kojo.factory` now uses:
 
-The controller grades frozen builder checkpoints and the fixed final program only after all inference has finished or stopped. A quota stop produces partial results, not an automatic continuation. Compare the final builder and fixer on identical cumulative tests. This measures one review workflow on a previously explored task, with extra compute; it does not establish skill learning or generalization. API-equivalent costs use the existing recorded rates; subscription cash cost is unknown.
+- The pinned upstream SCB `just-solve.jinja` and `slop_code.common.render.render_prompt`, unchanged. The builder receives **only the current checkpoint specification**. SCB handles canary stripping and entrypoint substitution.
+- A fresh Codex CLI conversation for every checkpoint, with one persistent builder workspace across the chain. Source, agent-created tests, notes, and virtual environments survive between checkpoints. Frozen submissions exclude environment/cache files, as before.
+- The model-provided **stock Codex base instructions**. The factory never sets `model_instructions_file`. Offline and live native transcripts must identify the base as model-provided, and its hash must match between preflight and execution.
+- Installed skills isolated separately: host skill discovery disabled, discovered skill paths disabled, and ambient skill catalogs rejected. Generic stock instructions explaining skills are retained; they are not an installed catalog. Host custom config, memories, plugins and MCP integrations remain excluded.
+- Official pinned SCB grading outside agent access. No prior grades or hidden tests are passed to builders, reviewers or fixers.
 
-## Native shell-write preflight
+The optional reviewer/fixer stages are our experimental addition, not normal SCB behavior. Their role requests are **user messages**, not base-prompt replacements. They receive the full public contract to review the final program; that does not change current-only builder prompts. The reviewer sees a disposable code copy, and the fixer receives the original builder code plus only the review text. Exactly one review/follow-up cycle is permitted.
 
-The harness sets both `TMPDIR` and zsh's independent `TMPPREFIX` inside each session's writable `src`. The previous harness set only TMPDIR/TMP/TEMP; zsh still used `/tmp/zsh` for heredocs and failed under the global `/tmp` deny rule. No sandbox read permissions were broadened.
-
-These are tool-subprocess overrides via `shell_environment_policy.set` ([official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)). Do not set the controller's own TMPDIR to src: the `:tmpdir` deny rule resolves against the controller environment and would then deny source access.
-
-Every isolated session's no-inference audit now writes a Python program and nested fixture with zsh heredocs, compiles and executes it, and checks Python temporary-file access. The smoke script fails on any failed command and cleans up afterward. This tests the native sandbox execution path with the same tool environment; it does not call a model or replay a synthetic model tool response. Existing audits still verify private files, symlink escapes, global temporary files and network access are denied.
-
-Run the native regression test on macOS with sandbox access:
+## Reproduction without model calls
 
 ```sh
+PYTHONPATH=src python3.12 -m kojo.factory audit --run-id UNIQUE-ID
 KOJO_NATIVE_TESTS=1 PYTHONPATH=src python3.12 -m unittest discover -s tests -q
 ```
 
-The test first reproduces the old heredoc failure, then verifies the repaired write/compile/run flow and empty source directory. On 2026-09-27 all 28 tests and all three factory role audits passed without model calls. Historical benchmark scores are unchanged; no factory rerun was launched for this repair.
+`audit` uses a local dummy endpoint that rejects the request without inference. It checks stock base provenance, exact prompt delivery, tools, runtime access and native sandbox isolation. Native regression tests require macOS sandbox access. `run` is the separate spending action; it has not been restarted.
 
-## Authorized Luna/Astra comparison
+## Explicit environment differences
 
-`python3.12 scripts/factory_compare.py` prints the fixed plan; add `--run` to execute it. Run IDs are single-use. Sequence: five fresh Luna builds + Luna review + Luna follow-up; five fresh Astra-low builds without review; Astra-low review of the **same frozen Luna builder source** + a separate fresh Luna follow-up. The Astra reviewer never sees the Luna review or its follow-up. All roles have 300 seconds, no learned guidance, the same public-spec prompts and repaired sandbox. This is 14 sessions total, no retries. The review feedback heading is model-neutral in both arms. Builder-model comparisons have equal five-checkpoint budgets; review arms share their initial source and have equal budgets. These remain single-sample exploratory results.
+This remains a Dockerless macOS execution adapter, not an identical upstream container. Python/CLI/dataset/evaluator versions are pinned. The current local profile exposes the framework Python and pinned libraries, denies outside task-data reads, and disables tool network/package downloads. Virtual environments can persist in the builder workspace; these runtime constraints can still differ from an upstream benchmark image. Do not present results as interchangeable with official SCB leaderboard numbers. The 300-second per-session budget and configurable model/low reasoning are experiment settings.
 
-For this explicitly authorized batch, `--monitor-only` records quota throughout but waives the old weekly floor, following the user's instruction not to worry about the guard. The default factory still enforces the guard. No API keys or paid-credit resets are used. CLI subscription cash cost is unknown. Estimated API-equivalent cost before launch was $2–$6, with a hard execution cap of 14 × 300 seconds and no direct API billing. Dollar equivalents use standard short-context rates: Luna $0.10/$0.01/$0.50 and Astra $10/$1/$50 per million input/cached/output tokens ([official Astra pricing](https://developers.openai.com/api/docs/models/gpt-6-astra)). They are estimates, not subscription charges or exact long-context/service-tier billing.
+The upstream references inspected are `agent_runner/runner.py` (current-only spec render and `finish_checkpoint(reset_context=True)`), `evaluation/config.py::get_checkpoint_spec`, and `configs/prompts/just-solve.jinja`, at runner commit `31ceea3add480edb33431e70475c4c70597e6b31`.
+
+## Native shell write fix
+
+Tool subprocesses set both TMPDIR and zsh's independent TMPPREFIX inside their writable source directory. Setting only TMPDIR left heredocs trying to write `/tmp/zsh`. Every isolated preflight now writes nested fixtures and a Python program using heredocs, compiles and runs it, tests Python temporary files, and cleans up. The controller's own TMPDIR stays unchanged so the `:tmpdir` deny rule cannot accidentally deny src.
+
+[Official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference) documents tool environment settings. Private-file/global-temp/symlink/network denial checks remain active.
+
+## Historical experiments
+
+Earlier factory runs used cumulative specs and a replacement base prompt. They are **nonstandard diagnostics**, not stock Codex / standard SCB measurements. Preserve their manifests, prompts and outputs unchanged. The old `run_chain run` path and canceled `factory_compare.py --run` launcher are disabled to prevent accidental reuse. Older gauntlet code is historical and is not the active stock factory path.
+
+The canceled comparison used seven Luna sessions plus an Astra chain that was stopped before final results were frozen. Astra review never started. Its quota-floor waiver applied to that batch; the default factory still enforces its configured quota guard. No retries or new model calls were made while correcting this protocol.

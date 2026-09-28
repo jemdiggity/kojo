@@ -30,6 +30,8 @@ def main(argv=None):
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--guidance', default='configs/prompts/verified-implementation-v1.md')
     args = parser.parse_args(argv)
+    if args.action == "run":
+        parser.error("Historical cumulative/custom-base runner disabled; use kojo.factory for stock SCB prompting")
     if not args.run_id or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.run_id):
         parser.error('Use a lowercase run ID with digits and hyphens')
     cfg, manifest = preflight()

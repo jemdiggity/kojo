@@ -17,12 +17,17 @@ def inspect_transcript(path, thread_id, instructions, prompt, guidance):
     if len(metas) != 1 or metas[0].get('id') != thread_id:
         raise RuntimeError('Session log identity mismatch')
     base = metas[0].get('base_instructions', {})
+    provenance = base.get('provenance', {}) if isinstance(base, dict) else {}
     base = base.get('text', '') if isinstance(base, dict) else base
     messages = [r['payload'] for r in rows if r.get('type') == 'response_item' and r.get('payload', {}).get('type') == 'message']
     text = lambda m: '\n'.join(c.get('text', '') for c in m.get('content', []) if isinstance(c, dict))
     verified = {
         'thread_id': thread_id,
-        'base_instructions_exact': base.strip() == instructions.strip(),
+        'base_instructions_exact': base.strip() == instructions.strip() if instructions is not None else None,
+        'base_instructions_mode': 'stock' if instructions is None else 'custom',
+        'base_instructions_provenance': provenance,
+        'base_instructions_sha256': hashlib.sha256(base.encode()).hexdigest(),
+        'stock_base_instructions_present': bool(base.strip()) and provenance.get('type') == 'model' if instructions is None else None,
         'guidance_in_session_base_instructions': not guidance or guidance.strip() in base,
         'exact_user_prompt_in_session': any(m.get('role') == 'user' and text(m) == prompt for m in messages),
         'assistant_messages': sum(m.get('role') == 'assistant' for m in messages),
@@ -31,7 +36,8 @@ def inspect_transcript(path, thread_id, instructions, prompt, guidance):
         'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
         'evidence': 'Native CLI session log, not an independent provider receipt. Retains what the CLI records; does not guarantee untruncated outputs or every wire request.',
     }
-    if not all(verified[k] for k in ['base_instructions_exact', 'guidance_in_session_base_instructions', 'exact_user_prompt_in_session']):
+    base_check = 'stock_base_instructions_present' if instructions is None else 'base_instructions_exact'
+    if not all(verified[k] for k in [base_check, 'guidance_in_session_base_instructions', 'exact_user_prompt_in_session']):
         raise RuntimeError('Native session log does not contain the expected instructions and prompt')
     return verified
 
@@ -50,6 +56,14 @@ def capture(run, instructions, prompt, guidance='', *, audit=False):
     shutil.copyfile(matches[0], dest)
     verified = inspect_transcript(dest, ids[0], instructions, prompt, guidance)
     verified['offline_audit'] = audit
+    if instructions is None:
+        if audit:
+            meta = next(r['payload'] for r in records(dest) if r.get('type') == 'session_meta')
+            (run/'stock-instructions.md').write_text(meta['base_instructions']['text'])
+        else:
+            expected = json.loads((run/'audit-transcript-verification.json').read_text())
+            if expected['base_instructions_sha256'] != verified['base_instructions_sha256']:
+                raise RuntimeError('Stock base instructions changed between offline audit and live session')
     (run / (prefix + 'transcript-verification.json')).write_text(json.dumps(verified, indent=2) + '\n')
     lines = ['# Native Codex session transcript', '', verified['evidence'], '',
              'OFFLINE AUDIT: no inference.' if audit else 'Live CLI session record.', '']

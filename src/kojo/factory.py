@@ -11,26 +11,22 @@ from kojo.run_chain import ChainBackend, compose_prompt
 
 
 def instructions(backend, role):
-    common = (
-        f'Work only in your current src directory. Use Python 3.12 via {backend.python}; '
-        'the executable entry file is code_search. Available libraries: Python standard library, '
-        'PyYAML, lxml, cssselect, tomli-w. All public specifications are in the user prompt. '
-        'Do not access parent directories, other runs, home directories, benchmark tests or external solutions. '
-        'No network or package installation. Put self-tests and temporary files inside src. '
-        'No skills or cheat sheet are supplied. Your execution budget is 300 seconds. '
-    )
-    return common + {
-        'build': 'Implement the requested checkpoint, preserving earlier requirements. Use shell tools to verify your work and summarize your checks.',
+    # These are task requests, never replacement Codex base instructions.
+    return {
+        'build': '',
         'review': 'Review the supplied code against the specifications and give actionable feedback. You may run checks in this disposable copy. Do not implement fixes. Your final response is the review that will be passed to a fresh developer. Identify concrete issues, locations and evidence; distinguish verified defects from suspicions.',
         'fix': 'Follow up on the supplied code review. Inspect the code and specifications, assess the feedback, implement justified fixes, and verify the result. This is the only follow-up; summarize changes and checks.',
     }[role]
 
 
 def stage_prompt(experiment, role, checkpoint=5, feedback=None):
-    specs = compose_prompt(experiment, checkpoint)
+    from kojo.scb_prompt import render_checkpoint
     if role == 'build':
-        return specs
-    specs = specs.replace('Implement the current checkpoint.', 'Review the completed program.' if role == 'review' else 'Improve the completed program using the review.')
+        return render_checkpoint(experiment.spec('code_search',checkpoint),checkpoint,experiment.b.python)
+    # Review/fix are explicitly experimental roles, not native SCB checkpoints.
+    # Full public contract is provided here so the final code can be reviewed.
+    specs = instructions(None,role) + "\n\n" + "\n\n".join(
+        f"# Public checkpoint {n} specification\n"+experiment.spec('code_search',n) for n in range(1,checkpoint+1))
     if role == 'fix':
         if not feedback or not feedback.strip():
             raise ValueError('A completed review is required before follow-up')
@@ -62,7 +58,7 @@ def main(argv=None):
     if args.action == 'audit':
         for role in (('build',) if args.no_review else ('build', 'review', 'fix')):
             probe = root / 'offline-audit' / role
-            audit(probe, instructions(backend, role), backend.runtime, None, True,
+            audit(probe, None, backend.runtime, None, True,
                   stage_prompt(experiment, role, 1 if role == 'build' else 5, 'Offline review placeholder.'), persist=True, model=models[role])
         print('All three role requests and native isolation verified without inference.', flush=True)
         return
@@ -76,7 +72,7 @@ def main(argv=None):
             'run_id':args.run_id, 'problem':'code_search', 'condition':'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'quota':read(BASE / 'configs/quota.json'),
             'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else 2), 'seconds_per_session':300, 'review_loops':0 if args.no_review else 1, 'skills':None,
-            'models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
+            'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'all public specs; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
             'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else ', one review, one follow-up'),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
             'scope':'Exploratory same-task workflow test, not held-out learning or a compute-matched comparison.',
@@ -88,9 +84,17 @@ def main(argv=None):
                 raise RuntimeError('Protocol changed during run')
             run = data / f'training-{role}/code_search/checkpoint_{n}'
             dest = output / role / f'checkpoint_{n}'
-            copy_code(source, run / 'src')
+            # Native SCB keeps one workspace/environment across checkpoints.
+            # The process/conversation is fresh; its filesystem is not reset.
+            work = data/'builder-workspace/src' if role == 'build' else run/'src'
+            if role == 'build':
+                work.mkdir(parents=True,exist_ok=True)
+                if n == 1 and list(work.iterdir()):
+                    raise RuntimeError('First builder workspace must be empty')
+            else:
+                copy_code(source,work)
             dest.mkdir(parents=True)
-            save(dest / 'initial-src.json', hashes(run / 'src'))
+            save(dest / 'initial-src.json', hashes(source) if source else {})
             prompt = stage_prompt(experiment, role, n, feedback)
             (dest / 'prompt.md').write_text(prompt)
             (dest / 'instructions.md').write_text(instructions(backend, role))
@@ -98,17 +102,19 @@ def main(argv=None):
             save(data / 'ledger.json', ledger)
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
             print(f'Starting {role} checkpoint {n}', flush=True)
-            run_session(run, instructions(backend, role), prompt, 300, backend.runtime,
-                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only)
-            for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt']:
+            run_session(run, None, prompt, 300, backend.runtime,
+                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work)
+            for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt','stock-instructions.md']:
+                if filename == 'answer.txt' and not (run/filename).exists():
+                    continue  # A timed-out session may have no final answer; preserve its code/receipts.
                 shutil.copy2(run/filename, dest/filename)
             if role != 'review':
-                copy_code(run/'src',run/'submission')
+                copy_code(work,run/'submission')
                 shutil.copytree(run/'submission',dest/'submission')
                 save(dest/'snapshot.json',hashes(run/'submission'))
                 frozen.append({'name':'code_search','checkpoint':n,'run':run,'role':role})
             else:
-                save(dest/'source-changes.json',{'before':hashes(source),'after':hashes(run/'src'),
+                save(dest/'source-changes.json',{'before':hashes(source),'after':hashes(work),
                                                'carry_forward':'Only answer.txt; no reviewer workspace changes.'})
             print(f'Finished {role} checkpoint {n}', flush=True)
             return run

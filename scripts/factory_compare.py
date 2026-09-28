@@ -9,6 +9,8 @@ base=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--run',action='store_true',help='Spend subscription usage; otherwise only print the plan')
 a=p.parse_args()
+if a.run:
+    p.error('This historical comparison was canceled. Do not resume; authorize new runs with new IDs.')
 luna='20260927-code-search-factory-02'
 plans=[
  [luna],

@@ -29,6 +29,20 @@ class TranscriptTests(unittest.TestCase):
                 with self.subTest(fields=fields), self.assertRaises(RuntimeError):
                     inspect_transcript(self.fixture(d,**fields),'thread-id','common\nguide','task','guide')
 
+    def test_stock_provenance_required(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=self.fixture(d,base='stock base')
+            with self.assertRaises(RuntimeError):
+                inspect_transcript(p,'thread-id',None,'task','')
+            rows=[json.loads(x) for x in p.read_text().splitlines()]
+            rows[0]['payload']['base_instructions']['provenance']={'type':'model','model':'gpt-6-luna'}
+            p.write_text('\n'.join(map(json.dumps,rows)))
+            self.assertTrue(inspect_transcript(p,'thread-id',None,'task','')['stock_base_instructions_present'])
+            rows[0]['payload']['base_instructions']['provenance']={'type':'custom'}
+            p.write_text('\n'.join(map(json.dumps,rows)))
+            with self.assertRaises(RuntimeError):
+                inspect_transcript(p,'thread-id',None,'task','')
+
     def test_persistence_does_not_resume_or_populate_src(self):
         with tempfile.TemporaryDirectory() as d:
             cmd=command(Path(d),'instructions',isolated_src=True,persist=True)
