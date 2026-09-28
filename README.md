@@ -6,7 +6,8 @@ there is no model training or fine-tuning.
 
 **Current status:** the Docker-free SCB baseline is complete. GPT-6 Luna passed
 2 of 5 `code_search` checkpoints completely, ending with 83/104 tests passing.
-The baseline / initial-skills / learned-skills comparison has not run on SCB.
+The baseline / initial-skills / learned-skills gauntlet is now prepared and awaits
+paid-run approval. [Protocol, budget, and commands](docs/gauntlet.md).
 
 - [Results and accounting](results/scb-code-search/RESULTS.md)
 - [Setup, execution, and reproduction](docs/reproduction.md)
@@ -37,7 +38,8 @@ python3.12 -m unittest discover -s tests -v
 ```text
 src/kojo/       CLI execution, quota guard, evaluator, reporting, tmux viewer
 scripts/       One command-line entry point
-configs/       Local evaluator settings, pinned grading dependencies, quota window
+skills/        Initial-skill and revision-writer prompts
+configs/       Experiment/split definitions, pinned dependencies, and quota limits
 tests/         Offline quota, isolation, and artifact integrity checks
 results/       Frozen submissions, evaluation reports, and usage accounting
 docs/          Protocol, reproduction, and upstream investigation

@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 import time
 
+from kojo.execution import session_paths
+
 BASE = Path(__file__).resolve().parents[2]
 DATA = BASE / "intermediate/scb-sequence"
 
@@ -17,6 +19,10 @@ def read(path, default=None):
 
 
 def runs(data):
+    if data.name == "gauntlet":
+        return [
+            (str(p.parent.relative_to(data)), p.parent) for p in session_paths(data)
+        ]
     first = data.parent / "scb-one"
     candidates = [(1, first)] + [(n, data / f"checkpoint_{n}") for n in range(2, 6)]
     return [
@@ -32,10 +38,10 @@ def runs(data):
 
 def dashboard(data):
     rows = [
-        "SCB code_search | read-only monitor | no model calls",
+        f"SCB {data.name} | read-only monitor | no model calls",
         "Saved state, refreshed every second. Completed runs are recorded history.",
         "",
-        "Checkpoint   Status          Seconds    Weekly remaining (last sample)",
+        "Attempt / checkpoint                                             Status          Seconds    Last quota",
     ]
     for n, path in runs(data):
         run = read(path / "run.json", {})
@@ -50,7 +56,7 @@ def dashboard(data):
             )
             quota = f"{last['remaining_percent']}% at {stamp}"
         rows.append(
-            f"{n:<12} {run.get('status', 'not started'):<15} {elapsed:<10} {quota}"
+            f"{str(n):<64} {run.get('status', 'not started'):<15} {elapsed:<10} {quota}"
         )
     rows += [
         "",

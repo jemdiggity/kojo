@@ -18,6 +18,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", nargs="?", default="watch", choices=["watch", "run"])
     parser.add_argument("--session", default="scb")
+    parser.add_argument(
+        "--experiment", choices=["baseline", "gauntlet"], default="baseline"
+    )
+    parser.add_argument("--phase", choices=["learn", "evaluate"], default="learn")
     args = parser.parse_args()
     if not args.session or not all(c.isalnum() or c in "_-" for c in args.session):
         parser.error(
@@ -33,7 +37,12 @@ def main():
         return
     python = sys.executable
     view = str(BASE / "scripts/kojo.py")
-    command = lambda mode: shlex.join([python, "-u", view, mode])
+    viewer_args = (
+        ["--data", str(BASE / "intermediate/gauntlet")]
+        if args.experiment == "gauntlet"
+        else []
+    )
+    command = lambda mode: shlex.join([python, "-u", view, mode, *viewer_args])
     created = tmux(
         "new-session",
         "-d",
@@ -57,7 +66,10 @@ def main():
     tmux("split-window", "-v", "-t", pane, "-c", str(BASE), command("events"))
     tmux("select-layout", "-t", target + ":monitor", "even-vertical")
     if args.mode == "run":
-        runner = shlex.join([python, "-u", str(BASE / "scripts/kojo.py"), "generate"])
+        run_args = (
+            ["gauntlet", args.phase] if args.experiment == "gauntlet" else ["generate"]
+        )
+        runner = shlex.join([python, "-u", str(BASE / "scripts/kojo.py"), *run_args])
         # A separate shell keeps the window visible after the guarded runner exits.
         shell = (
             runner

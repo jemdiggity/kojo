@@ -29,7 +29,7 @@ cost accounting. The hosted model alias cannot pin backend weights. The SCB stat
 quality analyzer did not recognize the extensionless entry file; no quality score
 is claimed.
 
-## Skill-learning experiment remains pending
+## Skill-learning experiment prepared; paid runs pending
 
 Use the same cheap model, tools, execution budget, and development feedback for
 baseline, initial skills, and learned skills. Only the skill artifact should vary.
@@ -39,4 +39,5 @@ training and evaluation. `code_search` results have been inspected and therefore
 belong to development data if they influence skill revisions.
 
 A stronger model refining skills must be reported as stronger-model-assisted
-learning, with its cost included. No SCB skill updater has run yet.
+learning, with its cost included. No SCB skill updater has run yet. The executable protocol and proposed budget are
+in [gauntlet.md](gauntlet.md).

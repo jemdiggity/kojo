@@ -1,0 +1,28 @@
+{
+  "model": "gpt-6-luna",
+  "writer_model": "gpt-6-luna",
+  "stronger_model_writer": false,
+  "checkpoints": {
+    "training": 10,
+    "validation": 5,
+    "test": 19
+  },
+  "learning_sessions": 38,
+  "test_sessions": 57,
+  "max_sessions": 95,
+  "test_repeats": 1,
+  "max_solver_seconds": 300,
+  "max_writer_seconds": 180,
+  "estimated_api_equivalent_usd_range": [
+    0.3,
+    3.0
+  ],
+  "actual_subscription_cash_cost_usd": null,
+  "quota": {
+    "weekly_remaining_floor": 78,
+    "weekly_start_remaining": 88,
+    "weekly_resets_at": 1791046775
+  },
+  "approval_required": true,
+  "protocol_sha256": "4c96747057b8bad56b8530dd91fcd1a778fad9b2906ebb56c2d553446da38c17"
+}

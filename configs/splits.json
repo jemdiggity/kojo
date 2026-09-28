@@ -1,0 +1,222 @@
+{
+  "problem_commit": "38d627ecf668a88f88f8d260f8df8df6116e9b03",
+  "splits": {
+    "training": [
+      "code_search",
+      "l2m"
+    ],
+    "validation": [
+      "etl_pipeline"
+    ],
+    "test": [
+      "xjq",
+      "file_backup",
+      "env_manager",
+      "migrate_configs"
+    ]
+  },
+  "problems": {
+    "code_search": {
+      "name": "code_search",
+      "entry_file": "code_search",
+      "checkpoints": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "assets": [],
+      "config_sha256": "6ae8d68a514bf6e64fd276598a8bc7b55f74cdac7aec4eac39fa7b0fa1da35ac",
+      "spec_sha256": {
+        "1": "661df04fb80b918afe6f02a4ee7157f4a64a079ed3ce2989601332d29137bf4b",
+        "2": "07f2cd414876c179ae06d0b1e80588e18bea85fdb94446fc7e7cfe62f36530f3",
+        "3": "522d7944beb095533a0c0a15c8ec8b38ad45f7a7b8ce93eff351dce37b8d4240",
+        "4": "59382e13f38adfeeab79b262c0d28fd167ea0f702162ee4b236b5c9f5f57475b",
+        "5": "702159a16c0851e325bf7e137ea4f502341947c8ae4b4e8ce3b77bd226441921"
+      }
+    },
+    "l2m": {
+      "name": "l2m",
+      "entry_file": "l2m",
+      "checkpoints": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "assets": [],
+      "config_sha256": "d26d4791feb62a01051776282d4bca14ff0d68583acf26c3202a44addd43c78a",
+      "spec_sha256": {
+        "1": "ef4ed597390f338b54e5ca84750b2c83f7ab428b26a9b6904cfd97ba82d5994a",
+        "2": "b07fb70db5f5eca9e5a3ddc8d43a4866c805bd92b90488e925b7417a2976fd7d",
+        "3": "79424bf05fd2be3308417a3609b1d136baddc8f745072d25c4feaa3c6180cfff",
+        "4": "50561418f10c39b65ccc80a7fd6b59ea837b2fe2a15ef4d5d9e7c77a83a52998",
+        "5": "a07a22226801c7ad717409f8afdd77db0ef537e30560aee0a5d710d1cd68823b"
+      }
+    },
+    "etl_pipeline": {
+      "name": "etl_pipeline",
+      "entry_file": "etl_pipeline",
+      "checkpoints": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "assets": [],
+      "config_sha256": "57e7b758b6ec56e6d90be7595de22c1c8ef394e1ab584d969528ca6af4a5bcef",
+      "spec_sha256": {
+        "1": "9a5885bbe6aaf78c2b3c65df5266361ab2a8a5d1319aab0d6d4e868cc30932aa",
+        "2": "8fdfed88d34fcfb156bf5a3d9450173a057bdb27383cd826711ff6885a2d29c1",
+        "3": "17839fd010bbe4905340b2b6cdbed2fd720c0ff1dc35aaba93c877f547b0ba11",
+        "4": "ae67422699e1249df2e54301acf3a765b7fc087bf4dc4aaf7812e4ce95b9c019",
+        "5": "4f0ba953c97174e518540ae8115805520fb01b4d7ca1e01e707bdbf523e7af71"
+      }
+    },
+    "xjq": {
+      "name": "xjq",
+      "entry_file": "xjq",
+      "checkpoints": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "assets": [],
+      "config_sha256": "94c4090d844c5f308b31593a8eebc70e0602f9b1f47de2d745ea5d9d23829e6b",
+      "spec_sha256": {
+        "1": "bf8552063d74b9ab11dbf4748df31e1dfcf7a6aed7cee3fa5f8c02a7c03ee17a",
+        "2": "ab845ae82d6ecd20cb3ba0a2532ea75bb14e2f21a27099e5eed35def0b3670b8",
+        "3": "cbd6b9c1ec24bb17e0ab20a9a11f14e4cc65cb45f19f385df435765a32a83e11",
+        "4": "b5dad942990a3c418981cab4877e2c0c15dc4071c225717ea4e0e96bf27e6bea",
+        "5": "fc21dbfa6d4256736229329202be287bdfa1549b3e14738f0bdef229795c42a1"
+      }
+    },
+    "file_backup": {
+      "name": "file_backup",
+      "entry_file": "backup_scheduler",
+      "checkpoints": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "assets": [
+        "files"
+      ],
+      "config_sha256": "24dda7079603dbc82fd98e3ea893599982c1de669d76bdf840cf97213ea67f9e",
+      "spec_sha256": {
+        "1": "c7491a5393c8724dd6347f553f1c601d73f4001f8b35e52c8e78795a01aa016b",
+        "2": "d6e53773c27f10ef14605f56d1b690ab344e8f7dd5330b675e51d7762bbb38c4",
+        "3": "a4ab8393ef6d72486329a07a77494a1e2c386f5039a5bdd0fcd939fff66a9281",
+        "4": "91605c771f3860b0c623c04794073480583f879f593c9b8b5364eb22bc63333c"
+      }
+    },
+    "env_manager": {
+      "name": "env_manager",
+      "entry_file": "rig",
+      "checkpoints": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "assets": [],
+      "config_sha256": "d681f0e94ada301762f89b34afc92c8a2f79c5b82c3067ee14eca7f8ea3c268d",
+      "spec_sha256": {
+        "1": "6eae5a192bc16d0cd9be89b299ec1f4f365adc1136cf5afc45260b0436e532a6",
+        "2": "84ff8e3ae4e8cf866343de2a14ef1b71968b82cc8a0f3087765eea1c19737063",
+        "3": "7099a559b7b020d8daf49fc0979da79ffc6df163f61d920e9a4b0765cc7c03ac",
+        "4": "3134850131bf9ece5e34d5c5b54144479e946e172682748270db5c3850b4cebc",
+        "5": "8f3c247d8f15976d5f94ce540a63dfb590e3f86685d4a9e8f2773e797b811fb3"
+      }
+    },
+    "migrate_configs": {
+      "name": "migrate_configs",
+      "entry_file": "migrate",
+      "checkpoints": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "assets": [],
+      "config_sha256": "cea2e3f0619eaadc20a73d90c3c8fc6f949de7b8711758d48351105db7b4cd61",
+      "spec_sha256": {
+        "1": "57c514c52b53548d5eeee3f5850f5969c73f786fad8db72c74cd69e078c27871",
+        "2": "1e46be0b9a387add9ba426cf64d9045b074af1aa3f33ae608201f721a9449ae1",
+        "3": "bbbc5a4284e7c6cb13708ce894b418d0e56e2c591b53efa3aa3f949e61fe1229",
+        "4": "2e3c388ea08548686fe5888253a31a1a8a741fd5ebeae0c54b5733ca3fbe7c9b",
+        "5": "75ea7a2ccae84c1f6c892c8dded06bd57b096f4b21883bb373af66c7b914ef36"
+      }
+    }
+  },
+  "checkpoint_counts": {
+    "training": 10,
+    "validation": 5,
+    "test": 19
+  },
+  "duplicate_audit": {
+    "method": "lowercase word 5-shingle Jaccard, comments removed",
+    "threshold": 0.75,
+    "highest_cross_split_pairs": [
+      [
+        0.0015420200462606013,
+        "code_search/1",
+        "migrate_configs/1"
+      ],
+      [
+        0.001282051282051282,
+        "code_search/2",
+        "migrate_configs/2"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "xjq/5"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "xjq/4"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "xjq/3"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "xjq/2"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "xjq/1"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "migrate_configs/5"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "migrate_configs/4"
+      ],
+      [
+        0.0,
+        "l2m/5",
+        "migrate_configs/3"
+      ]
+    ]
+  },
+  "grouping_rationale": "Whole problem chains remain together. Configuration planning/migration problems share the test split. Search/query/ETL tasks share CLI conventions but have different languages, inputs and operations. code_search is development-only because its prior outcomes were inspected."
+}

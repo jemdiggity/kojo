@@ -1,0 +1,23 @@
+{
+  "verified_at": "2026-09-28T01:35:15.617689+00:00",
+  "protocol_sha256": "4c96747057b8bad56b8530dd91fcd1a778fad9b2906ebb56c2d553446da38c17",
+  "paid_model_calls": 0,
+  "unit_tests_passed": 20,
+  "simulated_sessions": 95,
+  "simulated_selected_revision": "revision-1",
+  "native_solver_and_writer_isolation": "passed",
+  "designated_skill_in_exact_request": true,
+  "solver_cannot_modify_skill": true,
+  "pinned_runtime_imports_in_native_sandbox": "passed",
+  "official_local_grader_check": {
+    "problem": "code_search",
+    "checkpoint": 1,
+    "passed": 13,
+    "total": 13,
+    "source": "existing frozen baseline submission"
+  },
+  "held_out_grading_performed": false,
+  "tmux_monitor": "luna-monitor",
+  "note": "Simulation scores are fabricated orchestration fixtures, not model or benchmark results.",
+  "weekly_remaining_after_preparation_percent": 82
+}

@@ -12,11 +12,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=["status", "events", "tmux", "generate", "grade", "report", "_agent"],
+        choices=[
+            "status",
+            "events",
+            "tmux",
+            "generate",
+            "grade",
+            "report",
+            "_agent",
+            "gauntlet",
+        ],
     )
     args, remaining = parser.parse_known_args()
     sys.argv = [sys.argv[0], *remaining]
-    if args.command in ["status", "events"]:
+    if args.command == "gauntlet":
+        from kojo import gauntlet
+
+        gauntlet.main(remaining)
+    elif args.command in ["status", "events"]:
         from kojo import tmux_view
 
         sys.argv.insert(1, args.command)

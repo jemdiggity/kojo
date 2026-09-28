@@ -1,0 +1,5 @@
+{
+  "approved": false,
+  "protocol_sha256": "replace with the exact reviewed gauntlet plan hash",
+  "max_sessions": 95
+}

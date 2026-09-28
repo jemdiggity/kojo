@@ -8,3 +8,4 @@ __pycache__/
 .env.*
 !.env.example
 /.ruff_cache/
+/configs/gauntlet-approval.json

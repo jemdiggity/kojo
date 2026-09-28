@@ -64,9 +64,9 @@ Grading refuses existing grading folders; preserve them before regrading. Genera
 spends allowance; grading/reporting do not call models. Detaching tmux leaves a run
 alive; killing the runner window can interrupt it.
 
-The maintained generation command currently supports only the `code_search`
-checkpoint-2–5 continuation. It cannot yet launch other problems or a fresh checkpoint
-1. The broader three-condition learning experiment requires additional runner work.
+The legacy `generate` command supports the recorded `code_search` continuation.
+For fresh problems and the three-condition learning experiment, use the separate
+[gauntlet commands](gauntlet.md).
 
 ## Recorded provenance
 
