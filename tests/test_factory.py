@@ -5,12 +5,49 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
-from kojo.factory import instructions, stage_prompt
+from kojo.factory import instructions, stage_prompt, run_checkpoint
 from kojo.execution import command, cost
 from kojo.gauntlet import copy_code, hashes
 import tempfile
 
 class FactoryTests(unittest.TestCase):
+    def test_checkpoint_factory_order_feedback_and_carry_forward(self):
+        import json
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); calls=[]
+            def session(role, checkpoint, source, feedback=None):
+                calls.append((role,checkpoint,source,feedback))
+                run=root/f'{role}-{checkpoint}';run.mkdir()
+                if role=='review':
+                    (run/'run.json').write_text(json.dumps({'status':'complete'}))
+                    (run/'answer.txt').write_text(f'review {checkpoint}')
+                return run
+            first=run_checkpoint(session,1,None)
+            second=run_checkpoint(session,2,first)
+            self.assertEqual([(r,n) for r,n,_,_ in calls],
+                             [('build',1),('review',1),('fix',1),('build',2),('review',2),('fix',2)])
+            self.assertEqual(calls[2][2],root/'build-1/submission')
+            self.assertEqual(calls[2][3],'review 1')
+            self.assertEqual(calls[3][2],root/'fix-1/submission')
+            self.assertEqual(second,root/'fix-2/submission')
+
+    def test_checkpoint_factory_rejects_incomplete_review(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);calls=[]
+            def session(role,checkpoint,source,feedback=None):
+                calls.append(role)
+                if role=='review':(root/'run.json').write_text('{"status":"budget_exhausted"}')
+                return root
+            with self.assertRaises(RuntimeError):run_checkpoint(session,3,None)
+            self.assertEqual(calls,['build','review'])
+
+    def test_checkpoint_review_and_fix_never_see_future_specs(self):
+        spec=SimpleNamespace(spec=lambda name,n:f'PUBLIC SPEC {n}')
+        for role in ['review','fix']:
+            prompt=stage_prompt(spec,role,3,feedback='review feedback')
+            for n in [1,2,3]:self.assertIn(f'PUBLIC SPEC {n}',prompt)
+            for n in [4,5]:self.assertNotIn(f'PUBLIC SPEC {n}',prompt)
+
     def test_model_override_and_cost_do_not_use_luna_for_astra(self):
         with tempfile.TemporaryDirectory() as d:
             cmd=command(Path(d),'instructions',isolated_src=True,model='gpt-6-astra')

@@ -1,4 +1,4 @@
-"""Bounded build chains and one independent review/follow-up, with explicit model roles."""
+"""Bounded checkpoint factories with one independent review/follow-up per checkpoint."""
 import argparse
 import fcntl
 import shutil
@@ -24,7 +24,7 @@ def stage_prompt(experiment, role, checkpoint=5, feedback=None):
     if role == 'build':
         return render_checkpoint(experiment.spec('code_search',checkpoint),checkpoint,experiment.b.python)
     # Review/fix are explicitly experimental roles, not native SCB checkpoints.
-    # Full public contract is provided here so the final code can be reviewed.
+    # Only public specs through this checkpoint; future specs never reach these roles.
     specs = instructions(None,role) + "\n\n" + "\n\n".join(
         f"# Public checkpoint {n} specification\n"+experiment.spec('code_search',n) for n in range(1,checkpoint+1))
     if role == 'fix':
@@ -34,6 +34,20 @@ def stage_prompt(experiment, role, checkpoint=5, feedback=None):
     return specs
 
 
+def review_and_fix(session, checkpoint, source):
+    """One review/fix loop for this checkpoint; never inspect official grades."""
+    review = session('review', checkpoint, source)
+    if read(review/'run.json')['status'] != 'complete':
+        raise RuntimeError('Reviewer did not complete; refusing partial review follow-up')
+    return session('fix', checkpoint, source, (review/'answer.txt').read_text())/'submission'
+
+
+def run_checkpoint(session, checkpoint, source, *, review=True):
+    """Carry this checkpoint's final factory output into the next build."""
+    built = session('build', checkpoint, source)/'submission'
+    return review_and_fix(session, checkpoint, built) if review else built
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['audit', 'run'])
@@ -41,6 +55,7 @@ def main(argv=None):
     parser.add_argument('--build-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
     parser.add_argument('--review-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
     parser.add_argument('--no-review', action='store_true')
+    parser.add_argument('--review-scope', choices=['checkpoint','final'], default='checkpoint', help='One review/fix loop per checkpoint (default); final preserves historical runs')
     parser.add_argument('--seconds-per-session', type=int, default=600, help='Time limit for each builder, reviewer, and fixer session (default: 600)')
     parser.add_argument('--source-run', help='Reuse only this run’s frozen final builder source for a paired review')
     parser.add_argument('--monitor-only', action='store_true', help='Explicit user-authorized waiver of the weekly floor for this bounded run')
@@ -49,6 +64,8 @@ def main(argv=None):
         parser.error('seconds-per-session must be positive')
     if args.source_run and (args.no_review or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.source_run)):
         parser.error('source-run needs a review and a valid run ID')
+    if args.source_run and args.review_scope != 'final':
+        parser.error('source-run reuses final code only and requires --review-scope final')
     models={'build':args.build_model,'review':args.review_model,'fix':args.build_model}
     if not args.run_id or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.run_id):
         parser.error('Use lowercase letters, digits and hyphens')
@@ -72,11 +89,11 @@ def main(argv=None):
             raise RuntimeError('Run ID already used; no implicit resume or retry')
         output.mkdir(parents=True)
         save(output / 'manifest.json', {
-            'run_id':args.run_id, 'problem':'code_search', 'condition':'single-review-factory',
+            'run_id':args.run_id, 'problem':'code_search', 'condition':'checkpoint-review-factory' if args.review_scope == 'checkpoint' else 'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'quota':read(BASE / 'configs/quota.json'),
-            'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else 2), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else 1, 'skills':None,
-            'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'all public specs; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
-            'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else ', one review, one follow-up'),
+            'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else (10 if args.review_scope == 'checkpoint' else 2)), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else (5 if args.review_scope == 'checkpoint' else 1), 'review_scope':args.review_scope, 'review_loops_per_checkpoint':0 if args.no_review else (1 if args.review_scope == 'checkpoint' else None), 'skills':None,
+            'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
+            'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else (', each followed by one review and one fix; fixed code carries forward' if args.review_scope == 'checkpoint' else ', one final review, one follow-up')),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
             'scope':'Exploratory same-task workflow test, not held-out learning or a compute-matched comparison.',
         })
@@ -89,11 +106,14 @@ def main(argv=None):
             dest = output / role / f'checkpoint_{n}'
             # Native SCB keeps one workspace/environment across checkpoints.
             # The process/conversation is fresh; its filesystem is not reset.
-            work = data/'builder-workspace/src' if role == 'build' else run/'src'
-            if role == 'build':
+            shared_work = role == 'build' or (role == 'fix' and args.review_scope == 'checkpoint')
+            work = data/'builder-workspace/src' if shared_work else run/'src'
+            if shared_work:
                 work.mkdir(parents=True,exist_ok=True)
-                if n == 1 and list(work.iterdir()):
+                if role == 'build' and n == 1 and list(work.iterdir()):
                     raise RuntimeError('First builder workspace must be empty')
+                if source is not None and hashes(work, exclude_generated=True) != hashes(source):
+                    raise RuntimeError('Shared workspace does not match the preceding frozen source')
             else:
                 copy_code(source,work)
             dest.mkdir(parents=True)
@@ -131,12 +151,9 @@ def main(argv=None):
                 save(output/'reused-builder.json',{'run_id':args.source_run,'files':hashes(previous)})
             else:
                 for n in range(1,6):
-                    previous=session('build',n,previous)/'submission'
-            if not args.no_review:
-                review=session('review',5,previous)
-                if read(review/'run.json')['status'] != 'complete':
-                    raise RuntimeError('Reviewer did not complete; refusing partial review follow-up')
-                session('fix',5,previous,(review/'answer.txt').read_text())
+                    previous=run_checkpoint(session,n,previous,review=not args.no_review and args.review_scope == 'checkpoint')
+            if not args.no_review and args.review_scope == 'final':
+                previous=review_and_fix(session,5,previous)
         except BaseException as error:
             failure=error
             save(output/'STOPPED.json',{'reason':str(error),'time':time.time()})
