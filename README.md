@@ -1,17 +1,18 @@
 # Kojo
 
-A small experiment in whether persistent, reusable instructions help a cheap coding
-model solve unseen software tasks. Learning here means revising skill documents;
-there is no model training or fine-tuning.
+Experiments on changes to a software factory harness: model choice, independent
+review, fixer passes, and execution budgets. Persistent skill learning remains a
+future experiment; no model training or fine-tuning is involved.
 
-**Latest comparison:** stock Codex on SCB `code_search`: Luna **53/104**;
-Luna review + Luna fix **76/104**; Astra low **96/104**;
-Astra low review + Luna fix **88/104**. Both review arms reuse the same Luna build.
-All 14 sessions have verified native transcripts. No condition passed the full final suite.
-[Results, paired changes, accounting, and reproduction](results/comparisons/20260928-stock-code-search/RESULTS.md).
+**Latest run: restricted-network diagnostic.** Four fresh `code_search` chains used
+the same harness, 10-minute sessions, and one review/fix loop at every checkpoint
+in reviewed conditions. Final scores: Luna **64/104**, Luna-reviewed Luna **81/104**,
+Astra low **96/104**, Astra-reviewed Luna **94/104**. None fully passed the final suite.
 
-This is a one-task review-loop pilot. The original held-out skill-learning study has
-not run. Earlier cumulative-spec/custom-prompt runs are historical diagnostics.
+[Checkpoint scores, paired changes, costs, transcripts, and reproduction](results/comparisons/20260928-checkpoint-factory-10m/RESULTS.md).
+Network restrictions were our deviation from normal SCB; the user explicitly chose
+to finish this batch as a diagnostic. Earlier five-minute/final-only review results
+are preserved separately.
 
 - [Run registry and exact prompts](results/runs/README.md)
 - [Public code_search specifications](specs/code_search/checkpoint_1.md)
