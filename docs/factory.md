@@ -1,6 +1,6 @@
 # Stock Codex and SCB checkpoint protocol
 
-Testing is canceled. The historical comparison launcher refuses to resume. A new inference run requires explicit authorization and a new run ID.
+The historical comparison remains canceled and its launcher refuses to resume. The separately authorized 2026-09-28 stock comparison uses new run IDs; see the batch details below.
 
 ## Active factory behavior
 
@@ -21,7 +21,7 @@ PYTHONPATH=src python3.12 -m kojo.factory audit --run-id UNIQUE-ID
 KOJO_NATIVE_TESTS=1 PYTHONPATH=src python3.12 -m unittest discover -s tests -q
 ```
 
-`audit` uses a local dummy endpoint that rejects the request without inference. It checks stock base provenance, exact prompt delivery, tools, runtime access and native sandbox isolation. Native regression tests require macOS sandbox access. `run` is the separate spending action; it has not been restarted.
+`audit` uses a local dummy endpoint that rejects the request without inference. It checks stock base provenance, exact prompt delivery, tools, runtime access and native sandbox isolation. Native regression tests require macOS sandbox access. `run` is the separate spending action. The stock comparison below was explicitly authorized.
 
 ## Explicit environment differences
 

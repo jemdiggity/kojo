@@ -4,14 +4,14 @@ A small experiment in whether persistent, reusable instructions help a cheap cod
 model solve unseen software tasks. Learning here means revising skill documents;
 there is no model training or fine-tuning.
 
-**Latest run:** Luna with a task-specific cheat sheet finished `code_search` at
-91/104 tests, still fully passing 2/5 checkpoints. All five native session transcripts
-verify the supplied guidance. [Results and transcripts](results/runs/20260927-code-search-cheatsheet-01/RESULTS.md).
+**Latest comparison:** stock Codex on SCB `code_search`: Luna **53/104**;
+Luna review + Luna fix **76/104**; Astra low **96/104**;
+Astra low review + Luna fix **88/104**. Both review arms reuse the same Luna build.
+All 14 sessions have verified native transcripts. No condition passed the full final suite.
+[Results, paired changes, accounting, and reproduction](results/comparisons/20260928-stock-code-search/RESULTS.md).
 
-**Previous status:** the Docker-free SCB baseline is complete. GPT-6 Luna passed
-2 of 5 `code_search` checkpoints completely, ending with 83/104 tests passing.
-The baseline / initial-skills / learned-skills gauntlet is now prepared and awaits
-paid-run approval. [Protocol, budget, and commands](docs/gauntlet.md).
+This is a one-task review-loop pilot. The original held-out skill-learning study has
+not run. Earlier cumulative-spec/custom-prompt runs are historical diagnostics.
 
 - [Run registry and exact prompts](results/runs/README.md)
 - [Public code_search specifications](specs/code_search/checkpoint_1.md)
@@ -43,7 +43,7 @@ python3.12 -m unittest discover -s tests -v
 
 ```text
 src/kojo/       CLI execution, quota guard, evaluator, reporting, tmux viewer
-scripts/       One command-line entry point
+scripts/       CLI entry points and explicit experiment launchers
 skills/        Initial-skill and revision-writer prompts
 configs/       Experiment/split definitions, pinned dependencies, and quota limits
 tests/         Offline quota, isolation, and artifact integrity checks
