@@ -17,6 +17,6 @@ plans=[
  ['20260928-code-search-astra-review-stock-01','--source-run',luna,'--review-model','gpt-6-astra'],
 ]
 for plan in plans:
- cmd=[sys.executable,'-u','-m','kojo.factory','run','--run-id',*plan,'--monitor-only']
+ cmd=[sys.executable,'-u','-m','kojo.factory','run','--run-id',*plan,'--monitor-only','--seconds-per-session','300']
  print(' '.join(cmd),flush=True)
  if a.run:subprocess.run(cmd,cwd=base,env={**os.environ,'PYTHONPATH':str(base/'src')},check=True)

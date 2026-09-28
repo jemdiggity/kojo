@@ -41,9 +41,12 @@ def main(argv=None):
     parser.add_argument('--build-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
     parser.add_argument('--review-model', choices=['gpt-6-luna','gpt-6-astra'], default='gpt-6-luna')
     parser.add_argument('--no-review', action='store_true')
+    parser.add_argument('--seconds-per-session', type=int, default=600, help='Time limit for each builder, reviewer, and fixer session (default: 600)')
     parser.add_argument('--source-run', help='Reuse only this run’s frozen final builder source for a paired review')
     parser.add_argument('--monitor-only', action='store_true', help='Explicit user-authorized waiver of the weekly floor for this bounded run')
     args = parser.parse_args(argv)
+    if args.seconds_per_session <= 0:
+        parser.error('seconds-per-session must be positive')
     if args.source_run and (args.no_review or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.source_run)):
         parser.error('source-run needs a review and a valid run ID')
     models={'build':args.build_model,'review':args.review_model,'fix':args.build_model}
@@ -71,7 +74,7 @@ def main(argv=None):
         save(output / 'manifest.json', {
             'run_id':args.run_id, 'problem':'code_search', 'condition':'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'quota':read(BASE / 'configs/quota.json'),
-            'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else 2), 'seconds_per_session':300, 'review_loops':0 if args.no_review else 1, 'skills':None,
+            'max_sessions':(0 if args.source_run else 5)+(0 if args.no_review else 2), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else 1, 'skills':None,
             'prompt_protocol':'stock-codex-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock Codex; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'all public specs; custom review intervention','models':models,'reasoning':'low','source_run':args.source_run,'quota_monitor_only':args.monitor_only,
             'sequence':('reused frozen builder' if args.source_run else 'five incremental build checkpoints') + ('' if args.no_review else ', one review, one follow-up'),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
@@ -102,7 +105,7 @@ def main(argv=None):
             save(data / 'ledger.json', ledger)
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
             print(f'Starting {role} checkpoint {n}', flush=True)
-            run_session(run, None, prompt, 300, backend.runtime,
+            run_session(run, None, prompt, args.seconds_per_session, backend.runtime,
                         None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work)
             for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt','stock-instructions.md']:
                 if filename == 'answer.txt' and not (run/filename).exists():
