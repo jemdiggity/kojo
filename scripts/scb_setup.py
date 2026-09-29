@@ -1,5 +1,4 @@
 """Cache expensive benchmark installs; retain local source and solver isolation."""
-import contextlib
 import fcntl
 import hashlib
 import os
@@ -39,21 +38,6 @@ def data_root(root):
     if result.returncode == 0 and common.endswith('/.git'):
         return Path(common).parent
     return root
-
-
-@contextlib.contextmanager
-def run_locks(root):
-    # Hold existing run locks through setup, including while waiting for cache fill.
-    with contextlib.ExitStack() as stack:
-        for pattern in ('intermediate/runs/*/launcher.lock',
-                        'intermediate/runs/*/gauntlet/execution.lock'):
-            for path in data_root(root).glob(pattern):
-                lock = stack.enter_context(path.open('r'))
-                try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError:
-                    raise RuntimeError(f'Active run: {path}. Finish or stop it before setup.')
-        yield
 
 
 def prepare_cache(root, cache, env):
@@ -138,18 +122,19 @@ def main():
             raise RuntimeError('Mixed cached and local installations; use a fresh worktree.')
         run('sh', str(ROOT / 'scripts/scb_install.sh'), cwd=ROOT)
         return
-    with run_locks(ROOT):
-        cache_root = Path(os.environ.get('KOJO_SETUP_CACHE',
-                          str(Path.home() / 'Library/Caches/kojo/setup'))).expanduser().resolve()
-        cache_root.mkdir(parents=True, exist_ok=True)
-        env = dict(os.environ, UV_CACHE_DIR=str(cache_root / 'uv'),
-                   npm_config_cache=str(cache_root / 'npm'))
-        env.pop('UV_PROJECT_ENVIRONMENT', None)
-        cache = cache_root / cache_key(ROOT)
-        prepare_cache(ROOT, cache, env)
-        run('uv', 'sync', '--frozen', cwd=ROOT, env=env)
-        attach(ROOT, cache, env)
-        print(f'Setup complete (cache {cache.name}).')
+    # A cached setup writes only this worktree and a new or ready-marked cache entry,
+    # never an environment a running experiment uses, so active runs need no guard here.
+    cache_root = Path(os.environ.get('KOJO_SETUP_CACHE',
+                      str(Path.home() / 'Library/Caches/kojo/setup'))).expanduser().resolve()
+    cache_root.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, UV_CACHE_DIR=str(cache_root / 'uv'),
+               npm_config_cache=str(cache_root / 'npm'))
+    env.pop('UV_PROJECT_ENVIRONMENT', None)
+    cache = cache_root / cache_key(ROOT)
+    prepare_cache(ROOT, cache, env)
+    run('uv', 'sync', '--frozen', cwd=ROOT, env=env)
+    attach(ROOT, cache, env)
+    print(f'Setup complete (cache {cache.name}).')
 
 
 if __name__ == '__main__':
