@@ -7,6 +7,7 @@ const METRICS = { strict: 'Strict', iso: 'Iso.', core: 'Core', partial: 'Partial
 const QUALITY = { erosion: 'Erosion', verbosity: 'Verbosity' }; // static analysis, lower is better; columns and charts only
 const FILTERS = { batch: 'Batch', run: 'Run', problem: 'Problem', model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort' };
 const GROUPS = { model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort', problem: 'Problem', batch: 'Batch', run: 'Run' };
+const MAX_LIST_ROWS = 6; // filter lists share one height so they line up
 const PALETTE = ['#b3d4ff', '#fdf7b5', '#86e0c4', '#c76ea0', '#f4b183', '#a9a3f0', '#9adf8f', '#e58f8f'];
 const DEFINITIONS = `<b>Strict</b>: every test passes, including regressions. <b>Iso.</b>: every test introduced by
   that checkpoint passes (regressions ignored). <b>Core</b>: every Core-category test passes. <b>Partial</b>: mean
@@ -80,7 +81,8 @@ function controls(state, data) {
   const thenChoices = { '': '— none —', ...Object.fromEntries(Object.entries(GROUPS).filter(([k]) => k !== state.by)) };
   const thens = choose(thenChoices, (k) => k === state.then, (k) => next(state, { then: k }));
   const experiments = hashOptions(comparisonOptions(state, data));
-  const filterMenus = Object.entries(FILTERS).map(([name, label]) => filterMenu(state, data, name, label)).join('');
+  const rows = Math.min(Math.max(2, ...Object.values(data.facets).map((f) => f.length)), MAX_LIST_ROWS);
+  const filterLists = Object.entries(FILTERS).map(([name, label]) => filterList(state, data, name, label, rows)).join('');
   const clear = hasFilters(state) ? `<a href="#${h(next(state, { filters: {} }))}">clear filters</a>` : '';
   return `
     <div class="ctl">
@@ -91,24 +93,24 @@ function controls(state, data) {
     </div>
     <div class="ctl">
       <label>Suggested comparison <select class="wide" data-nav>${experiments}</select></label>
-      ${filterMenus}
       ${clear}
     </div>
+    <div class="filters">${filterLists}</div>
     <p class="muted">${poolingNote(state, data)}</p>`;
 }
 
 /**
- * A dropdown holding a multi-select list: click one value, shift-click a range, ctrl/cmd-click to toggle.
- * The page wires its change event (see wireFilters) because the hash depends on the whole selection.
+ * One filter: an always-visible multi-select list. Click picks a value, shift-click a range,
+ * ctrl/cmd-click toggles. The page wires its change event (see wireFilters) because the hash
+ * depends on the whole selection.
  */
-function filterMenu(state, data, name, label) {
+function filterList(state, data, name, label, rows) {
   const chosen = state.filters[name] || [];
   const options = data.facets[name]
-    .map(([value, count]) => `<option value="${h(value)}"${chosen.includes(value) ? ' selected' : ''}>${h(value)} (${count})</option>`)
+    .map(([value, count]) => `<option value="${h(value)}" title="${h(value)}"${chosen.includes(value) ? ' selected' : ''}>${h(value)} (${count})</option>`)
     .join('');
-  const size = Math.min(Math.max(data.facets[name].length, 2), 10);
-  return `<details class="menu" data-key="filter-${name}"><summary>${label}${chosen.length ? ` (${chosen.length})` : ''}</summary>
-    <div class="menu-box"><select multiple size="${size}" data-filter="${name}" aria-label="${label}">${options}</select></div></details>`;
+  return `<label class="filter">${label}${chosen.length ? ` (${chosen.length} selected)` : ''}
+    <select multiple size="${rows}" data-filter="${name}">${options}</select></label>`;
 }
 
 /** Navigate to the state whose `name` filter is the list's current selection. */
