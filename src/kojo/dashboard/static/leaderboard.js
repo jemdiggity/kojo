@@ -1,14 +1,20 @@
 import { getJson } from './api.js';
+import { LINE_COLORS, PROGRESS_LABELS, lineChart } from './chart.js';
 import { escapeHtml as h, fixed, meanSd, plural } from './format.js';
 import { hashOptions, render } from './view.js';
 
-const METRICS = { strict: 'Strict', iso: 'Iso.', core: 'Core', partial: 'Partial' };
+const PASS_METRICS = { strict: 'Strict', iso: 'Iso.', core: 'Core', partial: 'Partial' };
+const QUALITY_METRICS = { erosion: 'Erosion', verbosity: 'Verbosity' }; // static analysis, lower is better
+const METRICS = { ...PASS_METRICS, ...QUALITY_METRICS };
+const isQuality = (metric) => metric in QUALITY_METRICS;
 const FILTERS = { batch: 'Batch', problem: 'Problem', model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort' };
 const GROUPS = { model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort', problem: 'Problem', batch: 'Batch', run: 'Run' };
 const PALETTE = ['#b3d4ff', '#fdf7b5', '#86e0c4', '#c76ea0', '#f4b183', '#a9a3f0', '#9adf8f', '#e58f8f'];
 const DEFINITIONS = `<b>Strict</b>: every test passes, including regressions. <b>Iso.</b>: every test introduced by
   that checkpoint passes (regressions ignored). <b>Core</b>: every Core-category test passes. <b>Partial</b>: mean
-  passed/collected tests. Costs are API-equivalent USD; ± is standard deviation across checkpoints.`;
+  passed/collected tests. <b>Erosion</b>: share of complexity mass in high-complexity functions; <b>Verbosity</b>: share of
+  flagged source lines (lower is better for both; only analyzed checkpoints count). Costs are API-equivalent USD; ± is
+  standard deviation across checkpoints.`;
 
 // ---- state <-> URL -------------------------------------------------------
 // #leaderboard/<metric>/<by>/<then>?<filter>=a,b&experiment=<id>
@@ -50,19 +56,24 @@ const runsHash = (ids) => (ids.length === 1 ? `run/${ids[0]}` : `runs?ids=${ids.
 
 // ---- ordering ---------------------------------------------------------------
 
-/** Clusters by their best bar; within a cluster, second-dimension values alphabetically. */
+/** Clusters by their best bar (lowest for quality metrics); within a cluster, second-dimension values alphabetically. */
 function sortRows(rows, state) {
-  const value = (row) => row[state.metric] ?? -1;
+  const missing = -1e9;
+  const score = (row) => {
+    const value = row[state.metric];
+    if (value == null) return missing;
+    return isQuality(state.metric) ? -value : value;
+  };
   const best = {};
   rows.forEach((row) => {
-    best[row.key] = Math.max(best[row.key] ?? -1, value(row));
+    best[row.key] = Math.max(best[row.key] ?? missing, score(row));
   });
   const subs = subValues(rows);
   return [...rows].sort(
     (a, b) =>
       best[b.key] - best[a.key] ||
       a.key.localeCompare(b.key) ||
-      (state.then ? subs.indexOf(a.sub) - subs.indexOf(b.sub) : value(b) - value(a)),
+      (state.then ? subs.indexOf(a.sub) - subs.indexOf(b.sub) : score(b) - score(a)),
   );
 }
 
@@ -93,7 +104,7 @@ function controls(state, data) {
       <label>Metric <select data-nav>${metrics}</select></label>
       <label>Group by <select data-nav>${groups}</select></label>
       <label>Then by <select data-nav>${thens}</select></label>
-      <span class="muted">% of checkpoints, build output graded per checkpoint</span>
+      <span class="muted">${metricNote(state)}</span>
     </div>
     <div class="ctl">
       <label>Experiment <select class="wide" data-nav>${experiments}</select></label>
@@ -113,6 +124,11 @@ function filterMenu(state, data, name, label) {
   });
   return `<details class="menu" data-key="filter-${name}"><summary>${label}${chosen.length ? ` (${chosen.length})` : ''}</summary><div class="menu-box">${boxes.join('')}</div></details>`;
 }
+
+const metricNote = (state) =>
+  isQuality(state.metric)
+    ? 'mean score over analyzed checkpoints · lower is better'
+    : '% of checkpoints, build output graded per checkpoint';
 
 const experimentLabel = (e) => {
   const fixedText = Object.entries(e.fixed).map(([name, values]) => `${name}=${values.join('/')}`).join(', ');
@@ -136,47 +152,82 @@ function poolingNote(state, data) {
   return note;
 }
 
+const formatMetric = (metric, value) => (value == null ? '–' : isQuality(metric) ? value.toFixed(2) : `${value.toFixed(1)}%`);
+
+/** Upper end of the bar scale: whole tens of percent, or tenths for 0..1 quality scores. */
+function barScale(rows, metric) {
+  const max = Math.max(0, ...rows.map((r) => r[metric] || 0));
+  return isQuality(metric) ? Math.max(0.1, Math.ceil(max * 10) / 10) : Math.max(10, Math.ceil(max / 10) * 10);
+}
+
 function bars(rows, state) {
   const subs = subValues(rows);
-  const top = Math.max(10, Math.ceil(Math.max(...rows.map((r) => r[state.metric] || 0)) / 10) * 10);
+  const top = barScale(rows, state.metric);
   const bar = (row, index, label) => {
     const value = row[state.metric];
     const color = PALETTE[(state.then ? subs.indexOf(row.sub) : index) % PALETTE.length];
     return `<div class="hit" data-href="${h(runsHash(row.run_ids))}" title="${plural(row.runs, 'run')} — click to view">
       <div class="name" title="${h(label)}">${h(label)}</div>
       <div class="track"><div class="fill" style="width:${((value || 0) / top) * 100}%;background:${color}"></div></div>
-      <div class="val">${value == null ? '–' : `${value.toFixed(1)}%`}</div></div>`;
+      <div class="val">${formatMetric(state.metric, value)}</div></div>`;
   };
   const body = rows.map((row, i) => {
     if (!state.then) return bar(row, i, row.key);
     const heading = i === 0 || rows[i - 1].key !== row.key ? `<div class="cluster">${h(row.key)}</div>` : '';
     return heading + bar(row, i, row.sub);
   });
-  const axis = `<div></div><div class="axis"><span>0%</span><span>${top / 2}%</span><span>${top}%</span></div><div></div>`;
+  const tick = (fraction) => formatMetric(state.metric, top * fraction).replace(/\.0%$/, '%');
+  const axis = `<div></div><div class="axis"><span>${tick(0)}</span><span>${tick(0.5)}</span><span>${tick(1)}</span></div><div></div>`;
   return `<div class="bars">${body.join('')}${axis}</div>`;
 }
 
 function table(rows, state) {
-  const metricHeader = (name) =>
-    `<th class="num metric${name === state.metric ? ' sel' : ''}" data-href="${h(next(state, { metric: name }))}">${METRICS[name]}</th>`;
-  const metricCell = (row, name) => `<td class="num${name === state.metric ? ' sel' : ''}">${fixed(row[name])}</td>`;
+  const header = (name, label = METRICS[name]) =>
+    `<th class="num metric${name === state.metric ? ' sel' : ''}" data-href="${h(next(state, { metric: name }))}">${label}</th>`;
+  const cell = (name, content) => `<td class="num${name === state.metric ? ' sel' : ''}">${content}</td>`;
   const body = rows.map((row) => `
     <tr class="click" data-href="${h(runsHash(row.run_ids))}">
       <td>${h(row.key)}</td>${state.then ? `<td>${h(row.sub)}</td>` : ''}
       <td class="num">${row.runs}</td><td class="num">${row.checkpoints}</td>
-      ${Object.keys(METRICS).map((name) => metricCell(row, name)).join('')}
+      ${Object.keys(PASS_METRICS).map((name) => cell(name, fixed(row[name]))).join('')}
       <td class="num">${meanSd(row.cost_mean, row.cost_sd, 2)}</td><td class="num">${row.cost_total.toFixed(2)}</td>
-      <td class="num">${meanSd(row.minutes_mean, row.minutes_sd, 1)}</td></tr>`).join('');
+      <td class="num">${meanSd(row.minutes_mean, row.minutes_sd, 1)}</td>
+      ${Object.keys(QUALITY_METRICS).map((name) => cell(name, meanSd(row[name], row[`${name}_sd`], 2))).join('')}</tr>`).join('');
   const title = `Per-${GROUPS[state.by].toLowerCase()}${state.then ? ` × ${GROUPS[state.then].toLowerCase()}` : ''} performance`;
   return `<h2>${h(title)}</h2><div class="scroll"><table>
     <tr><th>${GROUPS[state.by]}</th>${state.then ? `<th>${GROUPS[state.then]}</th>` : ''}<th class="num">Runs</th><th class="num">Ckpts</th>
-    ${Object.keys(METRICS).map(metricHeader).join('')}<th class="num">$/CKPT</th><th class="num">Net $</th><th class="num">Min/CKPT</th></tr>
+    ${Object.keys(PASS_METRICS).map((name) => header(name)).join('')}<th class="num">$/CKPT</th><th class="num">Net $</th><th class="num">Min/CKPT</th>
+    ${Object.keys(QUALITY_METRICS).map((name) => header(name)).join('')}</tr>
     ${body}</table></div><p class="muted">${DEFINITIONS}</p>`;
 }
+
+/** Erosion and verbosity across normalized progress, one line per group; nothing if none were analyzed. */
+function qualityCharts(data, state) {
+  const label = (t) => (state.then ? `${t.key} · ${t.sub}` : t.key);
+  const charts = Object.entries(QUALITY_METRICS)
+    .map(([metric, title]) =>
+      lineChart({
+        title: `${title} across progress (lower is better)`,
+        xLabels: PROGRESS_LABELS,
+        series: data.trajectories.map((t, i) => ({ label: label(t), color: LINE_COLORS[i % LINE_COLORS.length], values: t[metric] || [] })),
+      }),
+    )
+    .join('');
+  return charts ? `<h2>Code quality over a run</h2><div class="charts">${charts}</div>
+    <p class="muted">Each run is placed on 0–100% by checkpoint order and interpolated, then averaged per group. Only runs with a static analysis contribute.</p>` : '';
+}
+
+const NO_QUALITY = `<p class="muted">No erosion/verbosity analysis found for these runs. Generate it with
+  <code>scripts/scb_quality.py &lt;run ids&gt; --output results/comparisons/&lt;name&gt;</code>; the dashboard picks up any
+  <code>quality.json</code> under <code>results/comparisons</code>.</p>`;
 
 export async function leaderboardView(route) {
   const state = parseState(route);
   const data = await getJson(`/api/leaderboard?${apiQuery(state)}`);
   const rows = sortRows(data.rows, state);
-  render(`${controls(state, data)}${rows.length ? bars(rows, state) + table(rows, state) : '<p class="muted">No graded runs found.</p>'}`);
+  const missingQuality = isQuality(state.metric) && rows.every((r) => r[state.metric] == null);
+  const content = rows.length
+    ? (missingQuality ? NO_QUALITY : bars(rows, state)) + table(rows, state) + qualityCharts(data, state)
+    : '<p class="muted">No graded runs found.</p>';
+  render(`${controls(state, data)}${content}`);
 }

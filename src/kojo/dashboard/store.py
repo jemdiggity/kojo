@@ -15,6 +15,7 @@ ROLES = ('build', 'review', 'fix')
 GRADED_ROLES = ('fix', 'build')  # roles that produce graded code; the earlier one loses to `fix`
 LOG_TAIL_BYTES = 64_000
 UNKNOWN = 'unknown'
+QUALITY_VARIANT = 'entrypoint-normalized'  # the analysis variant that covers extensionless entrypoints
 
 
 def load_json(path):
@@ -41,6 +42,14 @@ def _skill_name(manifest):
 def _factory_name(manifest):
     loops = manifest.get('review_loops')
     return f'build + review x{loops}' if loops else 'build only'
+
+
+def quality_metrics(row):
+    """{'erosion', 'verbosity'} from one quality.json row, in either file format, or None."""
+    metrics = ((row.get('variants') or {}).get(QUALITY_VARIANT) or {}).get('metrics') or row.get('metrics') or {}
+    if metrics.get('erosion') is None or metrics.get('verbosity') is None:
+        return None
+    return {'erosion': metrics['erosion'], 'verbosity': metrics['verbosity']}
 
 
 def final_checkpoints(rows):
@@ -94,13 +103,30 @@ class Store:
                 rows.append(row)
         return rows
 
+    def quality_by_checkpoint(self):
+        """(run id, checkpoint) -> erosion/verbosity, from every published quality.json.
+
+        These come from the offline scb-check analysis (scripts/scb_quality*.py); runs that
+        haven't been analyzed simply have no entry.
+        """
+        paths = sorted(self.results.glob('comparisons/*/quality.json')) + sorted(self.results.glob('comparisons/*/*/quality.json'))
+        found = {}
+        for path in paths:
+            for row in (load_json(path) or {}).get('rows', []):
+                metrics = quality_metrics(row)
+                if metrics:
+                    found[(row['run_id'], row['checkpoint'])] = metrics
+        return found
+
     def graded_runs(self):
         """Every run with at least one graded checkpoint, ready for comparison."""
         runs = []
+        quality = self.quality_by_checkpoint()
         for run_id in self.run_ids():
             rows = final_checkpoints(self.checkpoint_rows(run_id))
             if not rows:
                 continue
+            rows = [{**row, **quality.get((run_id, row['checkpoint']), {'erosion': None, 'verbosity': None})} for row in rows]
             manifest = load_json(self.results / 'runs' / run_id / 'manifest.json') or {}
             config = load_json(self.results / 'runs' / run_id / 'run-config.json') or {}
             settings = {'model': rows[0]['model'] or UNKNOWN, 'effort': rows[0]['effort'] or UNKNOWN,
@@ -187,7 +213,17 @@ class Store:
                 'grid': [{key: c[key] for key in ('problem', 'checkpoint', 'strict', 'passed', 'failed', 'skipped')}
                          for c in model['checkpoints']]})
         charts = sorted(p.name for p in (self.results / 'comparisons' / name / 'charts').glob('figure-*.png'))
-        return {'name': name, 'models': models, 'charts': charts}
+        return {'name': name, 'models': models, 'charts': charts, 'quality': self._quality_progress(name)}
+
+    def _quality_progress(self, name):
+        """Erosion/verbosity per model across normalized progress, if the suite was analyzed."""
+        data = load_json(self.results / 'comparisons' / name / 'quality-suite' / 'chart_aggregates.json')
+        if not data:
+            return None
+        progress = {}
+        for entry in data['normalized_progress']:
+            progress.setdefault(entry['metric'], {})[entry['model']] = entry['values']
+        return {'models': data['model_order'], 'progress': progress}
 
     def chart_path(self, name, filename):
         path = self.results / 'comparisons' / name / 'charts' / filename
