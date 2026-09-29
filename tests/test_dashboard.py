@@ -76,14 +76,20 @@ class ExperimentTests(unittest.TestCase):
 
     def test_batches_differing_in_one_parameter_combine(self):
         runs = self.sweep('b1', 'ma', ['none', 'sk', 'tk']) + self.sweep('b2', 'mb', ['tk', 'sk', 'none', 'sk'])
-        (found,) = experiments(runs)
-        self.assertEqual((found['vary'], found['batches']), ('model', ['b1', 'b2']))
+        (found,) = [e for e in experiments(runs) if e['vary'] == 'model']
+        self.assertEqual(found['batches'], ['b1', 'b2'])
         self.assertEqual(found['fixed']['skill'], ['none', 'sk', 'tk'])  # order and repeats are ignored
         self.assertEqual(len(found['runs']), 7)
 
+    def test_a_batch_varying_one_setting_is_an_experiment_on_its_own(self):
+        runs = [Run('plain', 'ab', {'model': 'm', 'skill': 'none', 'factory': 'build only', 'effort': 'low', 'problem': 'p'}),
+                Run('fixed', 'ab', {'model': 'm', 'skill': 'none', 'factory': 'build → review → fix', 'effort': 'low', 'problem': 'p'})]
+        (found,) = experiments(runs)
+        self.assertEqual((found['vary'], found['batches'], found['runs']), ('factory', ['ab'], ['fixed', 'plain']))
+
     def test_batches_differing_in_two_parameters_do_not_combine(self):
         runs = self.sweep('b1', 'ma', ['none', 'sk']) + self.sweep('b2', 'mb', ['none', 'sk'], effort='high')
-        self.assertEqual(experiments(runs), [])
+        self.assertFalse([e for e in experiments(runs) if len(e['batches']) > 1])
 
     def test_different_problems_never_combine(self):
         runs = self.sweep('b1', 'ma', ['none']) + self.sweep('b2', 'mb', ['none'], problem='q')
@@ -191,6 +197,17 @@ class StoreTests(Fixture):
         self.add_run('run-a')
         (run,) = Store(self.base).graded_runs()
         self.assertEqual((run.checkpoints[0]['erosion'], run.checkpoints[0]['verbosity']), (None, None))
+
+    def test_factory_names(self):
+        for run_id, extra in (('legacy', {'review_loops': 5}), ('custom-build', {'condition': 'custom-factory', 'models': {'build': 'm'}}),
+                              ('custom-chain', {'condition': 'custom-factory', 'models': {'fix': 'm', 'build': 'm', 'review': 'm'}}),
+                              ('plain', {})):
+            self.add_run(run_id)
+            manifest = json.loads((self.base / 'results/runs' / run_id / 'manifest.json').read_text())
+            write(self.base / 'results/runs' / run_id / 'manifest.json', {**manifest, **extra})
+        factories = {r.id: r.settings['factory'] for r in Store(self.base).graded_runs()}
+        self.assertEqual(factories, {'legacy': 'build + review x5', 'custom-build': 'build only',
+                                     'custom-chain': 'build → review → fix', 'plain': 'build only'})
 
     def test_run_without_a_batch_is_its_own_batch(self):
         self.add_run('run-a')

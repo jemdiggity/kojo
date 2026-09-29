@@ -40,8 +40,14 @@ def _skill_name(manifest):
 
 
 def _factory_name(manifest):
+    """The pipeline a run used: 'build only', 'build + review xN', or a custom factory's role chain."""
     loops = manifest.get('review_loops')
-    return f'build + review x{loops}' if loops else 'build only'
+    if loops:
+        return f'build + review x{loops}'
+    if manifest.get('condition') == 'custom-factory':  # roles are recorded only for the roles that ran
+        roles = [role for role in ROLES if role in (manifest.get('models') or {})]
+        return ' → '.join(roles) if len(roles) > 1 else 'build only'
+    return 'build only'
 
 
 def quality_metrics(row):

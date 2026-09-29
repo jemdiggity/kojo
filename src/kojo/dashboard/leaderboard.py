@@ -33,11 +33,13 @@ def mean_sd(values):
 
 
 def experiments(runs):
-    """Sets of batches whose parameters are identical except for exactly one setting.
+    """Sets of runs that differ in exactly one setting, matched through their batches.
 
     A batch's parameters are the sets of values it uses per setting (so ordering and
-    repeats don't matter). Batches that each sweep the same skills but use different
-    models therefore combine into one experiment.
+    repeats don't matter). Batches with identical parameters for every setting but one
+    are pooled, and that one setting must take at least two values across them. So
+    batches that each sweep the same skills with different models combine, and a single
+    batch that sweeps one setting is an experiment on its own.
     """
     batches = {}
     for run in runs:
@@ -53,13 +55,12 @@ def experiments(runs):
         for name, batch in batches.items():
             groups.setdefault(tuple(tuple(sorted(batch[s])) for s in held), []).append(name)
         for signature, names in groups.items():
-            distinct = {tuple(sorted(batches[n][vary])) for n in names}
-            if len(distinct) < 2:
+            values = sorted(set().union(*(batches[n][vary] for n in names)))
+            if len(values) < 2:
                 continue
-            fixed = {setting: list(values) for setting, values in zip(held, signature)}
+            fixed = {setting: list(vals) for setting, vals in zip(held, signature)}
             ident = hashlib.sha1(json.dumps([vary, fixed], sort_keys=True).encode()).hexdigest()[:10]
-            found[ident] = {'id': ident, 'vary': vary, 'fixed': fixed, 'batches': sorted(names),
-                            'values': sorted(set().union(*(batches[n][vary] for n in names))),
+            found[ident] = {'id': ident, 'vary': vary, 'fixed': fixed, 'batches': sorted(names), 'values': values,
                             'runs': sorted(r for n in names for r in batches[n]['runs'])}
     return sorted(found.values(), key=lambda e: (-len(e['runs']), e['vary'], e['id']))
 

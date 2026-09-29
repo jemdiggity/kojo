@@ -1,6 +1,6 @@
 import { getJson, getText } from './api.js';
 import { escapeHtml as h, duration, percent, plural, usd } from './format.js';
-import { render } from './view.js';
+import { copyButton, render } from './view.js';
 
 const table = (headers, rows, empty) =>
   rows ? `<div class="scroll"><table><tr>${headers}</tr>${rows}</table></div>` : `<p class="muted">${empty}</p>`;
@@ -46,7 +46,7 @@ export async function runView({ parts: [id] }) {
   const header = '<th>Role</th><th>#</th><th>Status</th><th class="num">Current</th><th class="num">Regression</th><th>Result</th><th class="num">Cost</th><th class="num">Time</th>';
   const rows = run.checkpoints.map(checkpointRow).join('') || '<tr><td colspan="8" class="muted">No checkpoints yet.</td></tr>';
   render(`<p><a href="#runs" data-back>← Back</a></p>
-    <h2 class="first">${h(run.id)} <span class="pill ${run.status}">${h(run.status)}</span></h2>
+    <h2 class="first">${h(run.id)} ${copyButton(h(run.id), 'Copy run name')} <span class="pill ${run.status}">${h(run.status)}</span></h2>
     <p class="muted">${run.batch ? `Batch ${h(run.batch)} · ` : ''}${h(run.models.join(', '))} · ${run.strict_passed}/${run.checkpoints_graded} strict · ${usd(run.cost_usd)} · ${duration(run.elapsed_seconds)}</p>
     <h2>Checkpoints</h2><div class="scroll"><table><tr>${header}</tr>${rows}</table></div>
     <details data-key="log"><summary>Controller log (tail)</summary><pre>${h(log) || 'No log.'}</pre></details>`);
