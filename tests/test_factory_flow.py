@@ -150,7 +150,13 @@ class FlowTests(unittest.TestCase):
 
 
 class ControllerTests(unittest.TestCase):
-    def run_main(self, flow_text, answers, extra=()):
+    def fake_quality(self, source, entry, scratch, expected=None):
+        self.assertEqual(entry, 'code_search')
+        self.assertTrue(Path(source).is_dir())
+        return [{'variant': 'upstream', 'metrics': {'files_scanned': 0, 'total_loc': 0, 'erosion': None, 'verbosity': None}},
+                {'variant': 'entrypoint-normalized', 'metrics': {'files_scanned': 1, 'total_loc': 7, 'erosion': 0.5, 'verbosity': 0.25}}]
+
+    def run_main(self, flow_text, answers, extra=(), quality=None):
         base = Path(self.enterContext(tempfile.TemporaryDirectory()))
         (base/'configs').mkdir()
         (base/'configs/quota.json').write_text('{}')
@@ -189,7 +195,8 @@ class ControllerTests(unittest.TestCase):
             for name, value in [('BASE', base), ('DATA_ROOT', base), ('protocol_digest', lambda: 'fixed'), ('preflight', lambda **kw: ({}, {'problems': {}})),
                                 ('ChainBackend', lambda *a: backend), ('Experiment', lambda *a: SimpleNamespace(score=score, spec=lambda p, n: f'SPEC {n}')),
                                 ('audit_external_sources', lambda *a: {'status': 'ok'}), ('metadata', fake_meta),
-                                ('run_session', inference)]:
+                                ('run_session', inference),
+                                ('analyze_snapshot', quality or self.fake_quality)]:
                 stack.enter_context(patch.object(factory, name, value))
             stack.enter_context(patch.object(factory.claude_execution, 'run_session', inference))
             stack.enter_context(patch.object(factory, 'stage_prompt', lambda experiment, role, n, feedback, problem, verdict: f'{role}|{n}|{feedback}|{verdict}'))
@@ -217,8 +224,29 @@ class ControllerTests(unittest.TestCase):
                          ['build', 'review', 'fix', 'review', 'build', 'review'])
         self.assertEqual([(r['role'], r['label'], r['broken'], r['gained']) for r in json.loads((root/'scores.json').read_text())][:2],
                          [('build', 'checkpoint_1', 0, 0), ('fix', 'checkpoint_1', 0, 0)])
+        scored = json.loads((root/'scores.json').read_text())
+        self.assertEqual(scored[0]['quality'], {'files_scanned': 1, 'total_loc': 7, 'erosion': 0.5, 'verbosity': 0.25})
+        for stage, label in (('build', 'checkpoint_1'), ('fix', 'checkpoint_1'), ('build', 'checkpoint_2')):
+            self.assertTrue((root/stage/label/'quality.json').exists())
+            self.assertTrue((root/stage/label/'evaluation.json').exists())  # Tests and quality for every stage output.
+        self.assertFalse((root/'review').joinpath('checkpoint_1/quality.json').exists())  # Review changes no code.
         self.assertTrue((root/'fix/checkpoint_1/submission/code_search').exists())
         self.assertTrue((root/'build/checkpoint_2/evaluation.json').exists())
+
+    def test_failed_quality_analysis_is_recorded_without_losing_grades(self):
+        def broken(*args):
+            raise RuntimeError('uvx missing')
+        _, graded, root = self.run_main('build = luna6\n', [], quality=broken)
+        self.assertEqual(len(graded), 2)
+        scored = json.loads((root/'scores.json').read_text())
+        self.assertEqual(scored[0]['quality'], {'error': 'RuntimeError: uvx missing'})
+        self.assertFalse((root/'build/checkpoint_1/quality.json').exists())
+
+    def test_no_quality_skips_the_analysis(self):
+        def forbidden(*args):
+            raise AssertionError('quality analysis ran')
+        _, _, root = self.run_main('build = luna6\n', [], extra=['--no-quality'], quality=forbidden)
+        self.assertNotIn('quality', json.loads((root/'scores.json').read_text())[0])
 
     def test_factory_conflicts_with_model_options(self):
         for flag in (['--build-model', 'gpt-6-luna'], ['--no-review'], ['--codex-effort', 'high']):

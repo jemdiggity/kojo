@@ -14,6 +14,7 @@ from kojo.external_access import audit_external_sources
 from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read, split_counts, test_diff
 from kojo.run_chain import ChainBackend, compose_prompt
 from kojo import claude_execution, factory_spec
+from kojo.quality import analyze_snapshot, headline
 
 
 def adapter(model):
@@ -48,6 +49,15 @@ def stage_prompt(experiment, role, checkpoint=5, feedback=None, problem="code_se
     if feedback and role in factory_spec.EDIT:
         specs += '\n\n# Feedback from the independent reviewer\n' + feedback
     return specs + VERDICT_REQUEST if verdict and role in factory_spec.READ else specs
+
+
+def quality_note(score):
+    quality = score.get('quality')
+    if not quality:
+        return ''
+    if 'error' in quality:
+        return f"; quality unavailable ({quality['error']})"
+    return f"; erosion {quality['erosion']:.3f}, verbosity {quality['verbosity']:.3f}" if quality['erosion'] is not None else '; quality: no Python found'
 
 
 def run_flow(flow, session, checkpoint, source, trace=None):
@@ -104,6 +114,7 @@ def parse_args(argv=None):
     parser.add_argument('--claude-max-budget-usd', type=float, help='Optional per-session Claude CLI budget; omitted means report usage only')
     parser.add_argument('--claude-max-output-tokens', type=int, help='Optional response-token allowance, verified against the emitted request')
     parser.add_argument('--no-review', action='store_true')
+    parser.add_argument('--no-quality', action='store_true', help='Skip the static quality analysis of each stage output (needs uvx and network)')
     parser.add_argument('--no-network', action='store_true', help='Historical restricted-network diagnostic; default permits network access')
     parser.add_argument('--review-scope', choices=['checkpoint','final'], help='One review/fix loop per checkpoint (default); final preserves historical runs')
     parser.add_argument('--seconds-per-session', type=int, default=600, help='Time limit for each builder, reviewer, and fixer session (default: 600)')
@@ -398,12 +409,21 @@ def main(argv=None):
             score.update(split_counts(report,row['checkpoint']))
             passing,broken,gained=test_diff(report,passing)  # Against the previous graded session of this run.
             score.update({'broken':len(broken),'gained':len(gained)})
+            if not args.no_quality:
+                # Report-only: a failed analysis is recorded, never allowed to lose the run's grades.
+                try:
+                    rows=analyze_snapshot(row['run']/'submission',manifest['problems'][args.problem]['entry_file'],
+                                          DATA_ROOT/'intermediate/runs'/args.run_id/'quality'/row['role']/label,read(output/row['role']/label/'snapshot.json'))
+                    save(output/row['role']/label/'quality.json',rows)
+                    score['quality']=headline(rows)
+                except Exception as error:
+                    score['quality']={'error':f'{type(error).__name__}: {error}'}
             for filename in ['dependency-install.json','dependency-freeze.txt']:
                 receipt=row['run']/filename
                 if receipt.exists():
                     shutil.copy2(receipt,output/row['role']/label/filename)
             save(output/'scores.json',scores)
-            print(f"Graded {row['role']} {label}: {score['passed']}/{score['total']} (-{score['broken']} / +{score['gained']})",flush=True)
+            print(f"Graded {row['role']} {label}: {score['passed']}/{score['total']} (-{score['broken']} / +{score['gained']}){quality_note(score)}",flush=True)
         if failure:
             raise failure
 
