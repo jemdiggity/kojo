@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kojo Runs</title>
+<style>
+:root{--bg:#fff;--fg:#1c2024;--mute:#68707a;--line:#e2e5e9;--card:#f6f7f9;--ok:#1a7f4b;--bad:#c62f3a;--run:#b7791f;--link:#2456c8}
+@media(prefers-color-scheme:dark){:root{--bg:#14171a;--fg:#e6e8eb;--mute:#8d96a0;--line:#2a2f35;--card:#1c2025;--ok:#4cc38a;--bad:#f0616b;--run:#e0a94a;--link:#7ba2ff}}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
+header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+h1{font-size:16px;margin:0}nav a{margin-right:12px;color:var(--link);cursor:pointer}nav a.on{font-weight:600;text-decoration:underline}
+main{padding:16px;max-width:1200px;margin:auto}table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:500}
+tr.click{cursor:pointer}tr.click:hover{background:var(--card)}.num{text-align:right;font-variant-numeric:tabular-nums}
+.pill{padding:1px 8px;border-radius:9px;font-size:12px;background:var(--card);border:1px solid var(--line)}
+.complete,.finished,.ok{color:var(--ok)}.failed,.launch_failed,.bad{color:var(--bad)}.running{color:var(--run)}
+.bar{display:inline-block;width:80px;height:8px;background:var(--line);border-radius:4px;vertical-align:middle}.bar i{display:block;height:100%;border-radius:4px;background:var(--ok)}
+pre{background:var(--card);padding:10px;overflow:auto;max-height:420px;font-size:12px}.scroll{overflow-x:auto}
+.grid{display:flex;gap:2px;flex-wrap:wrap}.cell{width:14px;height:14px;border-radius:3px;background:var(--bad)}.cell.s{background:var(--ok)}
+img{max-width:100%;border:1px solid var(--line);margin:8px 0}.muted{color:var(--mute)}h2{font-size:15px;margin:22px 0 8px}
+details.f{position:relative}.fbox{position:absolute;z-index:2;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto;min-width:200px}.fbox label{color:var(--fg)}.ctl a{cursor:pointer;color:var(--link)}
+details.log>summary,details.f>summary{cursor:pointer;color:var(--mute)}
+.ctl{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:8px 0 14px}.ctl label{color:var(--mute)}
+select{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
+.lb{display:grid;grid-template-columns:minmax(120px,240px) 1fr 64px;gap:8px 12px;align-items:center;margin:6px 0 4px}
+.lb .track{height:26px;background:var(--card);border-radius:3px;overflow:hidden}.lb .fill{height:100%;border-radius:3px}
+.lb .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}.lb .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .hit{cursor:pointer}.lb .hit:hover .track{outline:2px solid var(--link)}.lb .hit:hover .name{text-decoration:underline}tr.click td:first-child{color:var(--link)}.lb .cl{grid-column:1/-1;font-weight:600;margin-top:10px}.axis{display:grid;grid-template-columns:minmax(120px,240px) 1fr 64px;gap:12px;color:var(--mute);font-size:12px}.axis div:nth-child(2){display:flex;justify-content:space-between}
+th.m{cursor:pointer}th.sel,td.sel{color:var(--fg);font-weight:600;background:var(--card)}
+</style></head><body>
+<header><h1>Kojo</h1><nav id="nav"></nav><span class="muted" id="stamp"></span></header>
+<main id="main"></main>
+<script>
+const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct=x=>x==null?'–':(x*100).toFixed(1)+'%', usd=x=>x?'$'+x.toFixed(2):'–';
+const dur=s=>s==null?'–':s>=3600?(s/3600).toFixed(1)+'h':s>=60?Math.round(s/60)+'m':Math.round(s)+'s';
+const get=(u,t)=>fetch(u).then(r=>{if(!r.ok)throw new Error(u+' '+r.status);return t?r.text():r.json()});
+let timer;
+const openKeys=()=>new Set([...document.querySelectorAll('details[data-k][open]')].map(d=>d.dataset.k));
+function render(html){const keep=openKeys();$('#main').innerHTML=html;document.querySelectorAll('details[data-k]').forEach(d=>{if(keep.has(d.dataset.k))d.open=true})}
+function route(){clearInterval(timer);const [path,qs]=(location.hash.slice(1)||'leaderboard').split('?'),[k,id,id2,id3]=path.split('/');LB.f=Object.fromEntries([...new URLSearchParams(qs||'')].map(([a,b])=>[a,b.split(',')]));
+ $('#nav').innerHTML=[['leaderboard','Leaderboard'],['runs','Runs'],['results','Results']].map(([p,l])=>`<a href="#${p}" class="${k==p||(k=='run'&&p=='runs')?'on':''}">${l}</a>`).join('');
+ const view={leaderboard:()=>leaderboard(id,id2,id3),runs:runs,run:()=>run(id),results:()=>results(id)}[k]||runs;
+ const go=()=>view().then(()=>$('#stamp').textContent='updated '+new Date().toLocaleTimeString()).catch(e=>$('#main').innerHTML='<p class="bad">'+esc(e.message)+'</p>');
+ go(); if(k!='results'&&k!='leaderboard')timer=setInterval(go,5000)}
+
+const LB={metric:'strict',by:'model',then:'',f:{}},METRICS={strict:'Strict',iso:'Iso.',core:'Core',partial:'Partial'},
+ BYS={model:'Model',skill:'Skill set',factory:'Factory',effort:'Effort',problem:'Problem',batch:'Batch',run:'Run'},
+ PAL=['#b3d4ff','#fdf7b5','#86e0c4','#c76ea0','#f4b183','#a9a3f0','#9adf8f','#e58f8f'];
+const lbQuery=()=>{const q=new URLSearchParams({by:LB.by,then:LB.then});for(const[k,v]of Object.entries(LB.f))v.forEach(x=>q.append(k,x));return q};
+const lbHash=(o={})=>{const s={metric:LB.metric,by:LB.by,then:LB.then,f:LB.f,...o},q=new URLSearchParams();for(const[k,v]of Object.entries(s.f))if(v.length)q.set(k,v.join(','));
+ location.hash=`leaderboard/${s.metric}/${s.by}/${s.then==s.by?'':s.then}${q.toString()?'?'+q:''}`};
+const DIMS={batch:'Batch',problem:'Problem',model:'Model',skill:'Skill set',factory:'Factory',effort:'Effort'};
+const pooledNote=d=>{const settings=Object.entries(d.pooled).filter(([k])=>k!='batch'),mixed=settings.filter(([k,v])=>v.length>1&&k!=LB.by&&k!=LB.then),same=settings.filter(([k,v])=>v.length==1);
+ return `Pooling ${d.runs} run${d.runs==1?'':'s'}`+(same.length?' · same: '+same.map(([k,v])=>esc(k)+'='+esc(v[0])).join(', '):'')+(mixed.length?' · <span style="color:var(--run)">mixed: '+mixed.map(([k,v])=>esc(k)+' ('+v.length+')').join(', ')+' — filter to compare like with like</span>':'')};
+const expLabel=e=>`${DIMS[e.vary]} varies (${e.values.length}) across ${e.batches.length} batches · ${Object.entries(e.fixed).map(([k,v])=>k+'='+v.join('/')).join(', ')} · ${e.runs.length} runs`;
+const expThen=e=>Object.entries(e.fixed).find(([k,v])=>v.length>1)?.[0]||'';
+const goRuns=ids=>{location.hash=ids.length==1?'run/'+ids[0]:'runs?ids='+ids.join(',')};
+const sd=(m,s,f)=>m==null?'–':m.toFixed(f)+'<span class="muted">±'+(s||0).toFixed(f)+'</span>';
+async function leaderboard(metric,by,then){if(METRICS[metric])LB.metric=metric;if(BYS[by])LB.by=by;LB.then=BYS[then]&&then!=LB.by?then:'';
+ const d=await get('/api/leaderboard?'+lbQuery()),m=LB.metric,subs=[...new Set(d.rows.map(r=>r.sub))].filter(x=>x!=null).sort(),best={};
+ d.rows.forEach(r=>best[r.key]=Math.max(best[r.key]??-1,r[m]??-1));
+ const rows=[...d.rows].sort((a,b)=>best[b.key]-best[a.key]||a.key.localeCompare(b.key)||(LB.then?subs.indexOf(a.sub)-subs.indexOf(b.sub):(b[m]??-1)-(a[m]??-1)));
+ const top=Math.max(10,Math.ceil(Math.max(...rows.map(r=>r[m]||0))/10)*10);
+ const sel=(id,opts,cur)=>`<select id="${id}">${Object.entries(opts).map(([k,v])=>`<option value="${k}"${k==cur?' selected':''}>${v}</option>`).join('')}</select>`;
+ const bar=(r,i,label)=>`<div class="hit" style="display:contents" data-ids="${esc(r.run_ids.join(','))}" title="${esc(r.runs+' run'+(r.runs==1?'':'s')+' — click to view')}"><div class="name" title="${esc(label)}">${esc(label)}</div><div class="track"><div class="fill" style="width:${(r[m]||0)/top*100}%;background:${PAL[(LB.then?subs.indexOf(r.sub):i)%PAL.length]}"></div></div><div class="val">${r[m]==null?'–':r[m].toFixed(1)+'%'}</div></div>`;
+ const bars=rows.map((r,i)=>!LB.then?bar(r,i,r.key):(i==0||rows[i-1].key!=r.key?`<div class="cl">${esc(r.key)}</div>`:'')+bar(r,i,r.sub)).join('');
+ const th=(k,l)=>`<th class="num m ${k==m?'sel':''}" data-m="${k}">${l}</th>`, td=(r,k)=>`<td class="num ${k==m?'sel':''}">${r[k]==null?'–':r[k].toFixed(1)}</td>`;
+ const trs=rows.map(r=>`<tr class="click hit" data-ids="${esc(r.run_ids.join(','))}"><td>${esc(r.key)}</td>${LB.then?`<td>${esc(r.sub)}</td>`:''}<td class="num">${r.runs}</td><td class="num">${r.checkpoints}</td>${['strict','iso','core','partial'].map(k=>td(r,k)).join('')}
+  <td class="num">${sd(r.cost_mean,r.cost_sd,2)}</td><td class="num">${r.cost_total.toFixed(2)}</td><td class="num">${sd(r.minutes_mean,r.minutes_sd,1)}</td></tr>`).join('');
+ render(`<div class="ctl"><label>Metric ${sel('lbm',METRICS,m)}</label><label>Group by ${sel('lbb',BYS,LB.by)}</label><label>Then by ${sel('lbt',{'':'— none —',...Object.fromEntries(Object.entries(BYS).filter(([k])=>k!=LB.by))},LB.then)}</label><span class="muted">% of checkpoints, build output graded per checkpoint</span></div>
+ <div class="ctl"><label>Experiment <select id="lbx"><option value="">— all runs —</option>${d.experiments.map(e=>`<option value="${e.id}"${(LB.f.experiment||[])[0]==e.id?' selected':''}>${esc(expLabel(e))}</option>`).join('')}</select></label>
+ <div class="ctl" style="margin:0">${Object.entries(DIMS).map(([k,l])=>`<details class="f" data-k="flt-${k}"><summary>${l}${(LB.f[k]||[]).length?' ('+LB.f[k].length+')':''}</summary><div class="fbox">${d.facets[k].map(([v,n])=>`<label><input type="checkbox" data-d="${k}" value="${esc(v)}"${(LB.f[k]||[]).includes(v)?' checked':''}> ${esc(v)} <span class="muted">${n}</span></label>`).join('')}</div></details>`).join('')}
+  ${Object.keys(LB.f).some(k=>LB.f[k].length)?'<a onclick="lbHash({f:{}})">clear filters</a>':''}</div></div>
+ <p class="muted">${pooledNote(d)}</p>
+ ${rows.length?`<div class="lb">${bars}</div><div class="axis"><div></div><div><span>0%</span><span>${top/2}%</span><span>${top}%</span></div><div></div></div>
+ <h2>Per-${esc(BYS[LB.by].toLowerCase())}${LB.then?' × '+esc(BYS[LB.then].toLowerCase()):''} performance</h2><div class="scroll"><table><tr><th>${BYS[LB.by]}</th>${LB.then?`<th>${BYS[LB.then]}</th>`:''}<th class="num">Runs</th><th class="num">Ckpts</th>${th('strict','Strict')}${th('iso','Iso.')}${th('core','Core')}${th('partial','Partial')}<th class="num">$/CKPT</th><th class="num">Net $</th><th class="num">Min/CKPT</th></tr>${trs}</table></div>
+ <p class="muted"><b>Strict</b>: every test passes, including regressions. <b>Iso.</b>: every test introduced by that checkpoint passes (regressions ignored). <b>Core</b>: every Core-category test passes. <b>Partial</b>: mean passed/collected tests. Costs are API-equivalent USD; ± is standard deviation across checkpoints.</p>`:'<p class="muted">No graded runs found.</p>'}`);
+ $('#lbm').onchange=e=>lbHash({metric:e.target.value});$('#lbb').onchange=e=>lbHash({by:e.target.value,then:LB.then==e.target.value?'':LB.then});$('#lbt').onchange=e=>lbHash({then:e.target.value});
+ $('#lbx').onchange=e=>{const x=d.experiments.find(y=>y.id==e.target.value);
+  x?lbHash({f:{experiment:[x.id]},by:x.vary,then:expThen(x)}):lbHash({f:{...LB.f,experiment:[]}})};
+ document.querySelectorAll('input[data-d]').forEach(c=>c.onchange=()=>{const f={...LB.f},k=c.dataset.d,v=new Set(f[k]||[]);c.checked?v.add(c.value):v.delete(c.value);f[k]=[...v];lbHash({f})});
+ document.querySelectorAll('.hit[data-ids]').forEach(x=>x.onclick=()=>goRuns(x.dataset.ids.split(',')));
+ document.querySelectorAll('th.m').forEach(t=>t.onclick=()=>lbHash({metric:t.dataset.m}))}
+async function runs(){const d=await get('/api/overview'),ids=new URLSearchParams(location.hash.split('?')[1]||'').get('ids'),only=ids?new Set(ids.split(',')):null;
+ if(only)d.runs=d.runs.filter(x=>only.has(x.id)),d.batches=[];
+ const b=d.batches.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.action)}</td><td>${Object.entries(x.counts).map(([s,n])=>`<span class="pill ${s}">${n} ${esc(s)}</span>`).join(' ')}</td><td>${x.cancelled?'cancelled':''}</td></tr>`).join('');
+ const r=d.runs.map(x=>`<tr class="click" onclick="location.hash='run/${x.id}'"><td>${esc(x.id)}</td><td class="${x.status}">${esc(x.status)}</td><td>${esc(x.models.join(', '))}</td>
+  <td class="num">${x.strict_passed}/${x.checkpoints_graded}</td><td class="num">${pct(x.partial_pass)}</td><td class="num">${usd(x.cost_usd)}</td><td class="num">${dur(x.elapsed_seconds)}</td></tr>`).join('');
+ render(`${only?`<p><a href="#leaderboard" onclick="history.back();return false">← Leaderboard</a> · showing ${d.runs.length} run${d.runs.length==1?'':'s'} · <a href="#runs">show all runs</a></p>`:'<h2>Batches</h2>'}${only?'':b?`<div class="scroll"><table><tr><th>Batch</th><th>Action</th><th>Runs</th><th></th></tr>${b}</table></div>`:'<p class="muted">No batches.</p>'}
+ <h2>Runs</h2>${r?`<div class="scroll"><table><tr><th>Run</th><th>Status</th><th>Model</th><th class="num">Strict</th><th class="num">Partial</th><th class="num">Cost</th><th class="num">Time</th></tr>${r}</table></div>`:'<p class="muted">No runs found under results/runs or intermediate/runs.</p>'}`)}
+async function run(id){const [d,log]=await Promise.all([get('/api/runs/'+id),get(`/api/runs/${id}/log`,1)]);
+ const rows=d.checkpoints.map(c=>{const t=c.current?c.current.passed+'/'+c.current.total:'–',p=c.prior&&c.prior.total?c.prior.passed+'/'+c.prior.total:'–';
+  const f=(c.failed||[]).map(x=>`<div>${esc(x.group)}::${esc(x.name)} <span class="muted">${esc(x.state)}</span></div>`).join('');
+  return `<tr><td>${c.role}</td><td>${c.checkpoint}</td><td class="${c.status=='complete'?'ok':''}">${esc(c.status)}</td><td class="num">${t}</td><td class="num">${p}</td>
+  <td class="${c.strict?'ok':c.strict===false?'bad':''}">${c.strict==null?'–':c.strict?'✓ strict':'✗'}</td><td class="num">${usd(c.cost_usd)}</td><td class="num">${dur(c.elapsed_seconds)}</td></tr>
+  ${f?`<tr><td></td><td colspan="7"><details class="f" data-k="f${c.role}${c.checkpoint}"><summary>${c.failed.length} not passing</summary>${f}</details></td></tr>`:''}`}).join('');
+ render(`<p><a href="#runs" onclick="history.length>1?history.back():(location.hash='runs');return false">← Back</a></p><h2 style="margin-top:0">${esc(d.id)} <span class="pill ${d.status}">${esc(d.status)}</span></h2>
+ <p class="muted">${d.batch?'Batch '+esc(d.batch)+' · ':''}${esc(d.models.join(', '))} · ${d.strict_passed}/${d.checkpoints_graded} strict · ${usd(d.cost_usd)} · ${dur(d.elapsed_seconds)}</p>
+ <h2>Checkpoints</h2><div class="scroll"><table><tr><th>Role</th><th>#</th><th>Status</th><th class="num">Current</th><th class="num">Regression</th><th>Result</th><th class="num">Cost</th><th class="num">Time</th></tr>${rows||'<tr><td colspan="8" class="muted">No checkpoints yet.</td></tr>'}</table></div>
+ <details class="log" data-k="log"><summary>Controller log (tail)</summary><pre>${esc(log)||'No log.'}</pre></details>`)}
+async function results(name){const o=await get('/api/overview');name=name||o.comparisons[o.comparisons.length-1];
+ if(!name){$('#main').innerHTML='<p class="muted">No published comparisons.</p>';return}
+ const d=await get('/api/comparisons/'+name);
+ const rows=d.models.map(m=>`<tr><td>${esc(m.model)}</td><td class="num">${m.strict}/${m.checkpoints}</td><td class="num">${pct(m.partial_pass)}</td><td class="num">${usd(m.cost_usd)}</td><td class="num">${dur((m.minutes||0)*60)}</td>
+  <td><div class="grid">${m.grid.map(c=>`<span class="cell ${c.strict?'s':''}" title="${esc(c.problem)} #${c.checkpoint}: ${c.passed} passed, ${c.failed} failed, ${c.skipped} skipped"></span>`).join('')}</div></td></tr>`).join('');
+ $('#main').innerHTML=`<h2 style="margin-top:0">${esc(d.name)}</h2><div class="scroll"><table><tr><th>Model</th><th class="num">Strict</th><th class="num">Partial</th><th class="num">Cost</th><th class="num">Time</th><th>Checkpoints (green = strict pass)</th></tr>${rows}</table></div>
+ <h2>Figures</h2>${d.charts.map(c=>`<img loading="lazy" src="/api/comparisons/${d.name}/charts/${c}" alt="${esc(c)}">`).join('')}`}
+addEventListener('hashchange',route);route();
+</script></body></html>
