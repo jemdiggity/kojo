@@ -31,7 +31,8 @@ function pathFor(values, x, y) {
 
 /**
  * A small multi-series line chart.
- * series: [{ label, color, values }] with one value (or null) per entry of xLabels.
+ * series: [{ label, color, values, dashed }] with one value (or null) per entry of xLabels.
+ * Dashed series draw dotted and stay out of the legend; they share their solid series' colour.
  */
 export function lineChart({ title, series, xLabels }) {
   const values = series.flatMap((s) => s.values).filter((v) => v != null);
@@ -46,13 +47,15 @@ export function lineChart({ title, series, xLabels }) {
       <text class="axis-text" x="${PAD.left - 6}" y="${y(value) + 4}" text-anchor="end">${value.toFixed(2)}</text>`;
   });
   const ticks = xLabels.map((label, i) => `<text class="axis-text" x="${x(i)}" y="${HEIGHT - 8}" text-anchor="middle">${h(label)}</text>`);
-  const lines = series.map((s) => {
+  // Dashed (intermediate) series first, so final-stage lines and markers sit on top of them.
+  const lines = [...series.filter((s) => s.dashed), ...series.filter((s) => !s.dashed)].map((s) => {
     const dots = s.values
-      .map((v, i) => (v == null ? '' : `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${s.color}"><title>${h(s.label)} · ${h(xLabels[i])}: ${v.toFixed(3)}</title></circle>`))
+      .map((v, i) => (v == null ? '' : `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${s.dashed ? 'var(--bg)' : s.color}" stroke="${s.color}" stroke-width="${s.dashed ? 1.5 : 0}"><title>${h(s.label)} · ${h(xLabels[i])}: ${v.toFixed(3)}</title></circle>`))
       .join('');
-    return `<path d="${pathFor(s.values, x, y)}" fill="none" stroke="${s.color}" stroke-width="2"/>${dots}`;
+    const dash = s.dashed ? ' stroke-dasharray="2 4" stroke-linecap="round"' : '';
+    return `<path d="${pathFor(s.values, x, y)}" fill="none" stroke="${s.color}" stroke-width="2"${dash}/>${dots}`;
   });
-  const legend = series.map((s) => `<span class="key"><i style="background:${s.color}"></i>${h(s.label)}</span>`).join('');
+  const legend = series.filter((s) => !s.dashed).map((s) => `<span class="key"><i style="background:${s.color}"></i>${h(s.label)}</span>`).join('');
   return `<figure class="line-chart"><figcaption>${h(title)}</figcaption>
     <svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img" aria-label="${h(title)}">${grid.join('')}${ticks.join('')}${lines.join('')}</svg>
     <div class="legend">${legend}</div></figure>`;

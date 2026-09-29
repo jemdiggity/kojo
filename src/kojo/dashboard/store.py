@@ -31,7 +31,8 @@ class Run:
     id: str
     batch: str
     settings: dict  # model, skill, factory, effort, problem
-    checkpoints: list = field(default_factory=list)
+    checkpoints: list = field(default_factory=list)  # each checkpoint's final stage output
+    intermediate: list = field(default_factory=list)  # earlier code-changing stages a later stage replaced
 
 
 def _skill_name(manifest):
@@ -117,39 +118,48 @@ class Store:
                 rows.append(row)
         return rows
 
-    def quality_by_checkpoint(self):
-        """(run id, checkpoint) -> erosion/verbosity, from every published quality.json.
+    def quality_index(self):
+        """(run id, stage, checkpoint) -> erosion/verbosity, from every static analysis on disk.
 
-        These come from the offline scb-check analysis (scripts/scb_quality*.py); runs that
-        haven't been analyzed simply have no entry.
+        These come from the offline scb-check analysis; runs that haven't been analyzed simply
+        have no entry. Two sources: published quality.json files (one row per variant, tagged with
+        run, stage and checkpoint; untagged stages are builds) and the per-stage quality.json a
+        factory run writes beside each graded checkpoint.
         """
-        paths = sorted(self.results.glob('comparisons/*/quality.json')) + sorted(self.results.glob('comparisons/*/*/quality.json'))
         found = {}
-        for path in paths:
+        published = sorted(self.results.glob('comparisons/*/quality.json')) + sorted(self.results.glob('comparisons/*/*/quality.json'))
+        for path in published:
             for row in (load_json(path) or {}).get('rows', []):
                 metrics = quality_metrics(row)
                 if metrics:
-                    found[(row['run_id'], row['checkpoint'])] = metrics
+                    found[(row['run_id'], row.get('stage', 'build'), row['checkpoint'])] = metrics
+        for path in sorted(self.results.glob('runs/*/*/checkpoint_*/quality.json')):
+            run_id, stage, label = path.parts[-4], path.parts[-3], path.parts[-2]
+            rows = load_json(path)
+            metrics = next(filter(None, map(quality_metrics, rows if isinstance(rows, list) else [])), None)
+            if metrics:
+                found[(run_id, stage, int(label.split('_')[1]))] = metrics
         return found
 
     def graded_runs(self):
         """Every run with at least one graded checkpoint, ready for comparison."""
         runs = []
-        quality = self.quality_by_checkpoint()
+        quality = self.quality_index()
+        none = {'erosion': None, 'verbosity': None}
         for run_id in self.run_ids():
-            rows = final_checkpoints(self.checkpoint_rows(run_id))
-            if not rows:
+            rows = [{**row, **quality.get((run_id, row['role'], row['checkpoint']), none)}
+                    for row in self.checkpoint_rows(run_id)]
+            final = final_checkpoints(rows)
+            if not final:
                 continue
-            # The analysis covers build snapshots only, so it doesn't describe a fixer's output.
-            none = {'erosion': None, 'verbosity': None}
-            rows = [{**row, **(quality.get((run_id, row['checkpoint']), none) if row['role'] == 'build' else none)}
-                    for row in rows]
+            final_role = {c['checkpoint']: c['role'] for c in final}
+            intermediate = [r for r in rows if 'strict' in r and r['role'] != final_role.get(r['checkpoint'])]
             manifest = load_json(self.results / 'runs' / run_id / 'manifest.json') or {}
             config = load_json(self.results / 'runs' / run_id / 'run-config.json') or {}
-            settings = {'model': rows[0]['model'] or UNKNOWN, 'effort': rows[0]['effort'] or UNKNOWN,
+            settings = {'model': final[0]['model'] or UNKNOWN, 'effort': final[0]['effort'] or UNKNOWN,
                         'skill': _skill_name(manifest), 'factory': _factory_name(manifest),
                         'problem': manifest.get('problem') or UNKNOWN}
-            runs.append(Run(run_id, config.get('batch_id') or run_id, settings, rows))
+            runs.append(Run(run_id, config.get('batch_id') or run_id, settings, final, intermediate))
         return runs
 
     def _batch_states(self):
