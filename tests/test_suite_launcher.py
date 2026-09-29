@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -83,6 +84,25 @@ class SuiteLauncherTests(unittest.TestCase):
             self.assertEqual(suite.main(['--problems', 'circuit_eval', 'database_migration', '--id', 'audit', '--audit', '--models', 'sonnet55']), 7)
             self.assertEqual(call.call_count, 1)
             self.assertIn('--audit', call.call_args.args[0])
+
+    def test_audit_reports_one_line_per_run(self):
+        skills = [{'name': 'none', 'path': None, 'sha256': None}]
+        config = suite.plans('rep', ['sonnet55', 'astra6'], ['circuit_eval'], skills, None, ['low'])[0]
+        with tempfile.TemporaryDirectory() as tmp, patch.object(suite, 'ROOT', Path(tmp)):
+            good, bad = (f"{config['batch_id']}-{r['run_id']}-audit" for r in config['runs'])
+            status = Path(tmp) / 'intermediate/batches' / (config['batch_id'] + '-audit') / 'status.json'
+            status.parent.mkdir(parents=True)
+            status.write_text(json.dumps({'runs': {good: {'status': 'complete'}, bad: {'status': 'failed'}}}))
+            log = Path(tmp) / 'intermediate/runs' / bad / 'controller.log'
+            log.parent.mkdir(parents=True)
+            log.write_text('boom\n')
+            with patch.object(suite.subprocess, 'call', return_value=1), patch('builtins.print') as out:
+                self.assertEqual(suite.audit([Path('p')], [config], False), 1)
+            text = '\n'.join(str(c.args[0]) for c in out.call_args_list)
+            self.assertIn('PASS circuit_eval / claude-sonnet-5-5 / low / none', text)
+            self.assertIn('FAIL circuit_eval / gpt-6-astra / low / none', text)
+            self.assertIn('boom', text)
+            self.assertIn('Audit: 1/2 passed', text)
 
     def test_model_list_selects_only_requested_models(self):
         with patch.object(suite, 'plans', wraps=suite.plans) as build, patch('builtins.print'):
