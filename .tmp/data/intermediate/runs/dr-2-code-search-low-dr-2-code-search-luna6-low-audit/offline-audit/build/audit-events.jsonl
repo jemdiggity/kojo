@@ -1,0 +1,5 @@
+{"type":"thread.started","thread_id":"01a0ed8d-2035-7601-bc06-e60e1ce817e5"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in /Users/jeremyhale/.codex/config.toml."}}
+{"type":"turn.started"}
+{"type":"error","message":"{\"error\":{\"message\":\"Offline audit, no inference\",\"type\":\"invalid_request_error\"}}"}
+{"type":"turn.failed","error":{"message":"{\"error\":{\"message\":\"Offline audit, no inference\",\"type\":\"invalid_request_error\"}}"}}

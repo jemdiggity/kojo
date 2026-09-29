@@ -10,6 +10,7 @@ import sys
 
 BASE=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(BASE/'src'))
+from kojo.catalog import DATA_ROOT
 from kojo.gauntlet import hashes
 
 VERSION='0.1.3'
@@ -35,7 +36,7 @@ def main():
     scratch=BASE/'intermediate/quality'/out.name;scratch.mkdir(parents=True,exist_ok=True)
     rows=[]
     for rid in args.runs:
-        run=BASE/'results/runs'/rid
+        run=DATA_ROOT/'results/runs'/rid
         manifest=json.loads((run/'manifest.json').read_text())
         entry=manifest['problem_metadata']['entry_file']
         for checkpoint in sorted((run/'build').glob('checkpoint_*')):

@@ -55,7 +55,7 @@ class FactoryTests(unittest.TestCase):
             for role in ['build','review','fix']:(prompts/f'{role}.md').write_text('')
             for name in ['scripts/kojo.py','scripts/scb_entrypoint.py','pyproject.toml','uv.lock','.python-version']:
                 path=base/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text('fixture')
-            with patch.object(catalog,'BASE',base), patch.object(factory,'BASE',base):
+            with patch.object(catalog,'BASE',base), patch.object(factory,'BASE',base), patch.object(factory,'DATA_ROOT',base):
                 before=catalog.protocol_digest();harness=catalog.harness_digest()
                 (prompts/'review.md').write_text('A changed reviewer request.\n')
                 self.assertEqual(factory.instructions(None,'review'),'A changed reviewer request.')

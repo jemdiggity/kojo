@@ -1,0 +1,11 @@
+{
+  "inference_calls": 0,
+  "ambient_skills": false,
+  "private_files_blocked": true,
+  "isolated_src": true,
+  "shell_write_smoke": true,
+  "network_enabled": true,
+  "network_probe": "loopback reachable",
+  "designated_skill_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "native_skill_set": null
+}

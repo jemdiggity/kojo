@@ -5,10 +5,10 @@ import os
 from pathlib import Path
 import tempfile
 
-from kojo.catalog import BASE
+from kojo.catalog import DATA_ROOT
 
 
-def register_runs(entries, base=BASE):
+def register_runs(entries, base=DATA_ROOT):
     base = Path(base)
     index = base / 'results/runs/index.json'
     lock = base / 'intermediate/locks/run-index.lock'

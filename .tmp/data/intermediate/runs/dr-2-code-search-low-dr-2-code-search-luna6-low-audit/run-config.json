@@ -1,0 +1,40 @@
+{
+  "run_id": "dr-2-code-search-low-dr-2-code-search-luna6-low-audit",
+  "batch_id": "dr-2-code-search-low",
+  "action": "audit",
+  "command": [
+    "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-65326590/.venv/bin/python",
+    "-u",
+    "-m",
+    "kojo.factory",
+    "audit",
+    "--run-id",
+    "dr-2-code-search-low-dr-2-code-search-luna6-low-audit",
+    "--problem",
+    "code_search",
+    "--build-model",
+    "gpt-6-luna",
+    "--codex-effort",
+    "low",
+    "--seconds-per-session",
+    "1800",
+    "--no-review",
+    "--monitor-only"
+  ],
+  "protocol_sha256": "395bc4338e027cb1022854727f263f5c34d911131b966c23ce2b7dd14e5f05bd",
+  "plan": {
+    "run_id": "dr-2-code-search-luna6-low",
+    "factory_args": [
+      "--problem",
+      "code_search",
+      "--build-model",
+      "gpt-6-luna",
+      "--codex-effort",
+      "low",
+      "--seconds-per-session",
+      "1800",
+      "--no-review",
+      "--monitor-only"
+    ]
+  }
+}
