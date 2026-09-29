@@ -66,14 +66,25 @@ def experiments(runs):
     return sorted(found.values(), key=lambda e: (-len(e['runs']), e['vary'], e['batches']))
 
 
-def _facets(runs):
-    """For each filterable dimension: [(value, run count)], over all runs."""
-    counts = {name: {} for name in FILTERABLE}
-    for run in runs:
-        for name, seen in counts.items():
-            value = dimension(run, name)
-            seen[value] = seen.get(value, 0) + 1
-    return {name: sorted(seen.items()) for name, seen in counts.items()}
+def _matches(run, filters, skip=None):
+    """Whether `run` satisfies every filter, ignoring the `skip` dimension's own filter."""
+    return all(dimension(run, name) in values for name, values in filters.items() if name != skip)
+
+
+def _facets(runs, filters):
+    """For each filterable dimension: [(value, count)] over every value that exists.
+
+    A value's count is how many runs would match if it were chosen alongside the *other*
+    active filters, so 0 means it can't combine with the current selection.
+    """
+    facets = {}
+    for name in FILTERABLE:
+        counts = {dimension(run, name): 0 for run in runs}
+        for run in runs:
+            if _matches(run, filters, skip=name):
+                counts[dimension(run, name)] += 1
+        facets[name] = sorted(counts.items())
+    return facets
 
 
 def _row(key, sub, runs):
@@ -131,7 +142,7 @@ def leaderboard(runs, by, then=None, filters=None):
     if by not in GROUPABLE or (then and (then not in GROUPABLE or then == by)):
         raise ValueError('unknown grouping')
     filters = {name: set(values) for name, values in (filters or {}).items() if name in FILTERABLE and values}
-    included = [r for r in runs if all(dimension(r, name) in values for name, values in filters.items())]
+    included = [r for r in runs if _matches(r, filters)]
 
     groups = {}
     for run in included:
@@ -143,5 +154,5 @@ def leaderboard(runs, by, then=None, filters=None):
                     for (key, sub), members in sorted(groups.items(), key=lambda g: (g[0][0], g[0][1] or ''))]
     return {'by': by, 'then': then or None, 'rows': rows, 'runs': len(included),
             'trajectories': [t for t in trajectories if any(t[m] or t['intermediate'][m] for m in QUALITY)],
-            'facets': _facets(runs), 'experiments': experiments(runs),
+            'facets': _facets(runs, filters), 'experiments': experiments(runs),
             'pooled': {name: sorted({dimension(r, name) for r in included}) for name in FILTERABLE}}

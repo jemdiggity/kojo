@@ -107,7 +107,10 @@ function controls(state, data) {
 function filterList(state, data, name, label, rows) {
   const chosen = state.filters[name] || [];
   const options = data.facets[name]
-    .map(([value, count]) => `<option value="${h(value)}" title="${h(value)}"${chosen.includes(value) ? ' selected' : ''}>${h(value)} (${count})</option>`)
+    .map(([value, count]) => {
+      const title = count ? value : `${value} — no runs match this together with the other filters`;
+      return `<option value="${h(value)}" title="${h(title)}"${count || chosen.includes(value) ? '' : ' class="empty"'}${chosen.includes(value) ? ' selected' : ''}>${h(value)} (${count})</option>`;
+    })
     .join('');
   return `<label class="filter">${label}${chosen.length ? ` (${chosen.length} selected)` : ''}
     <select multiple size="${rows}" data-filter="${name}">${options}</select></label>`;
@@ -237,6 +240,16 @@ function qualityCharts(data, state) {
     <p class="muted">Each run is placed on 0–100% by checkpoint order and interpolated, then averaged per group. Only runs with a static analysis contribute.${dotted}</p>`;
 }
 
+/** Say why the table is empty, and which filters to loosen. */
+function noMatches(state) {
+  if (!hasFilters(state)) return '<p class="muted">No graded runs found.</p>';
+  const active = Object.entries(state.filters).filter(([, values]) => values.length)
+    .map(([name, values]) => `${h(FILTERS[name])} = ${values.map(h).join(' or ')}`).join(' and ');
+  return `<p>No runs match all of these filters together: ${active}.</p>
+    <p class="muted">A run has to match every list, so selections in different lists narrow each other. Options shown
+    dimmed with (0) can't combine with your other selections. <a href="#${h(next(state, { filters: {} }))}">Clear filters</a></p>`;
+}
+
 const NO_QUALITY = `<h2>Code quality over a run</h2><p class="muted">No erosion/verbosity analysis found for these runs. Generate it with
   <code>scripts/scb_quality.py &lt;run ids&gt; --output results/comparisons/&lt;name&gt;</code>; the dashboard picks up any
   <code>quality.json</code> under <code>results/comparisons</code>.</p>`;
@@ -247,7 +260,7 @@ export async function leaderboardView(route) {
   const rows = sortRows(data.rows, state);
   const content = rows.length
     ? bars(rows, state) + table(rows, state) + qualityCharts(data, state)
-    : '<p class="muted">No graded runs found.</p>';
+    : noMatches(state);
   render(`${controls(state, data)}${content}`);
   wireFilters(state);
 }
