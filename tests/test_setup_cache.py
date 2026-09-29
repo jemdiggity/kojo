@@ -84,7 +84,7 @@ class SetupCacheTests(unittest.TestCase):
             run.assert_called_once_with('sh', str(self.root / 'scripts/scb_install.sh'), cwd=self.root)
             cache.assert_not_called()
 
-    def test_worktree_uses_cache_and_keeps_active_run_guard(self):
+    def test_worktree_uses_cache_and_ignores_active_run(self):
         with patch.object(setup, 'ROOT', self.root), patch.object(setup.platform, 'system', return_value='Darwin'), \
              patch.object(setup, 'linked_worktree', return_value=True), patch.object(setup, 'run') as run, \
              patch.object(setup, 'prepare_cache') as cache, patch.object(setup, 'attach') as attach, \
@@ -98,9 +98,8 @@ class SetupCacheTests(unittest.TestCase):
             lock_path.parent.mkdir(parents=True)
             with lock_path.open('a') as lock:
                 fcntl.flock(lock, fcntl.LOCK_EX)
-                with self.assertRaisesRegex(RuntimeError, 'Active run'):
-                    setup.main()
-            self.assertEqual(cache.call_count, 1)
+                setup.main()
+            self.assertEqual(cache.call_count, 2)
 
     def test_detects_linked_git_worktree(self):
         subprocess.run(['git', 'init', '-q', str(self.root)], check=True)
