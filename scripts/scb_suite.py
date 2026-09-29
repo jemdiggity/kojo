@@ -10,6 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.batch import identifier, load_plan
+from kojo.known_skill_sets import KNOWN, resolve
 
 MODELS = {
     'sonnet55': 'claude-sonnet-5-5',
@@ -96,8 +97,9 @@ def main(argv=None):
                         help='Space-separated list of model aliases')
     parser.add_argument('--problems', nargs='+', choices=PROBLEMS, required=True,
                         help='Space-separated problem names in scheduling order')
-    parser.add_argument('--skill-sets', nargs='+', type=Path,
-                        help='Directories defining separate skill conditions; omitted means no skills')
+    parser.add_argument('--skill-sets', nargs='+',
+                        help='Separate skill conditions: a well-known name (%s) or a directory; '
+                             'omitted means no skills' % ', '.join(sorted(KNOWN)))
     parser.add_argument('--parallel', choices=['models', 'models-skills', 'all'],
                         help='Parallel dimensions; omitted means every run is sequential')
     action = parser.add_mutually_exclusive_group()
@@ -110,13 +112,15 @@ def main(argv=None):
         os.environ['PATH'] = str(cli_bin) + os.pathsep + os.environ.get('PATH', '')
     try:
         from kojo.skill_sets import describe_sets, freeze_sets
-        skill_sets = describe_sets(args.skill_sets or [])
+        cache = ROOT / 'intermediate/vendor/skill-sets'
+        skill_sets = describe_sets([resolve(s, cache) for s in args.skill_sets or []])
         configs = plans(args.id, args.models, args.problems, skill_sets, args.parallel)
         if args.tmux_session:
             identifier(args.tmux_session)
         if not (args.run or args.audit):
             print(json.dumps(configs, indent=2))
-            print('Preview only; no files written or model calls made.')
+            print('Preview only; no plans written or model calls made'
+                  + ('; named skill sets are cached under intermediate/vendor/skill-sets.' if any(n in KNOWN for n in args.skill_sets or []) else '.'))
             return 0
         if skill_sets:
             skill_sets = freeze_sets(ROOT / 'intermediate/plans' / args.id / 'skill-sets', skill_sets)
