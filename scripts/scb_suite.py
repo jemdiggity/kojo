@@ -87,17 +87,28 @@ def save_plans(directory, configs):
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if not argv:
+        argv = ['-h']
     parser = argparse.ArgumentParser(
+        usage='%(prog)s [-h]\n'
+              '  --id ID\n'
+              '  --models MODEL [MODEL ...]\n'
+              '  --problems PROBLEM [PROBLEM ...]\n'
+              '  [--skill-sets SKILL_SET [SKILL_SET ...]]\n'
+              '  [--parallel {models,models-skills,all}]\n'
+              '  [--audit | --run]\n'
+              '  [--tmux-session NAME]',
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='Supported model aliases (exact provider IDs):\n' +
                '\n'.join(f'  {alias:10} {model}' for alias, model in MODELS.items()) +
                '\n\nSelect models and problems explicitly with --models and --problems.')
     parser.add_argument('--id', required=True, help='Fresh experiment prefix, e.g. repro-01')
-    parser.add_argument('--models', nargs='+', choices=MODELS, required=True,
-                        help='Space-separated list of model aliases')
-    parser.add_argument('--problems', nargs='+', choices=PROBLEMS, required=True,
-                        help='Space-separated problem names in scheduling order')
-    parser.add_argument('--skill-sets', nargs='+',
+    parser.add_argument('--models', nargs='+', choices=MODELS, required=True, metavar='MODEL',
+                        help='Space-separated model aliases (%s)' % ', '.join(MODELS))
+    parser.add_argument('--problems', nargs='+', choices=PROBLEMS, required=True, metavar='PROBLEM',
+                        help='Space-separated problems in scheduling order (%s)' % ', '.join(PROBLEMS))
+    parser.add_argument('--skill-sets', nargs='+', metavar='SKILL_SET',
                         help='Separate skill conditions: a well-known name (%s) or a directory; '
                              'omitted means no skills' % ', '.join(sorted(KNOWN)))
     parser.add_argument('--parallel', choices=['models', 'models-skills', 'all'],
