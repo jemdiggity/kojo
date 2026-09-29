@@ -128,6 +128,15 @@ must have access to the selected models. No Docker or tmux is required.
 Progress appears in the terminal. Results are saved under `results/runs/`; raw
 transcripts and logs under `intermediate/runs/`. Ctrl-C stops the controller.
 
+### Where run output goes
+
+Run output (`results/runs/` and `intermediate/runs/`) is written under the main
+checkout of the repository, however many worktrees launch runs, so it survives
+deleting a worktree. Set `KOJO_DATA_DIR` to store it somewhere else, such as a
+directory outside the repo; every command reads the same setting. Plans, batch
+records, vendor checkouts, and virtual environments stay in the working tree.
+Both locations are gitignored.
+
 ### Pricing
 
 `configs/pricing.json` is the table of per-model rates (USD per million input,

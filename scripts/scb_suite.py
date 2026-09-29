@@ -11,6 +11,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.batch import identifier, load_plan
+from kojo.catalog import DATA_ROOT
 from kojo.known_skill_sets import KNOWN, resolve
 
 NONE = 'none'
@@ -117,15 +118,15 @@ def reset_audit(experiment, configs):
     saved = plans_dir / 'schedule.json'
     previous = json.loads(saved.read_text()) if saved.exists() else []
     ids = {run['run_id'] for config in configs + previous for run in config['runs']}
-    started = [rid for rid in sorted(ids) if (ROOT / 'intermediate/runs' / rid).exists()
-               or (ROOT / 'results/runs' / rid).exists()]
+    started = [rid for rid in sorted(ids) if (DATA_ROOT / 'intermediate/runs' / rid).exists()
+               or (DATA_ROOT / 'results/runs' / rid).exists()]
     shape = lambda cs: [(c['batch_id'], c['max_parallel'], [r['run_id'] for r in c['runs']]) for c in cs]
     if started and previous and shape(previous) != shape(configs):
         raise ValueError(f'Run {started[0]} has started under this --id; choose a new --id to change the plan.')
     for config in configs:
         shutil.rmtree(ROOT / 'intermediate/batches' / (config['batch_id'] + '-audit'), ignore_errors=True)
         for run in config['runs']:
-            shutil.rmtree(ROOT / 'intermediate/runs' / f"{config['batch_id']}-{run['run_id']}-audit", ignore_errors=True)
+            shutil.rmtree(DATA_ROOT / 'intermediate/runs' / f"{config['batch_id']}-{run['run_id']}-audit", ignore_errors=True)
     if not started:
         shutil.rmtree(plans_dir, ignore_errors=True)  # Nothing has run, so the plan is still editable.
 
@@ -174,7 +175,7 @@ def audit(paths, configs, verbose):
             batch_passed += ok
             print(f"{mark(ok)} {label(run['factory_args'])}")
             if not ok:
-                log = ROOT / 'intermediate/runs' / rid / 'controller.log'
+                log = DATA_ROOT / 'intermediate/runs' / rid / 'controller.log'
                 tail = log.read_text().strip().splitlines()[-5:] if log.exists() else ['(no controller log)']
                 print('     ' + '\n     '.join(tail) + f'\n     log: {log}')
         if code:

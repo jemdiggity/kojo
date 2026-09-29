@@ -7,6 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 from importlib.metadata import version
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
+from kojo.catalog import DATA_ROOT
 from kojo.gauntlet import hashes
 OUT=ROOT/'results/comparisons/20260928-dex-subset/quality-suite'
 SCRATCH=ROOT/'intermediate/quality/quality-suite'
@@ -30,7 +31,7 @@ def analyze_job(job):
     from scb_check.pipeline import analyze,analyze_files
     from scb_check.config import load_config
     from scb_check.reporting.score import compute_report
-    rid,cp=job;source=ROOT/'results/runs'/rid/'build'/cp/'submission'
+    rid,cp=job;source=DATA_ROOT/'results/runs'/rid/'build'/cp/'submission'
     expected=json.loads((source.parent/'snapshot.json').read_text());before=hashes(source)
     if expected!=before:raise RuntimeError('Source hash mismatch')
     key=hashlib.sha256(json.dumps(before,sort_keys=True).encode()).hexdigest()

@@ -1,0 +1,19 @@
+{
+  "thread_id": "01a0ed8d-2035-7601-bc06-e60e1ce817e5",
+  "base_instructions_exact": null,
+  "base_instructions_mode": "stock",
+  "base_instructions_provenance": {
+    "type": "model",
+    "model": "gpt-6-luna"
+  },
+  "base_instructions_sha256": "b707476816bfe5e571a1bd2179f130fff2b132da5ab8e61063acdb7fd24daf12",
+  "stock_base_instructions_present": true,
+  "guidance_in_session_base_instructions": true,
+  "exact_user_prompt_in_session": true,
+  "assistant_messages": 0,
+  "response_items": 5,
+  "records": 11,
+  "sha256": "be3422948cb7a1c5bd186dc6776242b5f0153a404628db5ffa417f927190f785",
+  "evidence": "Native CLI session log, not an independent provider receipt. Retains what the CLI records; does not guarantee untruncated outputs or every wire request.",
+  "offline_audit": true
+}

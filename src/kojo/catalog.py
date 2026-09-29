@@ -2,12 +2,32 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 
 BASE = Path(__file__).resolve().parents[2]
 REPO = BASE / "intermediate/vendor/scb-problems"
+
+
+def data_root():
+    """Where run output lives: $KOJO_DATA_DIR, else the main checkout, so it outlives any worktree."""
+    override = os.environ.get("KOJO_DATA_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+    try:
+        common = subprocess.check_output(
+            ["git", "-C", str(BASE), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            text=True, stderr=subprocess.DEVNULL).strip()
+        if common.endswith("/.git"):
+            return Path(common).parent
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    return BASE
+
+
+DATA_ROOT = data_root()
 
 
 def digest(path):
