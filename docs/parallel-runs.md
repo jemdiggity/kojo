@@ -105,3 +105,10 @@ page (stdlib only, no inference) with auto-refreshing batch/run progress,
 per-checkpoint test results and cost, the controller log tail, and the published
 comparison tables and figures. It only reads `intermediate/` and `results/` of `--base` (default: this checkout);
 point `--base` at the main checkout to see runs launched from other worktrees.
+
+Erosion and verbosity come from the offline static analysis in
+[code-quality.md](code-quality.md), not from the runs themselves. The dashboard reads any
+`quality.json` under `results/comparisons/` (both the per-run and suite formats), joins it to runs by
+run ID and checkpoint, and adds Erosion and Verbosity columns and trajectory charts to the
+Leaderboard; runs without an analysis show a dash. The Results tab charts the published suite's
+`quality-suite/chart_aggregates.json`.

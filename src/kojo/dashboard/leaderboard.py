@@ -6,7 +6,9 @@ import hashlib
 import json
 import statistics
 
-METRICS = ('strict', 'iso', 'core', 'partial')
+METRICS = ('strict', 'iso', 'core', 'partial')  # percent of checkpoints passing
+QUALITY = ('erosion', 'verbosity')  # static-analysis scores in [0, 1]; lower is better
+PROGRESS = (0, 0.25, 0.5, 0.75, 1)  # normalized positions along a run at which trajectories are sampled
 SETTINGS = ('model', 'skill', 'factory', 'effort', 'problem')
 # Results on different problems aren't comparable, so an experiment never varies the problem.
 VARYING = tuple(s for s in SETTINGS if s != 'problem')
@@ -83,7 +85,34 @@ def _row(key, sub, runs):
     row['cost_total'] = sum(c['cost_usd'] or 0 for c in checkpoints)
     row['minutes_mean'], row['minutes_sd'] = mean_sd(
         [c['elapsed_seconds'] / 60 for c in checkpoints if c['elapsed_seconds'] is not None])
+    for metric in QUALITY:
+        row[metric], row[f'{metric}_sd'] = mean_sd([c.get(metric) for c in checkpoints])
     return row
+
+
+def _interpolate(points, x):
+    """Linear interpolation of sorted (position, value) points at x."""
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        if x0 <= x <= x1:
+            return y0 if x1 == x0 else y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    return None
+
+
+def trajectory(runs, metric):
+    """Mean `metric` at each PROGRESS position across runs, or None if no run has enough data.
+
+    Each run is placed on 0..1 by checkpoint order so runs with different checkpoint counts align.
+    """
+    per_run = []
+    for run in runs:
+        count = len(run.checkpoints)
+        points = [(i / (count - 1), c[metric]) for i, c in enumerate(run.checkpoints) if c.get(metric) is not None]
+        if count > 1 and len(points) >= 2:
+            per_run.append([_interpolate(points, x) for x in PROGRESS])
+    if not per_run:
+        return None
+    columns = [[v for v in column if v is not None] for column in zip(*per_run)]
+    return [sum(c) / len(c) if c else None for c in columns]
 
 
 def leaderboard(runs, by, then=None, filters=None, experiment=None):
@@ -109,6 +138,9 @@ def leaderboard(runs, by, then=None, filters=None, experiment=None):
         groups.setdefault((dimension(run, by), dimension(run, then) if then else None), []).append(run)
     rows = sorted((_row(key, sub, members) for (key, sub), members in groups.items()),
                   key=lambda r: (-(r['strict'] or 0), r['key'], r['sub'] or ''))
+    trajectories = [{'key': key, 'sub': sub, **{m: trajectory(members, m) for m in QUALITY}}
+                    for (key, sub), members in sorted(groups.items(), key=lambda g: (g[0][0], g[0][1] or ''))]
     return {'by': by, 'then': then or None, 'rows': rows, 'runs': len(included),
+            'trajectories': [t for t in trajectories if any(t[m] for m in QUALITY)],
             'facets': _facets(runs), 'experiments': catalog,
             'pooled': {name: sorted({dimension(r, name) for r in included}) for name in FILTERABLE}}

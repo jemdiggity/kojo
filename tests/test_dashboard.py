@@ -8,7 +8,7 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 from kojo.dashboard.evaluation import summarize
-from kojo.dashboard.leaderboard import experiments, leaderboard
+from kojo.dashboard.leaderboard import experiments, leaderboard, trajectory
 from kojo.dashboard.server import make_handler
 from kojo.dashboard.store import Run, Store
 
@@ -123,6 +123,30 @@ class LeaderboardTests(unittest.TestCase):
         self.assertEqual(picked['runs'], 2)
         self.assertEqual(leaderboard(runs, 'model', experiment='nope')['runs'], 0)
 
+    def test_quality_means_and_trajectories(self):
+        def quality_run(run_id, erosion):
+            checkpoints = [{'strict': False, 'iso': False, 'core': False, 'partial': 0.5, 'cost_usd': 1.0,
+                            'elapsed_seconds': 60, 'erosion': e, 'verbosity': None if e is None else e / 2} for e in erosion]
+            return Run(run_id, 'b', {'model': 'm', 'skill': 'none', 'factory': 'build only', 'effort': 'low', 'problem': 'p'},
+                       checkpoints)
+        runs = [quality_run('r1', [0.2, 0.4, 0.6]), quality_run('r2', [0.4, None, 0.8]), self.run_of('r3', 'b', 'other', 'none', True)]
+        data = leaderboard(runs, 'model')
+        rows = {r['key']: r for r in data['rows']}
+        self.assertAlmostEqual(rows['m']['erosion'], (0.2 + 0.4 + 0.6 + 0.4 + 0.8) / 5)
+        self.assertAlmostEqual(rows['m']['verbosity'], rows['m']['erosion'] / 2)
+        self.assertIsNone(rows['other']['erosion'])
+        (line,) = data['trajectories']  # 'other' has no quality data
+        self.assertEqual(line['key'], 'm')
+        # r1 is 0.2..0.6; r2 interpolates its gap linearly to 0.4..0.8; mean at 0 / .5 / 1
+        self.assertAlmostEqual(line['erosion'][0], 0.3)
+        self.assertAlmostEqual(line['erosion'][2], 0.5)
+        self.assertAlmostEqual(line['erosion'][4], 0.7)
+
+    def test_trajectory_needs_two_measured_checkpoints(self):
+        one = Run('r', 'b', {}, [{'erosion': 0.5}, {'erosion': None}, {'erosion': None}])
+        self.assertIsNone(trajectory([one], 'erosion'))
+        self.assertIsNone(trajectory([], 'erosion'))
+
     def test_rejects_unknown_groupings(self):
         for kwargs in ({'by': 'bogus'}, {'by': 'model', 'then': 'model'}, {'by': 'model', 'then': 'bogus'}):
             with self.assertRaises(ValueError):
@@ -136,6 +160,25 @@ class StoreTests(Fixture):
         self.assertEqual((run.id, run.batch), ('run-a', 'b1'))
         self.assertEqual(run.settings, {'model': 'm1', 'effort': 'medium', 'skill': 'karpathy',
                                         'factory': 'build + review x2', 'problem': 'p'})
+
+    def test_quality_is_joined_from_published_quality_files_in_either_format(self):
+        self.add_run('run-a')
+        self.add_run('run-b')
+        suite_row = {'run_id': 'run-a', 'checkpoint': 1, 'variants': {
+            'upstream': {'metrics': {'erosion': 0.9, 'verbosity': 0.9}},
+            'entrypoint-normalized': {'metrics': {'erosion': 0.3, 'verbosity': 0.2}}}}
+        write(self.base / 'results/comparisons/suite/quality-suite/quality.json', {'rows': [suite_row]})
+        write(self.base / 'results/comparisons/flat/quality.json', {'rows': [
+            {'run_id': 'run-b', 'checkpoint': 1, 'metrics': {'erosion': 0.5, 'verbosity': 0.4}},
+            {'run_id': 'run-b', 'checkpoint': 2, 'metrics': {'erosion': None, 'verbosity': None}}]})
+        runs = {r.id: r for r in Store(self.base).graded_runs()}
+        self.assertEqual((runs['run-a'].checkpoints[0]['erosion'], runs['run-a'].checkpoints[0]['verbosity']), (0.3, 0.2))
+        self.assertEqual(runs['run-b'].checkpoints[0]['erosion'], 0.5)
+
+    def test_unanalyzed_runs_have_no_quality(self):
+        self.add_run('run-a')
+        (run,) = Store(self.base).graded_runs()
+        self.assertEqual((run.checkpoints[0]['erosion'], run.checkpoints[0]['verbosity']), (None, None))
 
     def test_run_without_a_batch_is_its_own_batch(self):
         self.add_run('run-a')
@@ -187,6 +230,14 @@ class StoreOverviewTests(Fixture):
         (model,) = data['models']
         self.assertEqual((model['strict'], model['checkpoints'], model['partial_pass']), (1, 2, (1 + 0.25) / 2))
         self.assertEqual(data['charts'], ['figure-01-a.png'])
+        self.assertIsNone(data['quality'])
+        write(self.base / 'results/comparisons/c1/quality-suite/chart_aggregates.json', {
+            'model_order': ['m'], 'normalized_progress': [
+                {'model': 'm', 'metric': 'erosion', 'values': [0.1, 0.2, 0.3, 0.4, 0.5]},
+                {'model': 'm', 'metric': 'verbosity', 'values': [0.5, 0.4, 0.3, 0.2, 0.1]}]})
+        quality = store.comparison('c1')['quality']
+        self.assertEqual(quality['models'], ['m'])
+        self.assertEqual(quality['progress']['erosion']['m'][4], 0.5)
         self.assertIsNone(store.comparison('missing'))
         self.assertIsNone(store.chart_path('c1', 'figure-99.png'))
 
