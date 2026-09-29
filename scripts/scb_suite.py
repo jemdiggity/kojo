@@ -199,7 +199,7 @@ def launch_summary(args, skill_sets, configs):
     runs = sum(len(c['runs']) for c in configs)
     parallel = max(c['max_parallel'] for c in configs)
     checkpoints = sum(PROBLEMS[p] for p in args.problems)
-    noun = lambda n, word: f'{n} {word}' + ('' if n == 1 else 's')
+    noun = lambda n, word: f'{n} ' + (word if n == 1 else word[:-1] + 'ies' if word == 'factory' else word + 's')
     skills = noun(max(1, len(skill_sets)), 'skill set')
     if args.factory:
         sessions = sum(factory_spec.load(name).max_sessions() for name in args.factory) * max(1, len(skill_sets)) * checkpoints
