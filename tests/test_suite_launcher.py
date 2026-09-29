@@ -104,6 +104,23 @@ class SuiteLauncherTests(unittest.TestCase):
             self.assertIn('boom', text)
             self.assertIn('Audit: 1/2 passed', text)
 
+    def test_audit_explains_launcher_failure_after_all_runs_pass(self):
+        skills = [{'name': 'none', 'path': None, 'sha256': None}]
+        config = suite.plans('rep', ['sonnet55'], ['circuit_eval'], skills, None, ['low'])[0]
+        rid = f"{config['batch_id']}-{config['runs'][0]['run_id']}-audit"
+        with tempfile.TemporaryDirectory() as tmp, patch.object(suite, 'ROOT', Path(tmp)):
+            status = Path(tmp) / 'intermediate/batches' / (config['batch_id'] + '-audit') / 'status.json'
+            status.parent.mkdir(parents=True)
+            status.write_text(json.dumps({'runs': {rid: {'status': 'complete'}}}))
+            def call(command, **kwargs):
+                kwargs['stdout'].write('RuntimeError: Harness changed during batch\n')
+                return 1
+            with patch.object(suite.subprocess, 'call', side_effect=call), patch('builtins.print') as out:
+                self.assertEqual(suite.audit([Path('p')], [config], False), 1)
+            text = '\n'.join(str(c.args[0]) for c in out.call_args_list)
+            self.assertIn('PASS', text)
+            self.assertIn('Harness changed during batch', text)
+
     def test_model_list_selects_only_requested_models(self):
         with patch.object(suite, 'plans', wraps=suite.plans) as build, patch('builtins.print'):
             self.assertEqual(suite.main(['--problems', 'circuit_eval', 'database_migration', '--id', 'preview', '--models', 'sonnet55', 'opus55', 'astra6']), 0)

@@ -148,6 +148,12 @@ def audit(paths, configs, verbose):
                 log = ROOT / 'intermediate/runs' / rid / 'controller.log'
                 tail = log.read_text().strip().splitlines()[-5:] if log.exists() else ['(no controller log)']
                 print('     ' + '\n     '.join(tail) + f'\n     log: {log}')
+        if code:
+            # Every run may have passed while the launcher itself still failed; say why.
+            detail = [l for l in output.splitlines() if l.strip() and not l.startswith('[')]
+            print(f"FAIL {config['batch_id']}: launcher exited {code} after its runs finished"
+                  + (':\n     ' + '\n     '.join(detail[-12:]) if detail else
+                     ' with no output; rerun with --verbose'))
         if batch_passed < len(config['runs']) or code:
             return finish(passed, total, code or 1)  # Stop before the next batch, as a failed audit should.
     return finish(passed, total, 0)
