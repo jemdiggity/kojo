@@ -1,0 +1,12 @@
+# luna builds -> opus refactors -> review loop (max 5) -> qa; a failed qa goes back to build (max 2)
+build    = luna6
+refactor = opus55:high
+review   = opus55:high
+fix      = luna6
+qa       = sonnet55
+
+build -> refactor -> review
+review -[fail, max 5]-> fix -> review
+review -> qa                 # the loop is spent or the review passed
+qa -[fail, max 2]-> build
+qa -[pass]-> done

@@ -69,6 +69,44 @@ class SuiteLauncherTests(unittest.TestCase):
             suite.plans('cmp', ['sonnet55'], ['circuit_eval'], None, None, ['xhigh'])
         suite.plans('cmp', ['astra6'], ['circuit_eval'], None, None, ['xhigh'])
 
+    def test_factories_replace_models_and_are_parallel_units(self):
+        names = ['luna-review-astra', 'luna-opus-qa']
+        serial = suite.plans('cmp', None, ['circuit_eval', 'database_migration'], factories=names)
+        self.assertEqual([b['max_parallel'] for b in serial], [1, 1])
+        run = serial[0]['runs'][1]
+        self.assertEqual(run['run_id'], 'cmp-circuit-eval-luna-opus-qa')
+        flags = run['factory_args']
+        self.assertEqual(flags[flags.index('--factory') + 1], 'luna-opus-qa')
+        for absent in ('--build-model', '--no-review', '--claude-effort', '--codex-effort'):
+            self.assertNotIn(absent, flags)
+        everything = suite.plans('cmp', None, ['circuit_eval', 'database_migration'], None, 'all', factories=names)
+        self.assertEqual([(b['batch_id'], b['max_parallel'], len(b['runs'])) for b in everything], [('cmp-all', 4, 4)])
+
+    def test_factories_reject_models_efforts_and_unknown_names(self):
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', ['sonnet55'], ['circuit_eval'], factories=['luna-opus-qa'])
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', None, ['circuit_eval'], None, None, ['low'], ['luna-opus-qa'])
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', None, ['circuit_eval'], factories=['nonesuch'])
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', None, ['circuit_eval'], factories=['luna-opus-qa', 'luna-opus-qa'])
+
+    def test_cli_wants_exactly_one_of_models_or_factory(self):
+        for argv in (['--id', 'x', '--problems', 'circuit_eval'],
+                     ['--id', 'x', '--problems', 'circuit_eval', '--models', 'sonnet55', '--factory', 'luna-opus-qa'],
+                     ['--id', 'x', '--problems', 'circuit_eval', '--factory', 'luna-opus-qa', '--efforts', 'low']):
+            with self.subTest(argv=argv), patch('sys.stderr'), self.assertRaises(SystemExit):
+                suite.main(argv)
+        with patch('builtins.print') as out:
+            self.assertEqual(suite.main(['--id', 'x', '--problems', 'circuit_eval', '--factory', 'luna-opus-qa', 'luna-review-astra',
+                                         '--parallel', 'all']), 0)
+        self.assertIn('--factory', out.call_args_list[0].args[0])
+
+    def test_audit_labels_name_the_factory(self):
+        run = suite.plans('cmp', None, ['circuit_eval'], factories=['luna-opus-qa'])[0]['runs'][0]
+        self.assertEqual(suite.label(run['factory_args']), 'factory circuit_eval / luna-opus-qa / none')
+
     def test_existing_plans_cannot_be_changed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -142,12 +180,19 @@ class SuiteLauncherTests(unittest.TestCase):
 
     def test_launch_summary_counts_runs_not_sessions(self):
         skills = [{'name': n, 'path': None, 'sha256': None} for n in ('none', 'a', 'b')]
-        args = argparse.Namespace(models=['haiku45'], problems=['code_search'], efforts=['low'])
+        args = argparse.Namespace(models=['haiku45'], factory=None, problems=['code_search'], efforts=['low'])
         configs = suite.plans('x', ['haiku45'], ['code_search'], skills, 'all', ['low'])
         text = suite.launch_summary(args, skills, configs)
         self.assertIn('Launching 3 runs (1 model x 3 skill sets x 1 effort x 1 problem)', text)
         self.assertIn('3 at a time', text)
         self.assertIn('15 checkpoint sessions in total', text)
+
+    def test_launch_summary_for_factories(self):
+        args = argparse.Namespace(models=None, factory=['luna-review-astra', 'luna-opus-qa'], problems=['code_search'], efforts=None)
+        configs = suite.plans('x', None, ['code_search'], None, 'all', None, args.factory)
+        text = suite.launch_summary(args, [], configs)
+        self.assertIn('Launching 2 runs (2 factories x 1 skill set x 1 problem), 2 at a time', text)
+        self.assertIn('up to 125 sessions', text)  # (3 + 22) worst-case sessions per checkpoint x 5 checkpoints
 
     def test_model_list_selects_only_requested_models(self):
         with patch.object(suite, 'plans', wraps=suite.plans) as build, patch('builtins.print'):

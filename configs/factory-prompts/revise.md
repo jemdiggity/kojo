@@ -1,0 +1,1 @@
+Review your inherited code against the specifications yourself. Look for defects, missing requirements and unverified behavior, implement justified fixes, and verify the result. This is the only pass; summarize changes and checks.

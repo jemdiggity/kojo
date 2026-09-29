@@ -1,0 +1,6 @@
+# luna builds -> astra reviews -> luna fixes
+build  = luna6
+review = astra6
+fix    = luna6
+
+build -> review -> fix

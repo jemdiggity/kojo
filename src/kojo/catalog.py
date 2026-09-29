@@ -158,6 +158,5 @@ def harness_digest():
     return protocol_digest(include_factory_instructions=False)
 
 
-def factory_instruction_hashes():
-    return {role: digest(BASE/'configs/factory-prompts'/f'{role}.md')
-            for role in ('build', 'review', 'fix')}
+def factory_instruction_hashes(roles=('build', 'review', 'fix')):
+    return {role: digest(BASE/'configs/factory-prompts'/f'{role}.md') for role in roles}
