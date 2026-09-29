@@ -42,6 +42,31 @@ class SuiteLauncherTests(unittest.TestCase):
         self.assertNotIn('--skill-set', baseline['runs'][0]['factory_args'])
         self.assertIn('--skill-set', skilled['runs'][0]['factory_args'])
 
+    def test_efforts_are_a_dimension(self):
+        args = ('cmp', ['sonnet55', 'astra6'], ['circuit_eval', 'database_migration'])
+        skills = [{'name': 'none', 'path': None, 'sha256': None}]
+        serial = suite.plans(*args, skills, None, ['low', 'high'])
+        self.assertEqual([b['batch_id'] for b in serial][:2], ['cmp-circuit-eval-low-none', 'cmp-circuit-eval-high-none'])
+        runs = [r for b in serial for r in b['runs']]
+        self.assertEqual(len(runs), 8)
+        self.assertEqual(len({r['run_id'] for r in runs}), 8)
+        astra = next(r for r in runs if r['run_id'].endswith('astra6-high-none'))['factory_args']
+        self.assertEqual(astra[astra.index('--codex-effort') + 1], 'high')
+        widths = {mode: [b['max_parallel'] for b in suite.plans(*args, skills, mode, ['low', 'high'])]
+                  for mode in suite.PARALLEL}
+        self.assertEqual(widths, {'models': [2] * 4, 'models-skills': [2] * 4,
+                                  'models-skills-efforts': [4, 4], 'all': [8]})
+
+    def test_omitted_efforts_keep_published_medium_ids(self):
+        run = suite.plans('cmp', ['sonnet55'], ['circuit_eval'])[0]['runs'][0]
+        self.assertEqual(run['run_id'], 'cmp-circuit-eval-sonnet55')
+        self.assertIn('medium', run['factory_args'])
+
+    def test_efforts_must_suit_every_provider(self):
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', ['sonnet55'], ['circuit_eval'], None, None, ['xhigh'])
+        suite.plans('cmp', ['astra6'], ['circuit_eval'], None, None, ['xhigh'])
+
     def test_existing_plans_cannot_be_changed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
