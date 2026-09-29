@@ -20,6 +20,16 @@ are preserved separately.
 - [Setup, execution, and reproduction](docs/reproduction.md)
 - [Protocol and context isolation](docs/protocol.md)
 
+## Relationship to SCB
+
+Kojo is a separate local execution harness, not a GitHub fork of SCB. It uses
+pinned upstream specifications and grading tests, while running agents through
+subscription-authenticated Codex CLI and Claude Code in local directories instead
+of direct API calls and Docker. Reported dollar amounts are hypothetical
+API-equivalent token costs, not subscription charges.
+
+[Current suite results and protocol differences](results/comparisons/20260928-dex-subset/SUITE_ANALYSIS.md).
+
 ## Quick start
 
 Python 3.12.8 is pinned. The controller uses only the standard library; Codex CLI,
@@ -60,14 +70,17 @@ scripts/       CLI entry points and explicit experiment launchers
 skills/        Initial-skill and revision-writer prompts
 configs/       Experiment/split definitions, pinned dependencies, and quota limits
 tests/         Offline quota, isolation, and artifact integrity checks
-results/       Frozen submissions, evaluation reports, and usage accounting
+results/       Versioned comparison reports, charts, and compact run registry
 docs/          Protocol, reproduction, and upstream investigation
 intermediate/  Ignored local traces, scratch data, vendor checkouts, and environments
 ```
 
 Raw traces, credentials, virtual environments, and vendored repositories are not
-committed. Dependency pins and frozen evidence live under `results`; the maintained
-harness lives under `src/kojo`. No new model runs were made during repository cleanup.
+committed. Per-run evidence under `results/runs/<run-id>/` also stays local, including
+submissions and their installed dependencies. The small registry, comparison reports,
+chart data, and reproduction scripts remain versioned. Recomputing reports requires
+the local run evidence; a Git clone alone does not include it. Dependency pins are
+versioned, and the maintained harness lives under `src/kojo`.
 
 The current factory enables network access and audits external-source evidence
 after each session. Role instructions are separate versioned Markdown files.

@@ -1,0 +1,151 @@
+{
+  "scope": [
+    "circuit_eval",
+    "database_migration",
+    "dynamic_config_service_api"
+  ],
+  "rows": [
+    {
+      "model": "sonnet55",
+      "name": "Sonnet 5.5",
+      "study": "Kojo",
+      "release_date": "2026-09-28",
+      "failed": [
+        4,
+        17,
+        19
+      ],
+      "skipped": [
+        0,
+        1,
+        15
+      ],
+      "total_failed": 40
+    },
+    {
+      "model": "opus55",
+      "name": "Opus 5.5",
+      "study": "Kojo",
+      "release_date": "2026-09-22",
+      "failed": [
+        4,
+        13,
+        23
+      ],
+      "skipped": [
+        0,
+        1,
+        15
+      ],
+      "total_failed": 40
+    },
+    {
+      "model": "sol6",
+      "name": "Sol 6",
+      "study": "Kojo",
+      "release_date": "2026-09-22",
+      "failed": [
+        4,
+        16,
+        40
+      ],
+      "skipped": [
+        0,
+        1,
+        15
+      ],
+      "total_failed": 60
+    },
+    {
+      "model": "astra6",
+      "name": "Astra 6",
+      "study": "Kojo",
+      "release_date": "2026-09-03",
+      "failed": [
+        0,
+        13,
+        40
+      ],
+      "skipped": [
+        0,
+        1,
+        15
+      ],
+      "total_failed": 53
+    },
+    {
+      "model": "opus5",
+      "name": "Opus 5",
+      "study": "Dexter",
+      "release_date": "2026-07-24",
+      "failed": [
+        2,
+        11,
+        9
+      ],
+      "skipped": null,
+      "total_failed": 22
+    },
+    {
+      "model": "opus5",
+      "name": "Opus 5",
+      "study": "Kojo",
+      "release_date": "2026-07-24",
+      "failed": [
+        58,
+        21,
+        17
+      ],
+      "skipped": [
+        0,
+        1,
+        15
+      ],
+      "total_failed": 96
+    },
+    {
+      "model": "sol56",
+      "name": "Sol 5.6",
+      "study": "Kojo",
+      "release_date": "2026-07-09",
+      "failed": [
+        7,
+        12,
+        36
+      ],
+      "skipped": [
+        0,
+        1,
+        14
+      ],
+      "total_failed": 55
+    },
+    {
+      "model": "sonnet5",
+      "name": "Sonnet 5",
+      "study": "Dexter",
+      "release_date": "2026-06-30",
+      "failed": [
+        7,
+        26,
+        37
+      ],
+      "skipped": null,
+      "total_failed": 70
+    },
+    {
+      "model": "opus48",
+      "name": "Opus 4.8",
+      "study": "Dexter",
+      "release_date": "2026-05-28",
+      "failed": [
+        12,
+        15,
+        14
+      ],
+      "skipped": null,
+      "total_failed": 41
+    }
+  ],
+  "paper_counts_available": false
+}

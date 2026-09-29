@@ -9,3 +9,11 @@ __pycache__/
 !.env.example
 /.ruff_cache/
 /configs/gauntlet-approval.json
+
+# Per-run evidence stays local; keep the small registry and its documentation.
+/results/runs/*/
+/runs/
+
+# Legacy unnumbered chart copies are regenerated, not versioned.
+/results/comparisons/20260928-dex-subset/charts/*
+!/results/comparisons/20260928-dex-subset/charts/figure-*

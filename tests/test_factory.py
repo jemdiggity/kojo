@@ -53,7 +53,7 @@ class FactoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             base=Path(directory);prompts=base/'configs/factory-prompts';prompts.mkdir(parents=True)
             for role in ['build','review','fix']:(prompts/f'{role}.md').write_text('')
-            for name in ['scripts/kojo.py','pyproject.toml','uv.lock','.python-version']:
+            for name in ['scripts/kojo.py','scripts/scb_entrypoint.py','pyproject.toml','uv.lock','.python-version']:
                 path=base/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text('fixture')
             with patch.object(catalog,'BASE',base), patch.object(factory,'BASE',base):
                 before=catalog.protocol_digest();harness=catalog.harness_digest()

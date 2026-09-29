@@ -1,0 +1,19 @@
+{
+  "strict-pass-bars": 1,
+  "checkpoint-grid": 2,
+  "failure-trajectories": 3,
+  "final-failures": 4,
+  "cost-failures": 5,
+  "external-final-failures": 6,
+  "external-total-failures": 7,
+  "value-release-date": 8,
+  "code-volume": 9,
+  "test-code-split": 10,
+  "complexity-duplication": 11,
+  "functions-complexity": 12,
+  "single-use-functions": 13,
+  "quality-progress": 14,
+  "quality-by-problem": 15,
+  "quality-test-sensitivity": 16,
+  "metric-spread": 17
+}

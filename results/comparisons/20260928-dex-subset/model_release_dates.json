@@ -1,0 +1,34 @@
+{
+  "definition": "Public API release date documented by provider; proxy for general availability, not preview date or model snapshot date.",
+  "verified_on": "2026-09-29",
+  "models": {
+    "sol56": {
+      "date": "2026-07-09",
+      "source": "https://developers.openai.com/api/docs/changelog#july-2026"
+    },
+    "opus5": {
+      "date": "2026-07-24",
+      "source": "https://www.anthropic.com/news/claude-opus-5"
+    },
+    "astra6": {
+      "date": "2026-09-03",
+      "source": "https://developers.openai.com/api/docs/changelog#september-2026"
+    },
+    "sol6": {
+      "date": "2026-09-22",
+      "source": "https://developers.openai.com/api/docs/changelog#september-2026"
+    },
+    "opus55": {
+      "date": "2026-09-22",
+      "source": "https://platform.claude.com/docs/en/release-notes/overview#september-22-2026"
+    },
+    "sonnet55": {
+      "date": "2026-09-28",
+      "source": "https://platform.claude.com/docs/en/release-notes/overview#september-28-2026"
+    },
+    "fable51": {
+      "date": "2026-09-01",
+      "source": "https://platform.claude.com/docs/en/models/fable-5-1/overview"
+    }
+  }
+}

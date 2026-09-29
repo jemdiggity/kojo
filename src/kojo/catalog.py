@@ -120,6 +120,7 @@ def protocol_digest(*, include_factory_instructions=True):
         paths += sorted((BASE / "configs/factory-prompts").glob("*.md"))
     paths += [
         BASE / "scripts/kojo.py",
+        BASE / "scripts/scb_entrypoint.py",
         BASE / "pyproject.toml",
         BASE / "uv.lock",
         BASE / ".python-version",

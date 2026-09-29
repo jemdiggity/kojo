@@ -291,7 +291,7 @@ def run():
         save(RUN / "usage.json", observations)
         events = []
         if (RUN / "events.jsonl").exists():
-            for line in (RUN / "events.jsonl").read_text().splitlines():
+            for line in (RUN / "events.jsonl").read_text().split("\n"):
                 try:
                     events.append(json.loads(line))
                 except ValueError:

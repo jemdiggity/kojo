@@ -11,6 +11,31 @@ from kojo.external_access import audit_external_sources
 
 
 class ClaudeTests(unittest.TestCase):
+    def test_fable_uses_adaptive_thinking_and_default_output_limit(self):
+        args, models, options = factory.parse_args([
+            'audit', '--run-id', 'fable-offline-test', '--problem', 'circuit_eval',
+            '--build-model', 'claude-fable-5-1', '--claude-effort', 'medium', '--no-review'])
+        self.assertEqual(models['build'], 'claude-fable-5-1')
+        self.assertEqual(options['build']['effort'], 'medium')
+        env = claude.environment('medium', model=models['build'])
+        self.assertNotIn('MAX_THINKING_TOKENS', env)
+        self.assertNotIn('CLAUDE_CODE_MAX_OUTPUT_TOKENS', env)
+
+    def test_native_transcript_unicode_separators_remain_inside_records(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);prompt="spec\u2028and\u2029more"
+            records=[{"type":"user","message":{"content":prompt}},
+                     {"attachment":{"type":"prompt_snapshot","systemPrompt":["stock"]}},
+                     {"type":"assistant","effort":"medium","message":{"model":"claude-opus-5-5","content":[]}}]
+            raw="\n".join(json.dumps(r,ensure_ascii=False) for r in records)+"\n"
+            (root/"transcript.jsonl").write_text(raw)
+            receipt=claude.verify_saved_transcript(root,"session",prompt,"claude-opus-5-5","medium")
+            self.assertTrue(receipt["exact_user_prompt"])
+            self.assertEqual((root/"transcript.jsonl").read_text(),raw)
+            (root/"transcript.jsonl").write_text(raw+'{"truncated":')
+            with self.assertRaises(json.JSONDecodeError):
+                claude.verify_saved_transcript(root,"session",prompt,"claude-opus-5-5","medium")
+
     def request(self):
         return {'model':claude.MODELS[0], 'system':[{'text':'stock prompt'}],
                 'messages':[{'role':'user','content':'exact task'}],

@@ -64,7 +64,7 @@ def audit_external_sources(path):
     if not path.exists():
         return {'status':'incomplete_evidence','review_suggested':True,'events':[], 'limitations':['Native transcript is missing.']}
     rows=[];errors=[]
-    for number,line in enumerate(path.read_text().splitlines(),1):
+    for number,line in enumerate(path.read_text().split("\n"),1):
         if not line.strip():continue
         try:rows.append((number,json.loads(line)))
         except ValueError:errors.append(number)

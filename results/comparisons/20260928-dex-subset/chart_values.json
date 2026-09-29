@@ -1,0 +1,56 @@
+[
+  {
+    "model": "sonnet55",
+    "scope": "suite",
+    "release_date": "2026-09-28",
+    "partial_percent": 90.80791118083079,
+    "cost": 6.8565242,
+    "percentage_points_per_dollar": 13.244015266631857,
+    "upper_bound": false
+  },
+  {
+    "model": "opus55",
+    "scope": "suite",
+    "release_date": "2026-09-22",
+    "partial_percent": 90.70594889304402,
+    "cost": 21.0678446,
+    "percentage_points_per_dollar": 4.305421395269073,
+    "upper_bound": false
+  },
+  {
+    "model": "sol6",
+    "scope": "suite",
+    "release_date": "2026-09-22",
+    "partial_percent": 90.29454526649543,
+    "cost": 4.0317788000000006,
+    "percentage_points_per_dollar": 22.39570912632792,
+    "upper_bound": true
+  },
+  {
+    "model": "astra6",
+    "scope": "suite",
+    "release_date": "2026-09-03",
+    "partial_percent": 90.79019560877121,
+    "cost": 15.888860000000001,
+    "percentage_points_per_dollar": 5.714078644331387,
+    "upper_bound": true
+  },
+  {
+    "model": "opus5",
+    "scope": "suite",
+    "release_date": "2026-07-24",
+    "partial_percent": 85.83407118779412,
+    "cost": 72.854747,
+    "percentage_points_per_dollar": 1.17815344534508,
+    "upper_bound": false
+  },
+  {
+    "model": "sol56",
+    "scope": "suite",
+    "release_date": "2026-07-09",
+    "partial_percent": 90.64434520796569,
+    "cost": 13.2868784,
+    "percentage_points_per_dollar": 6.82209488783804,
+    "upper_bound": true
+  }
+]

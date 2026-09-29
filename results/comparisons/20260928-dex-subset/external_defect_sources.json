@@ -1,0 +1,117 @@
+{
+  "metric": "Final-checkpoint failing test counts; not unique root-cause defects.",
+  "scope": [
+    "circuit_eval",
+    "database_migration",
+    "dynamic_config_service_api"
+  ],
+  "horthy": {
+    "source": "https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/f2bc7aec4575418d2d2e83fec078266cc56d3e6a/images/scb-defects.png",
+    "repository_commit": "f2bc7aec4575418d2d2e83fec078266cc56d3e6a",
+    "image_git_blob_sha": "10c1c651a03dac2151817cba16f9bd366c83dbed",
+    "extraction": "Manually transcribed printed integer labels, visually verified in browser. Published total equals sum of the three per-problem labels.",
+    "limitations": "Effort, dataset pin, test identities/denominators and skipped-test counts unavailable in the inspected write-up; comparability not established.",
+    "rows": [
+      {
+        "model": "opus48",
+        "name": "Opus 4.8",
+        "release_date": "2026-05-28",
+        "release_source": "https://www.anthropic.com/news/claude-opus-4-8",
+        "failed": [
+          12,
+          15,
+          14
+        ],
+        "published_total": 41
+      },
+      {
+        "model": "sonnet5",
+        "name": "Sonnet 5",
+        "release_date": "2026-06-30",
+        "release_source": "https://www.anthropic.com/news/claude-sonnet-5",
+        "failed": [
+          7,
+          26,
+          37
+        ],
+        "published_total": 70
+      },
+      {
+        "model": "opus5",
+        "name": "Opus 5",
+        "release_date": "2026-07-24",
+        "release_source": "https://www.anthropic.com/news/claude-opus-5",
+        "failed": [
+          2,
+          11,
+          9
+        ],
+        "published_total": 22
+      }
+    ]
+  },
+  "paper_v1": {
+    "source": "https://arxiv.org/html/2603.24755v1#S4.T1",
+    "scope": "Full original 20-problem benchmark; not our three-problem subset.",
+    "metric": "Strict checkpoint solve percentage, not failing-test count.",
+    "defect_counts": null,
+    "reason": "Not reported in Table 1. Per-problem and all-problem final failing-test counts not found in inspected paper, public leaderboard data or linked Zenodo PDF manifests.",
+    "rows": [
+      {
+        "model": "Sonnet 4.5",
+        "strict_percent": 5.4,
+        "final_failing_tests": null
+      },
+      {
+        "model": "Sonnet 4.6",
+        "strict_percent": 8.5,
+        "final_failing_tests": null
+      },
+      {
+        "model": "Opus 4.5",
+        "strict_percent": 10.9,
+        "final_failing_tests": null
+      },
+      {
+        "model": "Opus 4.6",
+        "strict_percent": 17.2,
+        "final_failing_tests": null
+      },
+      {
+        "model": "GPT 5.1 Codex Max",
+        "strict_percent": 10.8,
+        "final_failing_tests": null
+      },
+      {
+        "model": "GPT 5.2",
+        "strict_percent": 10.8,
+        "final_failing_tests": null
+      },
+      {
+        "model": "GPT 5.2 Codex",
+        "strict_percent": 9.7,
+        "final_failing_tests": null
+      },
+      {
+        "model": "GPT 5.3 Spark",
+        "strict_percent": 5.4,
+        "final_failing_tests": null
+      },
+      {
+        "model": "GPT 5.3 Codex",
+        "strict_percent": 9.7,
+        "final_failing_tests": null
+      },
+      {
+        "model": "GPT 5.4",
+        "strict_percent": 11.8,
+        "final_failing_tests": null
+      },
+      {
+        "model": "GLM 4.7",
+        "strict_percent": 4.3,
+        "final_failing_tests": null
+      }
+    ]
+  }
+}

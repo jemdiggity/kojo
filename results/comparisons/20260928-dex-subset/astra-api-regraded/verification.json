@@ -1,0 +1,22 @@
+{
+  "launcher_sha256": "1f5403542d8af77e84822166e3737c876a7c596680dd708e6b70ac037e8bab50",
+  "test_collections": [
+    {
+      "checkpoint": "checkpoint_1",
+      "same_test_collection": true
+    },
+    {
+      "checkpoint": "checkpoint_2",
+      "same_test_collection": true
+    },
+    {
+      "checkpoint": "checkpoint_3",
+      "same_test_collection": true
+    },
+    {
+      "checkpoint": "checkpoint_4",
+      "same_test_collection": true
+    }
+  ],
+  "source_hashes_checked_before_and_after": true
+}

@@ -1,0 +1,1709 @@
+[
+  {
+    "model": "opus5",
+    "run_id": "20260928-database-migration-opus5-medium-02",
+    "checkpoints": [
+      {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "checkpoint": 1,
+        "failures": [],
+        "new_tests": {
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 50,
+        "failed": 12,
+        "skipped": 0,
+        "checkpoint": 2,
+        "failures": [
+          {
+            "group": "checkpoint_2-Core",
+            "test": "test_backfill_data"
+          },
+          {
+            "group": "checkpoint_2-Core",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Core",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_backfill_data_without_where_updates_all"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_backfill_value_expression"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_backfill_where_filters_rows"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_2-Error",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 11,
+          "failed": 12,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 74,
+        "failed": 12,
+        "skipped": 1,
+        "checkpoint": 3,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_data_without_where_updates_all"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_value_expression"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_where_filters_rows"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          }
+        ],
+        "new_tests": {
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 102,
+        "failed": 14,
+        "skipped": 1,
+        "checkpoint": 4,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_data_without_where_updates_all"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_value_expression"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_where_filters_rows"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_foreign_key"
+          }
+        ],
+        "new_tests": {
+          "passed": 28,
+          "failed": 2,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 115,
+        "failed": 21,
+        "skipped": 1,
+        "checkpoint": 5,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_data_without_where_updates_all"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_value_expression"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_backfill_where_filters_rows"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_5-Error",
+            "test": "test_circular_dependency"
+          },
+          {
+            "group": "checkpoint_5-Error",
+            "test": "test_migrate_missing_dependency"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_empty_depends_on_array"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_skips_already_applied_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_transitive_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_simple_dependency"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_validate_command"
+          }
+        ],
+        "new_tests": {
+          "passed": 13,
+          "failed": 7,
+          "skipped": 0
+        }
+      }
+    ],
+    "attempts": [
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus5-medium-01/gauntlet/training-build/database_migration/checkpoint_1/run.json",
+        "status": "complete",
+        "seconds": 229.9137026249664,
+        "cost": 1.0511724999999998,
+        "usage": {
+          "input_tokens": 434107,
+          "cached_input_tokens": 402245,
+          "cache_creation_input_tokens": 31828,
+          "output_tokens": 21264,
+          "reasoning_output_tokens": 3016
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus5-medium-01/gauntlet/training-build/database_migration/checkpoint_2/run.json",
+        "status": "complete",
+        "seconds": 268.0849853339605,
+        "cost": 1.3339565,
+        "usage": {
+          "input_tokens": 724938,
+          "cached_input_tokens": 681973,
+          "cache_creation_input_tokens": 42919,
+          "output_tokens": 22542,
+          "reasoning_output_tokens": 5795
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus5-medium-01/gauntlet/training-build/database_migration/checkpoint_3/run.json",
+        "status": "cli_failure",
+        "seconds": 485.8509666660102,
+        "cost": 1.9083500000000004,
+        "usage": {
+          "input_tokens": 961762,
+          "cached_input_tokens": 901071,
+          "cache_creation_input_tokens": 60647,
+          "output_tokens": 32453,
+          "reasoning_output_tokens": 15523
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus5-medium-02/gauntlet/training-build/database_migration/checkpoint_3/run.json",
+        "status": "complete",
+        "seconds": 680.6999882080127,
+        "cost": 3.8296375000000005,
+        "usage": {
+          "input_tokens": 2680993,
+          "cached_input_tokens": 2585655,
+          "cache_creation_input_tokens": 95254,
+          "output_tokens": 63354,
+          "reasoning_output_tokens": 17755
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus5-medium-02/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "complete",
+        "seconds": 739.0440806250554,
+        "cost": 5.759250500000001,
+        "usage": {
+          "input_tokens": 5848608,
+          "cached_input_tokens": 5724531,
+          "cache_creation_input_tokens": 123945,
+          "output_tokens": 66275,
+          "reasoning_output_tokens": 23244
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus5-medium-02/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "complete",
+        "seconds": 1021.65724820795,
+        "cost": 6.225518499999998,
+        "usage": {
+          "input_tokens": 7130947,
+          "cached_input_tokens": 7012687,
+          "cache_creation_input_tokens": 118100,
+          "output_tokens": 61495,
+          "reasoning_output_tokens": 20176
+        }
+      }
+    ],
+    "total_minutes": 57.08751619443259,
+    "known_cost": 20.1078855,
+    "unmetered_attempts": 0
+  },
+  {
+    "model": "opus55",
+    "run_id": "20260928-database-migration-opus55-medium-02",
+    "checkpoints": [
+      {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "checkpoint": 1,
+        "failures": [],
+        "new_tests": {
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 56,
+        "failed": 6,
+        "skipped": 0,
+        "checkpoint": 2,
+        "failures": [
+          {
+            "group": "checkpoint_2-Core",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Error",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 17,
+          "failed": 6,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 80,
+        "failed": 6,
+        "skipped": 1,
+        "checkpoint": 3,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 107,
+        "failed": 9,
+        "skipped": 1,
+        "checkpoint": 4,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_4-Core",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_foreign_key"
+          }
+        ],
+        "new_tests": {
+          "passed": 27,
+          "failed": 3,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 123,
+        "failed": 13,
+        "skipped": 1,
+        "checkpoint": 5,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_complete_column_migration"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_null_without_default"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_overwrites_existing_values"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_5-Error",
+            "test": "test_validate_duplicate_versions"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_skips_already_applied_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_transitive_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_simple_dependency"
+          }
+        ],
+        "new_tests": {
+          "passed": 16,
+          "failed": 4,
+          "skipped": 0
+        }
+      }
+    ],
+    "attempts": [
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus55-medium-01/gauntlet/training-build/database_migration/checkpoint_1/run.json",
+        "status": "complete",
+        "seconds": 112.70165304199327,
+        "cost": 0.48047980000000007,
+        "usage": {
+          "input_tokens": 162319,
+          "cached_input_tokens": 139419,
+          "cache_creation_input_tokens": 22884,
+          "output_tokens": 13473,
+          "reasoning_output_tokens": 3225
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus55-medium-01/gauntlet/training-build/database_migration/checkpoint_2/run.json",
+        "status": "complete",
+        "seconds": 80.1798357910011,
+        "cost": 0.36728,
+        "usage": {
+          "input_tokens": 92215,
+          "cached_input_tokens": 70500,
+          "cache_creation_input_tokens": 21705,
+          "output_tokens": 8975,
+          "reasoning_output_tokens": 2454
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus55-medium-01/gauntlet/training-build/database_migration/checkpoint_3/run.json",
+        "status": "complete",
+        "seconds": 290.86590370803606,
+        "cost": 1.2662183999999996,
+        "usage": {
+          "input_tokens": 740083,
+          "cached_input_tokens": 680792,
+          "cache_creation_input_tokens": 59259,
+          "output_tokens": 32793,
+          "reasoning_output_tokens": 13879
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus55-medium-01/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "complete",
+        "seconds": 329.33687870798167,
+        "cost": 1.448217,
+        "usage": {
+          "input_tokens": 709007,
+          "cached_input_tokens": 637325,
+          "cache_creation_input_tokens": 71656,
+          "output_tokens": 37370,
+          "reasoning_output_tokens": 18037
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus55-medium-01/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "cli_failure",
+        "seconds": 143.18130366702098,
+        "cost": 0.37743400000000005,
+        "usage": {
+          "input_tokens": 163076,
+          "cached_input_tokens": 120830,
+          "cache_creation_input_tokens": 42236,
+          "output_tokens": 767,
+          "reasoning_output_tokens": 95
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-opus55-medium-02/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "complete",
+        "seconds": 177.08261070901062,
+        "cost": 1.0234804000000002,
+        "usage": {
+          "input_tokens": 602892,
+          "cached_input_tokens": 537882,
+          "cache_creation_input_tokens": 64986,
+          "output_tokens": 19796,
+          "reasoning_output_tokens": 7846
+        }
+      }
+    ],
+    "total_minutes": 18.88913642708406,
+    "known_cost": 4.9631096,
+    "unmetered_attempts": 0
+  },
+  {
+    "model": "astra6",
+    "run_id": "20260928-database-migration-astra6-medium-02",
+    "checkpoints": [
+      {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "checkpoint": 1,
+        "failures": [],
+        "new_tests": {
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 60,
+        "failed": 2,
+        "skipped": 0,
+        "checkpoint": 2,
+        "failures": [
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Error",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 21,
+          "failed": 2,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 84,
+        "failed": 2,
+        "skipped": 1,
+        "checkpoint": 3,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 110,
+        "failed": 6,
+        "skipped": 1,
+        "checkpoint": 4,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_4-Core",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_index"
+          }
+        ],
+        "new_tests": {
+          "passed": 26,
+          "failed": 4,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 123,
+        "failed": 13,
+        "skipped": 1,
+        "checkpoint": 5,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_index"
+          },
+          {
+            "group": "checkpoint_5-Error",
+            "test": "test_circular_dependency"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_empty_depends_on_array"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_skips_already_applied_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_transitive_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_validate_without_migrations_dir"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_simple_dependency"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_validate_command"
+          }
+        ],
+        "new_tests": {
+          "passed": 13,
+          "failed": 7,
+          "skipped": 0
+        }
+      }
+    ],
+    "attempts": [
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-astra6-medium-01/gauntlet/training-build/database_migration/checkpoint_1/run.json",
+        "status": "complete",
+        "seconds": 288.58828195906244,
+        "cost": 0.768634,
+        "usage": {
+          "input_tokens": 101465,
+          "cached_input_tokens": 77824,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 9088,
+          "reasoning_output_tokens": 1379
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-astra6-medium-01/gauntlet/training-build/database_migration/checkpoint_2/run.json",
+        "status": "complete",
+        "seconds": 204.2234978750348,
+        "cost": 0.6904200000000001,
+        "usage": {
+          "input_tokens": 153681,
+          "cached_input_tokens": 127360,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5997,
+          "reasoning_output_tokens": 912
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-astra6-medium-01/gauntlet/training-build/database_migration/checkpoint_3/run.json",
+        "status": "complete",
+        "seconds": 272.6929259169847,
+        "cost": 1.118158,
+        "usage": {
+          "input_tokens": 312166,
+          "cached_input_tokens": 265728,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 7761,
+          "reasoning_output_tokens": 780
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-astra6-medium-01/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "interrupted",
+        "seconds": 137.28602704196237,
+        "cost": null,
+        "usage": null
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-astra6-medium-02/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "complete",
+        "seconds": 324.24164270900656,
+        "cost": 1.174046,
+        "usage": {
+          "input_tokens": 332855,
+          "cached_input_tokens": 288256,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 8796,
+          "reasoning_output_tokens": 1138
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-astra6-medium-02/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "complete",
+        "seconds": 225.55182925006375,
+        "cost": 0.95086,
+        "usage": {
+          "input_tokens": 294496,
+          "cached_input_tokens": 256000,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 6198,
+          "reasoning_output_tokens": 177
+        }
+      }
+    ],
+    "total_minutes": 24.209736745868575,
+    "known_cost": 4.7021180000000005,
+    "unmetered_attempts": 1
+  },
+  {
+    "model": "sol56",
+    "run_id": "20260928-database-migration-sol56-medium-02",
+    "checkpoints": [
+      {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "checkpoint": 1,
+        "failures": [],
+        "new_tests": {
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 60,
+        "failed": 2,
+        "skipped": 0,
+        "checkpoint": 2,
+        "failures": [
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Error",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 21,
+          "failed": 2,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 84,
+        "failed": 2,
+        "skipped": 1,
+        "checkpoint": 3,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 110,
+        "failed": 6,
+        "skipped": 1,
+        "checkpoint": 4,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_4-Core",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_index"
+          }
+        ],
+        "new_tests": {
+          "passed": 26,
+          "failed": 4,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 124,
+        "failed": 12,
+        "skipped": 1,
+        "checkpoint": 5,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_index"
+          },
+          {
+            "group": "checkpoint_5-Error",
+            "test": "test_circular_dependency"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_empty_depends_on_array"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_skips_already_applied_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_transitive_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_validate_without_migrations_dir"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_simple_dependency"
+          }
+        ],
+        "new_tests": {
+          "passed": 14,
+          "failed": 6,
+          "skipped": 0
+        }
+      }
+    ],
+    "attempts": [
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol56-medium-01/gauntlet/training-build/database_migration/checkpoint_1/run.json",
+        "status": "complete",
+        "seconds": 211.782488290919,
+        "cost": 0.40366959999999996,
+        "usage": {
+          "input_tokens": 274284,
+          "cached_input_tokens": 247424,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 9863,
+          "reasoning_output_tokens": 2964
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol56-medium-01/gauntlet/training-build/database_migration/checkpoint_2/run.json",
+        "status": "complete",
+        "seconds": 232.31258854200132,
+        "cost": 0.4374128,
+        "usage": {
+          "input_tokens": 247010,
+          "cached_input_tokens": 215552,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 11268,
+          "reasoning_output_tokens": 4403
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol56-medium-01/gauntlet/training-build/database_migration/checkpoint_3/run.json",
+        "status": "complete",
+        "seconds": 372.2102373751113,
+        "cost": 0.8295824,
+        "usage": {
+          "input_tokens": 748516,
+          "cached_input_tokens": 701056,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 17966,
+          "reasoning_output_tokens": 4666
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol56-medium-01/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "interrupted",
+        "seconds": 76.18524112494197,
+        "cost": null,
+        "usage": null
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol56-medium-02/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "complete",
+        "seconds": 314.00048287503887,
+        "cost": 0.7277808,
+        "usage": {
+          "input_tokens": 744307,
+          "cached_input_tokens": 705152,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 14455,
+          "reasoning_output_tokens": 3966
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol56-medium-02/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "complete",
+        "seconds": 300.21049212501384,
+        "cost": 0.7623216,
+        "usage": {
+          "input_tokens": 697577,
+          "cached_input_tokens": 634624,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 12833,
+          "reasoning_output_tokens": 4249
+        }
+      }
+    ],
+    "total_minutes": 25.111692172217104,
+    "known_cost": 3.1607672,
+    "unmetered_attempts": 1
+  },
+  {
+    "model": "sol6",
+    "run_id": "20260928-database-migration-sol6-medium-02",
+    "checkpoints": [
+      {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "checkpoint": 1,
+        "failures": [],
+        "new_tests": {
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 59,
+        "failed": 3,
+        "skipped": 0,
+        "checkpoint": 2,
+        "failures": [
+          {
+            "group": "checkpoint_2-Core",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_transformations_applied_in_order"
+          }
+        ],
+        "new_tests": {
+          "passed": 20,
+          "failed": 3,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 83,
+        "failed": 3,
+        "skipped": 1,
+        "checkpoint": 3,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          }
+        ],
+        "new_tests": {
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 109,
+        "failed": 7,
+        "skipped": 1,
+        "checkpoint": 4,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_4-Core",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_index"
+          }
+        ],
+        "new_tests": {
+          "passed": 26,
+          "failed": 4,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 120,
+        "failed": 16,
+        "skipped": 1,
+        "checkpoint": 5,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_index"
+          },
+          {
+            "group": "checkpoint_5-Error",
+            "test": "test_circular_dependency"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_complex_dependency"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_empty_depends_on_array"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_skips_already_applied_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_transitive_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_parallel_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_validate_without_migrations_dir"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_migrate_all"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_simple_dependency"
+          }
+        ],
+        "new_tests": {
+          "passed": 11,
+          "failed": 9,
+          "skipped": 0
+        }
+      }
+    ],
+    "attempts": [
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol6-medium-01/gauntlet/training-build/database_migration/checkpoint_1/run.json",
+        "status": "complete",
+        "seconds": 152.39516620803624,
+        "cost": 0.13498120000000002,
+        "usage": {
+          "input_tokens": 119704,
+          "cached_input_tokens": 98176,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 7229,
+          "reasoning_output_tokens": 2234
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol6-medium-01/gauntlet/training-build/database_migration/checkpoint_2/run.json",
+        "status": "complete",
+        "seconds": 141.89820249995682,
+        "cost": 0.17662160000000002,
+        "usage": {
+          "input_tokens": 193280,
+          "cached_input_tokens": 149888,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5986,
+          "reasoning_output_tokens": 2046
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol6-medium-01/gauntlet/training-build/database_migration/checkpoint_3/run.json",
+        "status": "complete",
+        "seconds": 194.64129683398642,
+        "cost": 0.23198600000000003,
+        "usage": {
+          "input_tokens": 263769,
+          "cached_input_tokens": 215040,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 9152,
+          "reasoning_output_tokens": 2281
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol6-medium-01/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "complete",
+        "seconds": 235.12015308300033,
+        "cost": 0.2610888,
+        "usage": {
+          "input_tokens": 555618,
+          "cached_input_tokens": 520704,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 8712,
+          "reasoning_output_tokens": 2461
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol6-medium-01/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "interrupted",
+        "seconds": 167.7240708329482,
+        "cost": null,
+        "usage": null
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sol6-medium-02/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "complete",
+        "seconds": 173.11662754090503,
+        "cost": 0.2255536,
+        "usage": {
+          "input_tokens": 510648,
+          "cached_input_tokens": 483968,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 7540,
+          "reasoning_output_tokens": 2570
+        }
+      }
+    ],
+    "total_minutes": 17.748258616647217,
+    "known_cost": 1.0302312,
+    "unmetered_attempts": 1
+  },
+  {
+    "model": "sonnet55",
+    "run_id": "20260928-database-migration-sonnet55-medium-01",
+    "checkpoints": [
+      {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "checkpoint": 1,
+        "failures": [],
+        "new_tests": {
+          "passed": 39,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 58,
+        "failed": 4,
+        "skipped": 0,
+        "checkpoint": 2,
+        "failures": [
+          {
+            "group": "checkpoint_2-Core",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Functionality",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_2-Error",
+            "test": "test_transform_target_column_not_exists"
+          }
+        ],
+        "new_tests": {
+          "passed": 19,
+          "failed": 4,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 82,
+        "failed": 4,
+        "skipped": 1,
+        "checkpoint": 3,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          }
+        ],
+        "new_tests": {
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 103,
+        "failed": 13,
+        "skipped": 1,
+        "checkpoint": 4,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_4-Error",
+            "test": "test_rollback_transactional_on_failure"
+          },
+          {
+            "group": "checkpoint_4-Core",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Core",
+            "test": "test_rollback_multiple"
+          },
+          {
+            "group": "checkpoint_4-Core",
+            "test": "test_rollback_to_version"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_add_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_add_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Functionality",
+            "test": "test_rollback_drop_index"
+          }
+        ],
+        "new_tests": {
+          "passed": 21,
+          "failed": 9,
+          "skipped": 0
+        }
+      },
+      {
+        "passed": 119,
+        "failed": 17,
+        "skipped": 1,
+        "checkpoint": 5,
+        "failures": [
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_migrate_column_data_default_value_for_null"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_data"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transform_target_column_not_exists"
+          },
+          {
+            "group": "checkpoint_2-Regression",
+            "test": "test_transformations_applied_in_order"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_explicit_rollback"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_add_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_add_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_check_constraint"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_foreign_key"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_drop_index"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_multiple"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_to_version"
+          },
+          {
+            "group": "checkpoint_4-Regression",
+            "test": "test_rollback_transactional_on_failure"
+          },
+          {
+            "group": "checkpoint_5-Error",
+            "test": "test_validate_duplicate_versions"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_skips_already_applied_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Functionality",
+            "test": "test_migrate_transitive_dependencies"
+          },
+          {
+            "group": "checkpoint_5-Core",
+            "test": "test_simple_dependency"
+          }
+        ],
+        "new_tests": {
+          "passed": 16,
+          "failed": 4,
+          "skipped": 0
+        }
+      }
+    ],
+    "attempts": [
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sonnet55-medium-01/gauntlet/training-build/database_migration/checkpoint_1/run.json",
+        "status": "complete",
+        "seconds": 40.98895495804027,
+        "cost": 0.1265282,
+        "usage": {
+          "input_tokens": 65785,
+          "cached_input_tokens": 52021,
+          "cache_creation_input_tokens": 13758,
+          "output_tokens": 6108,
+          "reasoning_output_tokens": 947
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sonnet55-medium-01/gauntlet/training-build/database_migration/checkpoint_2/run.json",
+        "status": "complete",
+        "seconds": 43.06056470796466,
+        "cost": 0.1678706,
+        "usage": {
+          "input_tokens": 167985,
+          "cached_input_tokens": 150903,
+          "cache_creation_input_tokens": 17068,
+          "output_tokens": 6939,
+          "reasoning_output_tokens": 668
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sonnet55-medium-01/gauntlet/training-build/database_migration/checkpoint_3/run.json",
+        "status": "complete",
+        "seconds": 118.51722799998242,
+        "cost": 0.3870512,
+        "usage": {
+          "input_tokens": 284747,
+          "cached_input_tokens": 249496,
+          "cache_creation_input_tokens": 35235,
+          "output_tokens": 19618,
+          "reasoning_output_tokens": 4412
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sonnet55-medium-01/gauntlet/training-build/database_migration/checkpoint_4/run.json",
+        "status": "complete",
+        "seconds": 84.30937845795415,
+        "cost": 0.2828938,
+        "usage": {
+          "input_tokens": 163090,
+          "cached_input_tokens": 130349,
+          "cache_creation_input_tokens": 32731,
+          "output_tokens": 12588,
+          "reasoning_output_tokens": 4186
+        }
+      },
+      {
+        "receipt": "intermediate/runs/20260928-database-migration-sonnet55-medium-01/gauntlet/training-build/database_migration/checkpoint_5/run.json",
+        "status": "complete",
+        "seconds": 69.88501750002615,
+        "cost": 0.2998294,
+        "usage": {
+          "input_tokens": 270811,
+          "cached_input_tokens": 233757,
+          "cache_creation_input_tokens": 37040,
+          "output_tokens": 10489,
+          "reasoning_output_tokens": 2940
+        }
+      }
+    ],
+    "total_minutes": 5.946019060399461,
+    "known_cost": 1.2641732,
+    "unmetered_attempts": 0
+  }
+]

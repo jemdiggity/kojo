@@ -8,7 +8,7 @@ import shutil
 
 
 def records(path):
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    return [json.loads(line) for line in path.read_text().split("\n") if line.strip()]
 
 
 def inspect_transcript(path, thread_id, instructions, prompt, guidance):

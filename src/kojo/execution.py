@@ -365,7 +365,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
 def usage_from_events(path):
     events = []
     if path.exists():
-        for line in path.read_text().splitlines():
+        for line in path.read_text().split("\n"):
             try:
                 events.append(json.loads(line))
             except ValueError:

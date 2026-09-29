@@ -18,7 +18,7 @@ import uuid
 from kojo.execution import save, shell_environment
 
 VERSION = "2.1.283"
-MODELS = ("claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5")
+MODELS = ("claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1")
 EFFORTS = ("low", "medium", "high")
 THINKING_TOKENS = {"low": 4000, "medium": 10000, "high": 31999}
 
@@ -72,7 +72,7 @@ def environment(effort, *, audit_url=None, config_dir=None, max_output_tokens=No
         "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     })
-    if model in ("claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"):
+    if model in ("claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1"):
         env.pop("MAX_THINKING_TOKENS", None)  # Adaptive thinking; keep CLI token defaults.
     if max_output_tokens is not None:
         if not isinstance(max_output_tokens,int) or max_output_tokens<=0:raise ValueError("Invalid output-token allowance")
@@ -249,7 +249,7 @@ print('native-write-smoke-ok')
         if not denied.get("is_error") or "KOJO_PRIVATE_AUDIT_MARKER" in json.dumps(denied):
             raise RuntimeError("Claude native Read isolation smoke failed")
         receipt.update(native_shell_writes=True,private_bash_read_blocked=True,private_file_tool_read_blocked=True)
-        events=[json.loads(line) for line in (run/"audit-events.jsonl").read_text().splitlines()]
+        events=[json.loads(line) for line in (run/"audit-events.jsonl").read_text().split("\n") if line.strip()]
         init=next(r for r in events if r.get("subtype")=="init")
         if init.get("skills") or init.get("mcp_servers") or init.get("slash_commands"):
             raise RuntimeError("Unexpected customization in Claude initialization")
@@ -274,7 +274,12 @@ def capture(run, config, session_id, prompt, model, effort):
     if len(matches)!=1:
         raise RuntimeError("Missing or ambiguous native Claude transcript")
     shutil.copy2(matches[0],run/"transcript.jsonl")
-    rows=[json.loads(line) for line in (run/"transcript.jsonl").read_text().splitlines()]
+    return verify_saved_transcript(run, session_id, prompt, model, effort)
+
+
+def verify_saved_transcript(run, session_id, prompt, model, effort):
+    # JSONL is LF-delimited. Unicode separators inside strings are valid JSON.
+    rows=[json.loads(line) for line in (run/"transcript.jsonl").read_text().split("\n") if line.strip()]
     prompts=[r.get("message",{}).get("content") for r in rows if r.get("type")=="user"]
     if prompt not in prompts:
         raise RuntimeError("Exact user prompt absent from native transcript")
@@ -344,7 +349,7 @@ def run_session(run, instructions, prompt, seconds, runtime=None, skill=None,
         row["elapsed_seconds"]=time.monotonic()-started
         events=[]
         if (run/"events.jsonl").exists():
-            for line in (run/"events.jsonl").read_text().splitlines():
+            for line in (run/"events.jsonl").read_text().split("\n"):
                 try:events.append(json.loads(line))
                 except ValueError:pass  # Abrupt timeout can truncate the final record.
         result=next((r for r in reversed(events) if r.get("type")=="result"),{})

@@ -183,7 +183,7 @@ def evaluation_environment(python, dependency_report=None):
         entry='.venv/bin/python'
     return {'type':'local','name':'gauntlet-python312','environment':{'include_os_env':True},
             'setup':{'commands':[],'eval_commands':commands},
-            'commands':{'entry_file':'{entry_file}','command':entry}}
+            'commands':{'entry_file':'{entry_file}','command':shlex.join([entry,str(BASE/'scripts/scb_entrypoint.py')])}}
 
 
 class Backend:

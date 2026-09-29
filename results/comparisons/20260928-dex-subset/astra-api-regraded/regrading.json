@@ -1,0 +1,537 @@
+{
+  "run_id": "20260928-dynamic-config-service-api-astra6-medium-01",
+  "invocation": "language-aware-v1",
+  "original_results_preserved": true,
+  "checkpoints": [
+    {
+      "checkpoint": "checkpoint_1",
+      "score": {
+        "strict": 1,
+        "passed": 47,
+        "total": 47,
+        "fraction": 1.0
+      },
+      "evaluation": {
+        "schema_version": 1,
+        "problem_name": "dynamic_config_service_api",
+        "problem_version": 1,
+        "checkpoint_name": "checkpoint_1",
+        "checkpoint_version": 1,
+        "duration": 0.7841999530792236,
+        "entrypoint": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 /Users/jeremyhale/work/kojo/scripts/scb_entrypoint.py config_server",
+        "tests": {
+          "checkpoint_1-Core": {
+            "passed": [
+              "TestCore::test_00_healthz",
+              "TestCore::test_01_create_base_v1",
+              "TestCore::test_02_create_billing_v1_including_base",
+              "TestCore::test_03_list_versions_billing",
+              "TestCore::test_04_get_active_billing",
+              "TestCore::test_05_resolve_billing_active"
+            ],
+            "failed": [],
+            "skipped": []
+          },
+          "checkpoint_1-Functionality": {
+            "passed": [
+              "TestCore::test_06_create_billing_v2_override_pool",
+              "TestCore::test_07_resolve_billing_explicit_version",
+              "TestCore::test_08_list_versions_after_second",
+              "TestCore::test_09_resolve_billing_active_after_second",
+              "TestCore::test_10_rollback_billing_to_v1",
+              "TestCore::test_11_get_active_billing_after_rollback",
+              "TestCore::test_12_resolve_inactive_version_dry_run",
+              "TestFunctionality::test_01_setup_array_base",
+              "TestFunctionality::test_02_setup_type_conflict_base",
+              "TestFunctionality::test_03_get_specific_version",
+              "TestFunctionality::test_04_get_specific_version_not_found",
+              "TestFunctionality::test_05_activate_specific_version",
+              "TestFunctionality::test_06_activate_specific_version_conflict",
+              "TestFunctionality::test_07_idempotent_create",
+              "TestFunctionality::test_08_idempotent_activate",
+              "TestFunctionality::test_09_idempotent_rollback",
+              "TestFunctionality::test_10_include_null_version",
+              "TestFunctionality::test_11_deep_merge_arrays",
+              "TestFunctionality::test_12_resolve_array_merge",
+              "TestFunctionality::test_13_idempotent_resolve",
+              "TestFunctionality::test_14_empty_scope",
+              "TestFunctionality::test_15_case_sensitive_scope",
+              "TestFunctionality::test_16_rollback_to_future_version",
+              "TestFunctionality::test_17_rollback_to_same_active",
+              "TestFunctionality::test_18_canonical_json_response",
+              "TestFunctionality::test_19_max_versions_per_scope"
+            ],
+            "failed": [],
+            "skipped": []
+          },
+          "checkpoint_1-Error": {
+            "passed": [
+              "TestError::test_01_missing_pair_get_active",
+              "TestError::test_02_invalid_input_create_missing_scope",
+              "TestError::test_03_setup_cycle_create_a",
+              "TestError::test_04_setup_cycle_create_b",
+              "TestError::test_05_resolve_cycle_expect_conflict",
+              "TestError::test_06_setup_conflict_create_base",
+              "TestError::test_07_setup_conflict_create_billing_conflict",
+              "TestError::test_08_resolve_billing2_type_conflict",
+              "TestError::test_09_request_too_large",
+              "TestError::test_10_type_conflict_base",
+              "TestError::test_11_deep_merge_type_conflict",
+              "TestError::test_12_resolve_type_conflict",
+              "TestError::test_13_invalid_scope_key_type",
+              "TestError::test_14_resolve_missing_include_reference",
+              "TestError::test_15_include_chain_max_depth"
+            ],
+            "failed": [],
+            "skipped": []
+          }
+        },
+        "pass_counts": {
+          "Core": 6,
+          "Functionality": 26,
+          "Regression": 0,
+          "Error": 15
+        },
+        "total_counts": {
+          "Core": 6,
+          "Functionality": 26,
+          "Regression": 0,
+          "Error": 15
+        },
+        "pytest_exit_code": 0,
+        "pytest_collected": 47,
+        "test_collection_hash": "3f86d6a021bcee56a428832a70624c0bfcb05100124b3470071ad4617fffbaac",
+        "infrastructure_failure": false
+      }
+    },
+    {
+      "checkpoint": "checkpoint_2",
+      "score": {
+        "strict": 1,
+        "passed": 93,
+        "total": 93,
+        "fraction": 1.0
+      },
+      "evaluation": {
+        "schema_version": 1,
+        "problem_name": "dynamic_config_service_api",
+        "problem_version": 1,
+        "checkpoint_name": "checkpoint_2",
+        "checkpoint_version": 1,
+        "duration": 2.47125506401062,
+        "entrypoint": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 /Users/jeremyhale/work/kojo/scripts/scb_entrypoint.py config_server",
+        "tests": {
+          "checkpoint_1-Regression": {
+            "passed": [
+              "TestCore::test_00_healthz",
+              "TestCore::test_01_create_base_v1",
+              "TestCore::test_02_create_billing_v1_including_base",
+              "TestCore::test_03_list_versions_billing",
+              "TestCore::test_04_get_active_billing",
+              "TestCore::test_05_resolve_billing_active",
+              "TestCore::test_06_create_billing_v2_override_pool",
+              "TestCore::test_07_resolve_billing_explicit_version",
+              "TestCore::test_08_list_versions_after_second",
+              "TestCore::test_09_resolve_billing_active_after_second",
+              "TestCore::test_10_rollback_billing_to_v1",
+              "TestCore::test_11_get_active_billing_after_rollback",
+              "TestCore::test_12_resolve_inactive_version_dry_run",
+              "TestError::test_01_missing_pair_get_active",
+              "TestError::test_02_invalid_input_create_missing_scope",
+              "TestError::test_03_setup_cycle_create_a",
+              "TestError::test_04_setup_cycle_create_b",
+              "TestError::test_05_resolve_cycle_expect_conflict",
+              "TestError::test_06_setup_conflict_create_base",
+              "TestError::test_07_setup_conflict_create_billing_conflict",
+              "TestError::test_08_resolve_billing2_type_conflict",
+              "TestError::test_09_request_too_large",
+              "TestError::test_10_type_conflict_base",
+              "TestError::test_11_deep_merge_type_conflict",
+              "TestError::test_12_resolve_type_conflict",
+              "TestError::test_13_invalid_scope_key_type",
+              "TestError::test_14_resolve_missing_include_reference",
+              "TestError::test_15_include_chain_max_depth",
+              "TestFunctionality::test_01_setup_array_base",
+              "TestFunctionality::test_02_setup_type_conflict_base",
+              "TestFunctionality::test_03_get_specific_version",
+              "TestFunctionality::test_04_get_specific_version_not_found",
+              "TestFunctionality::test_05_activate_specific_version",
+              "TestFunctionality::test_06_activate_specific_version_conflict",
+              "TestFunctionality::test_07_idempotent_create",
+              "TestFunctionality::test_08_idempotent_activate",
+              "TestFunctionality::test_09_idempotent_rollback",
+              "TestFunctionality::test_10_include_null_version",
+              "TestFunctionality::test_11_deep_merge_arrays",
+              "TestFunctionality::test_12_resolve_array_merge",
+              "TestFunctionality::test_13_idempotent_resolve",
+              "TestFunctionality::test_14_empty_scope",
+              "TestFunctionality::test_15_case_sensitive_scope",
+              "TestFunctionality::test_16_rollback_to_future_version",
+              "TestFunctionality::test_17_rollback_to_same_active",
+              "TestFunctionality::test_18_canonical_json_response",
+              "TestFunctionality::test_19_max_versions_per_scope"
+            ],
+            "failed": [],
+            "skipped": []
+          },
+          "checkpoint_2-Core": {
+            "passed": [
+              "TestCore::test_01_create_base_v1",
+              "TestCore::test_02_create_schema_cfg_v1",
+              "TestCore::test_03_bind_schema_billing",
+              "TestCore::test_04_create_billing_v1_yaml",
+              "TestCore::test_11_resolve_billing_validated",
+              "TestCore::test_12_validate_only_ok"
+            ],
+            "failed": [],
+            "skipped": []
+          },
+          "checkpoint_2-Functionality": {
+            "passed": [
+              "TestCore::test_05_create_multiple_schema_versions",
+              "TestCore::test_06_list_schema_versions",
+              "TestCore::test_07_get_specific_schema_version",
+              "TestCore::test_08_update_binding",
+              "TestCore::test_09_get_schema_binding_billing",
+              "TestCore::test_10_create_config_with_schema_ref_override",
+              "TestCore::test_13_validate_with_version",
+              "TestCore::test_14_validate_stored_mode",
+              "TestCore::test_15_validate_with_schema_ref_override",
+              "TestCore::test_16_resolve_with_schema_ref",
+              "TestCore::test_17_create_config_raw_json",
+              "TestCore::test_18_create_config_toml",
+              "TestCore::test_19_create_schema_yaml"
+            ],
+            "failed": [],
+            "skipped": []
+          },
+          "checkpoint_2-Error": {
+            "passed": [
+              "TestError::test_01_setup_schema_valid",
+              "TestError::test_02_setup_bind_billing",
+              "TestError::test_03_bind_missing_schema_name",
+              "TestError::test_04_bind_missing_version_conflict",
+              "TestError::test_05_get_schema_binding_not_found",
+              "TestError::test_06_get_nonexistent_schema",
+              "TestError::test_07_get_nonexistent_schema_version",
+              "TestError::test_08_invalid_schema_definition",
+              "TestError::test_09_schema_external_ref_not_allowed",
+              "TestError::test_10_unsupported_schema_format_toml",
+              "TestError::test_11_unsupported_raw_config_format",
+              "TestError::test_12_create_billing_v2_invalid_pool_string",
+              "TestError::test_13_validation_failed_required",
+              "TestError::test_14_validation_failed_enum",
+              "TestError::test_15_validation_failed_pattern",
+              "TestError::test_16_validate_no_schema_bound",
+              "TestError::test_17_validation_failed_nested_path",
+              "TestError::test_18_yaml_anchors_not_allowed",
+              "TestError::test_19_yaml_with_custom_tags",
+              "TestError::test_20_yaml_with_merge_keys",
+              "TestError::test_21_toml_non_json_type_datetime",
+              "TestError::test_22_toml_parsing_error",
+              "TestError::test_23_raw_json_with_comments",
+              "TestError::test_24_raw_json_array_root_unprocessable",
+              "TestError::test_25_raw_schema_too_large",
+              "TestError::test_26_schema_version_limit",
+              "TestError::test_27_yaml_non_string_key"
+            ],
+            "failed": [],
+            "skipped": []
+          }
+        },
+        "pass_counts": {
+          "Core": 6,
+          "Functionality": 13,
+          "Regression": 47,
+          "Error": 27
+        },
+        "total_counts": {
+          "Core": 6,
+          "Functionality": 13,
+          "Regression": 47,
+          "Error": 27
+        },
+        "pytest_exit_code": 0,
+        "pytest_collected": 93,
+        "test_collection_hash": "55fff82a8e066ea6f7388badee9202723c5d7ba4b6d12b0b914d5d82e9c1c27c",
+        "infrastructure_failure": false
+      }
+    },
+    {
+      "checkpoint": "checkpoint_3",
+      "score": {
+        "strict": 0,
+        "passed": 26,
+        "total": 76,
+        "fraction": 0.34210526315789475
+      },
+      "evaluation": {
+        "schema_version": 1,
+        "problem_name": "dynamic_config_service_api",
+        "problem_version": 1,
+        "checkpoint_name": "checkpoint_3",
+        "checkpoint_version": 1,
+        "duration": 1.312244176864624,
+        "entrypoint": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 /Users/jeremyhale/work/kojo/scripts/scb_entrypoint.py config_server",
+        "tests": {
+          "checkpoint_3-Core": {
+            "passed": [
+              "TestCore::test_01_set_base_policy",
+              "TestCore::test_02_create_base_draft",
+              "TestCore::test_06_set_billing_policy",
+              "TestCore::test_07_create_billing_draft",
+              "TestCore::test_22_healthcheck"
+            ],
+            "failed": [
+              "TestCore::test_11_resolve_billing_after_activation"
+            ],
+            "skipped": [
+              "TestCore::test_03_create_proposal_for_base",
+              "TestCore::test_04_review_approve_base",
+              "TestCore::test_05_merge_base_proposal",
+              "TestCore::test_08_propose_billing",
+              "TestCore::test_09_approve_billing",
+              "TestCore::test_10_activate_billing_with_proposal"
+            ]
+          },
+          "checkpoint_3-Functionality": {
+            "passed": [
+              "TestCore::test_12_get_policy_defaults",
+              "TestCore::test_15_create_second_base_draft",
+              "TestCore::test_18_list_proposals_filtered",
+              "TestFunctionality::test_01_setup_edge_policy",
+              "TestFunctionality::test_02_setup_edge_draft",
+              "TestFunctionality::test_07_review_on_merged_proposal_returns_snapshot",
+              "TestFunctionality::test_08_idempotent_merge",
+              "TestFunctionality::test_11_withdraw_on_closed_returns_snapshot",
+              "TestFunctionality::test_21_review_on_withdrawn_returns_snapshot",
+              "TestFunctionality::test_23_clearing_rejection_recalculates_status"
+            ],
+            "failed": [
+              "TestCore::test_14_list_proposals",
+              "TestCore::test_16_propose_base_v2",
+              "TestCore::test_19_propose_base_v2_again"
+            ],
+            "skipped": [
+              "TestCore::test_13_get_proposal_by_id",
+              "TestCore::test_17_withdraw_proposal",
+              "TestCore::test_20_reject_then_re_approve",
+              "TestCore::test_21_merge_base_v2",
+              "TestFunctionality::test_03_proposal_with_empty_diffs",
+              "TestFunctionality::test_04_author_can_reject_self",
+              "TestFunctionality::test_05_idempotent_review",
+              "TestFunctionality::test_06_tally_by_actor_is_sorted",
+              "TestFunctionality::test_09_supersede_on_merge",
+              "TestFunctionality::test_10_labels_are_sorted",
+              "TestFunctionality::test_12_proposal_with_title_and_description",
+              "TestFunctionality::test_13_review_with_message_stored",
+              "TestFunctionality::test_14_decision_replacement_updates_tally",
+              "TestFunctionality::test_15_proposal_ids_globally_monotonic",
+              "TestFunctionality::test_16_proposals_sorted_by_id_ascending",
+              "TestFunctionality::test_17_quorum_snapshot_captured_at_proposal_time",
+              "TestFunctionality::test_18_diffs_with_actual_changes",
+              "TestFunctionality::test_19_multiple_reviewers_quorum",
+              "TestFunctionality::test_20_second_proposal_for_same_draft_supersedes",
+              "TestFunctionality::test_22_rejection_blocks_quorum",
+              "TestFunctionality::test_24_diff_ordering_and_includes_sorted"
+            ]
+          },
+          "checkpoint_3-Error": {
+            "passed": [
+              "TestError::test_01_setup_policy",
+              "TestError::test_02_setup_draft",
+              "TestError::test_03_activate_without_proposal",
+              "TestError::test_11_policy_required_approvals_invalid",
+              "TestError::test_12_policy_required_approvals_too_high",
+              "TestError::test_13_get_nonexistent_proposal",
+              "TestError::test_14_rollback_without_proposal",
+              "TestError::test_17_review_nonexistent_proposal",
+              "TestError::test_18_merge_nonexistent_proposal",
+              "TestError::test_19_withdraw_nonexistent_proposal",
+              "TestError::test_30_request_too_large"
+            ],
+            "failed": [],
+            "skipped": [
+              "TestError::test_04_setup_proposal",
+              "TestError::test_05_author_self_approve_not_allowed",
+              "TestError::test_06_reviewer_not_in_allowed_list",
+              "TestError::test_07_withdraw_not_author",
+              "TestError::test_08_merge_not_approved",
+              "TestError::test_09_propose_non_draft",
+              "TestError::test_10_stale_base_proposal",
+              "TestError::test_15_invalid_label_format",
+              "TestError::test_16_propose_nonexistent_version",
+              "TestError::test_20_proposal_validation_failed_resolved",
+              "TestError::test_21_merge_not_mergeable",
+              "TestError::test_22_merge_stale_base",
+              "TestError::test_23_max_proposals_per_scope",
+              "TestError::test_24_max_reviews_per_proposal",
+              "TestError::test_25_title_too_long",
+              "TestError::test_26_description_too_long",
+              "TestError::test_27_label_too_long",
+              "TestError::test_28_too_many_labels",
+              "TestError::test_29_actor_too_long"
+            ]
+          }
+        },
+        "pass_counts": {
+          "Core": 5,
+          "Functionality": 10,
+          "Regression": 0,
+          "Error": 11
+        },
+        "total_counts": {
+          "Core": 12,
+          "Functionality": 34,
+          "Regression": 0,
+          "Error": 30
+        },
+        "pytest_exit_code": 1,
+        "pytest_collected": 76,
+        "test_collection_hash": "5b41991d39c0dd112e5a93a02650c2806ed872f0c759263103f67ea34bb33790",
+        "infrastructure_failure": false
+      }
+    },
+    {
+      "checkpoint": "checkpoint_4",
+      "score": {
+        "strict": 0,
+        "passed": 26,
+        "total": 81,
+        "fraction": 0.32098765432098764
+      },
+      "evaluation": {
+        "schema_version": 1,
+        "problem_name": "dynamic_config_service_api",
+        "problem_version": 1,
+        "checkpoint_name": "checkpoint_4",
+        "checkpoint_version": 1,
+        "duration": 2.275059938430786,
+        "entrypoint": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 /Users/jeremyhale/work/kojo/scripts/scb_entrypoint.py config_server",
+        "tests": {
+          "checkpoint_4-Core": {
+            "passed": [
+              "TestCore::test_05_create_billing_v1_draft_tls_false",
+              "TestCore::test_11_healthcheck"
+            ],
+            "failed": [
+              "TestCore::test_01_create_policy_bundle_v1",
+              "TestCore::test_04_create_binding_prod_acme",
+              "TestCore::test_06_evaluate_billing_v1_violation"
+            ],
+            "skipped": [
+              "TestCore::test_07_propose_billing_v1_blocked_policy_violation"
+            ]
+          },
+          "checkpoint_4-Functionality": {
+            "passed": [
+              "TestCore::test_09_create_billing_v2_draft_tls_true",
+              "TestFunctionality::test_09_create_auth_config_draft",
+              "TestFunctionality::test_10_create_frontend_v1_draft",
+              "TestFunctionality::test_11_create_staging_billing_v1_draft",
+              "TestFunctionality::test_12_create_billing_v3_draft_warnings",
+              "TestFunctionality::test_15_get_policy_stack_no_match",
+              "TestFunctionality::test_36_create_bulk_config",
+              "TestFunctionality::test_39_create_merge_app_config",
+              "TestRegressionFromCheckpoint1::test_01_create_regtest_base_v1",
+              "TestRegressionFromCheckpoint1::test_03_create_regtest_billing_with_includes",
+              "TestRegressionFromCheckpoint1::test_05_list_versions_regtest_billing",
+              "TestRegressionFromCheckpoint1::test_08_create_regtest_billing_v2",
+              "TestRegressionFromCheckpoint1::test_10_list_versions_after_v2",
+              "TestRegressionFromCheckpoint1::test_12_activate_requires_approval",
+              "TestRegressionFromCheckpoint1::test_14_missing_config_get_active",
+              "TestRegressionFromCheckpoint1::test_15_get_specific_version",
+              "TestRegressionFromCheckpoint1::test_16_get_nonexistent_version",
+              "TestRegressionFromCheckpoint1::test_17_activate_nonexistent_version",
+              "TestRegressionFromCheckpoint1::test_18_request_too_large"
+            ],
+            "failed": [
+              "TestCore::test_02_list_bundle_versions",
+              "TestCore::test_03_get_bundle_version_1",
+              "TestCore::test_08_explain_tls_violation",
+              "TestCore::test_10_evaluate_billing_v2_clean",
+              "TestFunctionality::test_01_create_security_bundle_v1",
+              "TestFunctionality::test_02_create_compliance_bundle_v1",
+              "TestFunctionality::test_03_create_policy_bundle_v2_tarball",
+              "TestFunctionality::test_04_list_bundle_versions_multiple",
+              "TestFunctionality::test_05_get_bundle_version_security_v1",
+              "TestFunctionality::test_06_create_binding_security_high_priority",
+              "TestFunctionality::test_07_create_binding_default_graph_keys",
+              "TestFunctionality::test_08_create_binding_same_priority",
+              "TestFunctionality::test_13_get_policy_stack",
+              "TestFunctionality::test_14_get_policy_stack_multiple_priorities",
+              "TestFunctionality::test_16_evaluate_auth_config_all_pass",
+              "TestFunctionality::test_17_evaluate_multiple_policies_all_violations",
+              "TestFunctionality::test_18_evaluate_no_matching_bindings",
+              "TestFunctionality::test_19_evaluate_specific_version",
+              "TestFunctionality::test_20_evaluate_warnings_only",
+              "TestFunctionality::test_21_explain_warning_violation",
+              "TestFunctionality::test_32_create_binding_same_priority_prod_acme",
+              "TestFunctionality::test_33_get_policy_stack_same_priority_ordering",
+              "TestFunctionality::test_34_create_bulk_violations_bundle",
+              "TestFunctionality::test_35_bind_bulk_violations_bundle",
+              "TestFunctionality::test_37_evaluate_bulk_truncation",
+              "TestFunctionality::test_38_create_merge_blocker_bundle",
+              "TestFunctionality::test_41_review_merge_app_bob",
+              "TestFunctionality::test_42_review_merge_app_carol",
+              "TestFunctionality::test_43_bind_merge_blocker_policy",
+              "TestFunctionality::test_44_merge_merge_app_blocked",
+              "TestRegressionFromCheckpoint1::test_06_get_active_regtest_billing",
+              "TestRegressionFromCheckpoint1::test_07_resolve_regtest_billing",
+              "TestRegressionFromCheckpoint1::test_09_propose_and_merge_regtest_billing_v2",
+              "TestRegressionFromCheckpoint1::test_11_resolve_after_v2",
+              "TestRegressionFromCheckpoint1::test_13_resolve_shows_v2_still_active"
+            ],
+            "skipped": [
+              "TestFunctionality::test_22_propose_billing_v2",
+              "TestFunctionality::test_23_propose_billing_v3_warnings",
+              "TestFunctionality::test_24_propose_auth_service_v1_passes",
+              "TestFunctionality::test_25_propose_frontend_v1_no_policies",
+              "TestFunctionality::test_26_review_billing_v2_bob_approve",
+              "TestFunctionality::test_27_review_billing_v2_carol_approve",
+              "TestFunctionality::test_28_review_billing_v3_alice_approve",
+              "TestFunctionality::test_29_review_billing_v3_carol_approve",
+              "TestFunctionality::test_30_merge_billing_v3",
+              "TestFunctionality::test_31_get_proposal_with_policy_summary",
+              "TestFunctionality::test_40_propose_merge_app",
+              "TestRegressionFromCheckpoint1::test_02_propose_and_merge_regtest_base",
+              "TestRegressionFromCheckpoint1::test_04_propose_and_merge_regtest_billing"
+            ]
+          },
+          "checkpoint_4-Error": {
+            "passed": [
+              "TestError::test_01_get_nonexistent_bundle",
+              "TestError::test_02_create_binding_nonexistent_bundle",
+              "TestError::test_03_evaluate_nonexistent_config",
+              "TestError::test_04_create_invalid_policy_bundle",
+              "TestError::test_05_create_policy_bundle_too_large"
+            ],
+            "failed": [
+              "TestError::test_06_create_binding_duplicate_conflict",
+              "TestError::test_07_evaluation_timeout"
+            ],
+            "skipped": [
+              "TestError::test_08_schema_validation_short_circuits_policies"
+            ]
+          }
+        },
+        "pass_counts": {
+          "Core": 2,
+          "Functionality": 19,
+          "Regression": 0,
+          "Error": 5
+        },
+        "total_counts": {
+          "Core": 6,
+          "Functionality": 67,
+          "Regression": 0,
+          "Error": 8
+        },
+        "pytest_exit_code": 1,
+        "pytest_collected": 81,
+        "test_collection_hash": "c1550cec462003465c4cd77750026aa6eb9bc2ef86e68db2fd815edc871436d5",
+        "infrastructure_failure": false
+      }
+    }
+  ]
+}
