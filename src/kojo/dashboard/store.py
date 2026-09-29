@@ -45,8 +45,16 @@ def _factory_name(manifest):
 
 
 def quality_metrics(row):
-    """{'erosion', 'verbosity'} from one quality.json row, in either file format, or None."""
-    metrics = ((row.get('variants') or {}).get(QUALITY_VARIANT) or {}).get('metrics') or row.get('metrics') or {}
+    """{'erosion', 'verbosity'} for the normalized variant from one quality.json row, or None.
+
+    Suite files nest variants inside a row; per-run files have one row per variant.
+    """
+    if 'variants' in row:
+        metrics = (row['variants'].get(QUALITY_VARIANT) or {}).get('metrics') or {}
+    elif row.get('variant', QUALITY_VARIANT) == QUALITY_VARIANT:
+        metrics = row.get('metrics') or {}
+    else:
+        return None
     if metrics.get('erosion') is None or metrics.get('verbosity') is None:
         return None
     return {'erosion': metrics['erosion'], 'verbosity': metrics['verbosity']}

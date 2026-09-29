@@ -169,7 +169,8 @@ class StoreTests(Fixture):
             'entrypoint-normalized': {'metrics': {'erosion': 0.3, 'verbosity': 0.2}}}}
         write(self.base / 'results/comparisons/suite/quality-suite/quality.json', {'rows': [suite_row]})
         write(self.base / 'results/comparisons/flat/quality.json', {'rows': [
-            {'run_id': 'run-b', 'checkpoint': 1, 'metrics': {'erosion': 0.5, 'verbosity': 0.4}},
+            {'run_id': 'run-b', 'checkpoint': 1, 'variant': 'entrypoint-normalized', 'metrics': {'erosion': 0.5, 'verbosity': 0.4}},
+            {'run_id': 'run-b', 'checkpoint': 1, 'variant': 'upstream', 'metrics': {'erosion': 0.0, 'verbosity': 0.0}},
             {'run_id': 'run-b', 'checkpoint': 2, 'metrics': {'erosion': None, 'verbosity': None}}]})
         runs = {r.id: r for r in Store(self.base).graded_runs()}
         self.assertEqual((runs['run-a'].checkpoints[0]['erosion'], runs['run-a'].checkpoints[0]['verbosity']), (0.3, 0.2))
