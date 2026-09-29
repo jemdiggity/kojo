@@ -96,3 +96,10 @@ In monitor-only mode, unavailable quota telemetry is recorded in
 `quota-errors.json` without terminating inference. Enforced quota mode still
 stops when usage cannot be checked. Provider failures still stop the chain;
 synthetic CLI error messages are not treated as model identity evidence.
+
+## Dashboard
+
+`python3.12 scripts/scb_dashboard.py [--port 8765]` serves a read-only local web
+page (stdlib only, no inference) with auto-refreshing batch/run progress,
+per-checkpoint test results and cost, the controller log tail, and the published
+comparison tables and figures. It only reads `intermediate/` and `results/`.
