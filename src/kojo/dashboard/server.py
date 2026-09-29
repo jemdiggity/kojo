@@ -51,7 +51,7 @@ def leaderboard_response(store, query):
     try:
         return json_response(leaderboard(
             store.graded_runs(), one('by') or 'model', then=one('then'),
-            filters={name: query.get(name, []) for name in FILTERABLE}, experiment=one('experiment')))
+            filters={name: query.get(name, []) for name in FILTERABLE}))
     except ValueError as error:
         return json_response({'error': str(error)}, status=400)
 

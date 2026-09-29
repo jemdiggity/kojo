@@ -1,9 +1,7 @@
-"""Aggregate runs into a paper-style table, and find comparable experiments.
+"""Aggregate runs into a paper-style table, and suggest comparisons worth making.
 
 Pure functions over `store.Run` objects; no file access.
 """
-import hashlib
-import json
 import statistics
 
 METRICS = ('strict', 'iso', 'core', 'partial')  # percent of checkpoints passing
@@ -12,8 +10,8 @@ PROGRESS = (0, 0.25, 0.5, 0.75, 1)  # normalized positions along a run at which 
 SETTINGS = ('model', 'skill', 'factory', 'effort', 'problem')
 # Results on different problems aren't comparable, so an experiment never varies the problem.
 VARYING = tuple(s for s in SETTINGS if s != 'problem')
-FILTERABLE = SETTINGS + ('batch',)
-GROUPABLE = FILTERABLE + ('run',)
+FILTERABLE = SETTINGS + ('batch', 'run')  # anything a run can be selected or grouped by
+GROUPABLE = FILTERABLE
 
 
 def dimension(run, name):
@@ -33,7 +31,10 @@ def mean_sd(values):
 
 
 def experiments(runs):
-    """Sets of runs that differ in exactly one setting, matched through their batches.
+    """Suggested comparisons: sets of runs that differ in exactly one setting, matched through batches.
+
+    These are only presets for the filters (each is selected by its `batches`); the filters stay
+    the single way runs are chosen.
 
     A batch's parameters are the sets of values it uses per setting (so ordering and
     repeats don't matter). Batches with identical parameters for every setting but one
@@ -59,10 +60,10 @@ def experiments(runs):
             if len(values) < 2:
                 continue
             fixed = {setting: list(vals) for setting, vals in zip(held, signature)}
-            ident = hashlib.sha1(json.dumps([vary, fixed], sort_keys=True).encode()).hexdigest()[:10]
-            found[ident] = {'id': ident, 'vary': vary, 'fixed': fixed, 'batches': sorted(names), 'values': values,
-                            'runs': sorted(r for n in names for r in batches[n]['runs'])}
-    return sorted(found.values(), key=lambda e: (-len(e['runs']), e['vary'], e['id']))
+            found[(vary, tuple(sorted(names)))] = {
+                'vary': vary, 'fixed': fixed, 'batches': sorted(names), 'values': values,
+                'runs': sorted(r for n in names for r in batches[n]['runs'])}
+    return sorted(found.values(), key=lambda e: (-len(e['runs']), e['vary'], e['batches']))
 
 
 def _facets(runs):
@@ -120,23 +121,17 @@ def trajectory(runs, metric, intermediate=False):
     return [sum(c) / len(c) if c else None for c in columns]
 
 
-def leaderboard(runs, by, then=None, filters=None, experiment=None):
+def leaderboard(runs, by, then=None, filters=None):
     """Percent of checkpoints passing each metric, per `by` (and optionally `then`) group.
 
-    `filters` maps a dimension to its allowed values; `experiment` restricts to one
-    catalogued experiment. `pooled` lists the values present among the included runs so
-    callers can show which settings were combined.
+    `filters` maps a dimension to its allowed values (a run is included if it matches every
+    filtered dimension). `pooled` lists the values present among the included runs so callers can
+    show which settings were combined; `experiments` are suggested comparisons over all runs.
     """
     if by not in GROUPABLE or (then and (then not in GROUPABLE or then == by)):
         raise ValueError('unknown grouping')
     filters = {name: set(values) for name, values in (filters or {}).items() if name in FILTERABLE and values}
-    catalog = experiments(runs)
-    allowed = None
-    if experiment:
-        chosen = next((e for e in catalog if e['id'] == experiment), None)
-        allowed = set(chosen['runs']) if chosen else set()
-    included = [r for r in runs if (allowed is None or r.id in allowed)
-                and all(dimension(r, name) in values for name, values in filters.items())]
+    included = [r for r in runs if all(dimension(r, name) in values for name, values in filters.items())]
 
     groups = {}
     for run in included:
@@ -148,5 +143,5 @@ def leaderboard(runs, by, then=None, filters=None, experiment=None):
                     for (key, sub), members in sorted(groups.items(), key=lambda g: (g[0][0], g[0][1] or ''))]
     return {'by': by, 'then': then or None, 'rows': rows, 'runs': len(included),
             'trajectories': [t for t in trajectories if any(t[m] or t['intermediate'][m] for m in QUALITY)],
-            'facets': _facets(runs), 'experiments': catalog,
+            'facets': _facets(runs), 'experiments': experiments(runs),
             'pooled': {name: sorted({dimension(r, name) for r in included}) for name in FILTERABLE}}

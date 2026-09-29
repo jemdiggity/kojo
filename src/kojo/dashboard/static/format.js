@@ -5,7 +5,7 @@ const DASH = '–';
 
 export const percent = (fraction) => (fraction == null ? DASH : `${(fraction * 100).toFixed(1)}%`);
 export const usd = (amount) => (amount ? `$${amount.toFixed(2)}` : DASH);
-export const plural = (count, noun) => `${count} ${noun}${count === 1 ? '' : 's'}`;
+export const plural = (count, noun, many = `${noun}s`) => `${count} ${count === 1 ? noun : many}`;
 
 export function duration(seconds) {
   if (seconds == null) return DASH;

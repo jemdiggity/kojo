@@ -121,13 +121,21 @@ class LeaderboardTests(unittest.TestCase):
         self.assertEqual(only['pooled']['batch'], ['b2'])
         self.assertEqual(only['facets']['batch'], [('b1', 2), ('b2', 1)])
 
-    def test_experiment_selects_its_runs(self):
+    def test_run_filter_combines_any_chosen_runs(self):
+        runs = [self.run_of('r1', 'b1', 'ma', 'none', True), self.run_of('r2', 'b2', 'mb', 'sk', False),
+                self.run_of('r3', 'b3', 'mc', 'tk', True)]
+        data = leaderboard(runs, 'model', filters={'run': ['r1', 'r3']})
+        self.assertEqual({r['key'] for r in data['rows']}, {'ma', 'mc'})
+        self.assertEqual(data['pooled']['run'], ['r1', 'r3'])
+        self.assertEqual(data['facets']['run'], [('r1', 1), ('r2', 1), ('r3', 1)])
+
+    def test_an_experiment_is_selected_by_filtering_on_its_batches(self):
         runs = [self.run_of('r1', 'b1', 'ma', 'none', True), self.run_of('r2', 'b2', 'mb', 'none', False),
                 self.run_of('r3', 'b3', 'mc', 'sk', True)]
         (found,) = experiments(runs)
-        picked = leaderboard(runs, 'model', experiment=found['id'])
-        self.assertEqual(picked['runs'], 2)
-        self.assertEqual(leaderboard(runs, 'model', experiment='nope')['runs'], 0)
+        self.assertEqual((found['vary'], found['batches']), ('model', ['b1', 'b2']))
+        picked = leaderboard(runs, 'model', filters={'batch': found['batches']})
+        self.assertEqual({r['key'] for r in picked['rows']}, {'ma', 'mb'})
 
     def test_quality_means_and_trajectories(self):
         def quality_run(run_id, erosion):

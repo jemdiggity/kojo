@@ -42,7 +42,7 @@ details>summary{cursor:pointer;color:var(--mute)}
 .menu{position:relative}
 .menu-box{position:absolute;z-index:2;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;
   display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto;min-width:200px}
-.menu-box label{color:var(--fg)}
+.menu-box select[multiple]{min-width:240px;max-width:100%}
 
 /* leaderboard chart: name | bar | value, one row per .hit */
 .bars{display:grid;grid-template-columns:min(240px,30%) minmax(0,1fr) 56px;gap:8px 12px;align-items:center;margin:6px 0 4px}
