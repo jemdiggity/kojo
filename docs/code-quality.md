@@ -17,7 +17,7 @@ python3.12 scripts/scb_quality.py \
   --output results/comparisons/astra-quality-new
 ```
 
-Use a fresh output name. Multiple run IDs can be supplied. Only completed, hash-verified frozen build checkpoints are analyzed. Source hashes are checked again afterward. Existing receipts and source remain unchanged. Raw analysis copies and stderr live under `intermediate/quality/<output-name>`; final JSON and Markdown are saved in the requested output directory. This works after any run, including resumed trajectories; use only the selected latest run per trajectory to avoid duplicate checkpoints.
+Use a fresh output name. Multiple run IDs can be supplied. Every completed, hash-verified frozen code-changing stage is analyzed (build, and for factories fix, refactor and revise; review and qa change no code), one row per stage and checkpoint. Source hashes are checked again afterward. Existing receipts and source remain unchanged. Raw analysis copies and stderr live under `intermediate/quality/<output-name>`; final JSON and Markdown are saved in the requested output directory. This works after any run, including resumed trajectories; use only the selected latest run per trajectory to avoid duplicate checkpoints.
 
 ## Coverage and comparability
 

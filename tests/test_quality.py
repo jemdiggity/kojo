@@ -20,3 +20,15 @@ class QualityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);source=root/'source';source.mkdir();(source/'tool').write_text('pass');(source/'tool.py').write_text('pass')
             with self.assertRaisesRegex(RuntimeError,'collision'):quality.prepare(source,root/'analysis','tool',True)
+
+    def test_every_code_changing_stage_is_analyzed_in_run_order(self):
+        import os
+        with tempfile.TemporaryDirectory() as d:
+            run=Path(d)
+            for order,(stage,label,frozen) in enumerate([('build','checkpoint_1',True),('review','checkpoint_1',False),('fix','checkpoint_1',True),
+                                                          ('build','checkpoint_2',True),('refactor','checkpoint_2',True),('skill-set','checkpoint_9',False)]):
+                directory=run/stage/label;directory.mkdir(parents=True)
+                (directory/'run.json').write_text('{}');os.utime(directory/'run.json',(order,order))
+                if frozen:(directory/'snapshot.json').write_text('{}')
+            self.assertEqual([(c.parent.name,c.name) for c in quality.frozen_snapshots(run)],
+                             [('build','checkpoint_1'),('fix','checkpoint_1'),('build','checkpoint_2'),('refactor','checkpoint_2')])
