@@ -16,11 +16,16 @@ class SuiteLauncherTests(unittest.TestCase):
             save.assert_not_called()
             call.assert_not_called()
 
-    def test_order_and_settings(self):
-        plans = suite.plans('example', list(suite.MODELS), list(suite.PROBLEMS))
-        self.assertEqual(len(plans), 4)
-        for problem, plan in zip(suite.PROBLEMS, plans):
+    def test_published_experiment(self):
+        # The README's reproduction command: these exact models and problems.
+        models = ['sonnet55', 'opus55', 'sol6', 'astra6', 'fable51', 'opus5', 'sol56']
+        problems = ['circuit_eval', 'database_migration', 'dynamic_config_service_api']
+        plans = suite.plans('repro-01', models, problems)
+        self.assertEqual(len(plans), 3)
+        for problem, plan in zip(problems, plans):
             self.assertEqual(plan['max_parallel'], 1)
+            self.assertEqual([r['factory_args'][r['factory_args'].index('--build-model') + 1] for r in plan['runs']],
+                             [suite.MODELS[m] for m in models])
             for run in plan['runs']:
                 flags = run['factory_args']
                 self.assertEqual(flags[flags.index('--problem') + 1], problem)
