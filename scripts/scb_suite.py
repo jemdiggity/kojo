@@ -25,7 +25,6 @@ MODELS = {
     'haiku45': 'claude-haiku-4-5-20251001',
     'luna6': 'gpt-6-luna',
 }
-DEFAULT_MODELS = ('sonnet55', 'opus55', 'sol6', 'astra6', 'opus5', 'sol56')
 PROBLEMS = {'code_search': 5, 'circuit_eval': 8, 'database_migration': 5,
             'dynamic_config_service_api': 4}
 

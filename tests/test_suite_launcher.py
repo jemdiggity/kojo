@@ -17,7 +17,7 @@ class SuiteLauncherTests(unittest.TestCase):
             call.assert_not_called()
 
     def test_order_and_settings(self):
-        plans = suite.plans('example', suite.DEFAULT_MODELS, list(suite.PROBLEMS))
+        plans = suite.plans('example', list(suite.MODELS), list(suite.PROBLEMS))
         self.assertEqual(len(plans), 4)
         for problem, plan in zip(suite.PROBLEMS, plans):
             self.assertEqual(plan['max_parallel'], 1)
