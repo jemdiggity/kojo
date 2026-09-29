@@ -1,0 +1,8 @@
+# luna builds -> opus refactors -> opus reviews, luna fixes; at most 5 review-fix loops
+build    = luna6
+refactor = opus55:high
+review   = opus55:high
+fix      = luna6
+
+build -> refactor -> review
+review -[fail, max 5]-> fix -> review

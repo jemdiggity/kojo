@@ -98,6 +98,28 @@ def evaluation_score(report):
     }
 
 
+def split_counts(report, checkpoint):
+    """Passed/total for this checkpoint's own tests (core, functionality, error) and, separately,
+    for the regression tests carried over from earlier checkpoints."""
+    counts = {"new": [0, 0], "regression": [0, 0]}
+    for group, result in report.get("tests", {}).items():
+        own = group.startswith(f"checkpoint_{checkpoint}-")
+        bucket = counts["new" if own else "regression"]
+        bucket[0] += len(result["passed"])
+        bucket[1] += len(result["passed"]) + len(result["failed"]) + len(result.get("skipped", []))
+    return {name: {"passed": p, "total": t} for name, (p, t) in counts.items()}
+
+
+def pass_diff(report, before):
+    """(passing, broken, gained) against `before`, the tests passing after the previous session.
+    A test is Core/Functionality/Error in its own checkpoint and Regression later, so tests are
+    matched by checkpoint and name."""
+    passing = {(g.split("-")[0], t) for g, r in report.get("tests", {}).items() for t in r["passed"]}
+    failing = [(g, t) for g, r in report.get("tests", {}).items() for t in r["failed"]]
+    broken = sorted(f for f in failing if (f[0].split("-")[0], f[1]) in before)
+    return passing, broken, passing - before
+
+
 def rank(rows):
     return (
         sum(r["strict"] for r in rows),
