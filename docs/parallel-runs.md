@@ -96,3 +96,22 @@ In monitor-only mode, unavailable quota telemetry is recorded in
 `quota-errors.json` without terminating inference. Enforced quota mode still
 stops when usage cannot be checked. Provider failures still stop the chain;
 synthetic CLI error messages are not treated as model identity evidence.
+
+## Dashboard
+
+`python3.12 scripts/scb_dashboard.py [--port 8765] [--base CHECKOUT]` (or
+`python3.12 -m kojo.dashboard` with `src` on the path) serves a read-only local web
+page (stdlib only, no inference) with auto-refreshing batch/run progress,
+per-checkpoint test results and cost, the controller log tail, and the published
+comparison tables and figures. It only reads `intermediate/` and `results/` of `--base` (default: this checkout);
+point `--base` at the main checkout to see runs launched from other worktrees.
+
+Erosion and verbosity come from the offline static analysis in
+[code-quality.md](code-quality.md), not from the runs themselves. The dashboard reads any
+`quality.json` under `results/comparisons/` (both the per-run and suite formats), joins it to runs by
+run ID and checkpoint, and adds Erosion and Verbosity columns and trajectory charts to the
+Leaderboard; runs without an analysis show a dash. Analyses are per stage: rows tagged with a
+`stage` (or a `<stage>/checkpoint_N/quality.json` beside a graded checkpoint) attach to that stage, the
+table uses each checkpoint's final stage (e.g. fix), and earlier stages that a later stage replaced
+appear as dotted lines in the trajectory charts. The Results tab charts the published suite's
+`quality-suite/chart_aggregates.json`.
