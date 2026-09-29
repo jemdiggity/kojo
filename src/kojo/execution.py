@@ -119,9 +119,9 @@ def audit_shell_writes(sandbox, work):
             raise RuntimeError("Heredoc content was corrupted")
 
 
-def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False):
+def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False, effort="low"):
     run.mkdir(parents=True, exist_ok=True)
-    if model not in ("gpt-6-luna", "gpt-6-astra"):
+    if model not in ("gpt-6-luna", "gpt-6-astra", "gpt-5.6-sol", "gpt-6-sol"):
         raise ValueError("Unsupported experiment model")
     work = Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work")
     work.mkdir(parents=True, exist_ok=True)
@@ -135,7 +135,9 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     if instructions is not None:
         instruction_path.write_text(instructions)
     args = overrides(ignore_user_config=True)
-    args += ["-c", "model=" + json.dumps(model)]
+    if effort not in ("low", "medium", "high", "xhigh", "max"):
+        raise ValueError("Unsupported Codex effort")
+    args += ["-c", "model=" + json.dumps(model), "-c", "model_reasoning_effort=" + json.dumps(effort)]
     args += [
         "-c",
         "features.shell_tool=true",
@@ -167,8 +169,8 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     ]
 
 
-def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False):
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path, network_enabled)
+def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False, effort="low"):
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path, network_enabled, effort)
     received = queue.Queue()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -222,6 +224,8 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
             save(run / "audit-request.json", payload)
             if payload.get("model") != model:
                 raise RuntimeError("Requested model missing from audited request")
+            if payload.get("reasoning", {}).get("effort") != effort:
+                raise RuntimeError("Requested effort missing from audited request")
             serialized = json.dumps(payload)
             # Stock instructions explain skills generically; that is not a catalog.
             texts = [c.get("text", "") for m in payload.get("input", [])
@@ -310,6 +314,10 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                     if check.returncode == 0:
                         raise RuntimeError("Global temporary files readable")
                 network = subprocess.run(sandbox + [str(Path(sys._base_executable).resolve()), "-c", "import socket; socket.create_connection(('127.0.0.1', " + str(server.server_port) + "), timeout=1)"], capture_output=True)
+                if network_enabled:
+                    bind = subprocess.run(sandbox + [str(Path(sys._base_executable).resolve()), "-c", "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); s.listen(); s.close()"], capture_output=True)
+                    if bind.returncode:
+                        raise RuntimeError("Local server binding failed: " + bind.stderr.decode()[-1000:])
                 if (network.returncode == 0) != network_enabled:
                     raise RuntimeError("Native network policy does not match the requested setting")
                 link = work / ".audit-link"
@@ -367,7 +375,7 @@ def usage_from_events(path):
 
 
 def cost(usage, model="gpt-6-luna"):
-    multiplier = {"gpt-6-luna": 1, "gpt-6-astra": 100}[model]
+    multiplier = {"gpt-6-luna": 1, "gpt-6-astra": 100, "gpt-5.6-sol": 40, "gpt-6-sol": 20}[model]
     if usage is None:
         return None
     return multiplier * (
@@ -377,13 +385,30 @@ def cost(usage, model="gpt-6-luna"):
     ) / 1e6
 
 
+def observe_usage(meta, observations, run, *, required=False):
+    """Telemetry must not abort monitor-only execution or final cleanup."""
+    try:
+        sample = meta.usage()
+    except Exception as error:
+        path = run / "quota-errors.json"
+        errors = json.loads(path.read_text()) if path.exists() else []
+        errors.append({"time": time.time(), "error_type": type(error).__name__, "message": str(error)})
+        save(path, errors)
+        if required:
+            raise
+        return None
+    observations.append(sample)
+    save(run / "quota.json", observations)
+    return sample
+
+
 def run_session(
-    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False, work_path=None, network_enabled=False
+    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False, work_path=None, network_enabled=False, effort="low"
 ):
     if (run / "run.json").exists():
         raise RuntimeError("Attempt already exists; refusing automatic retry")
-    audit(run, instructions, runtime, skill, isolated_src, prompt, persist=instructions is None, model=model, work_path=work_path, network_enabled=network_enabled)
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model, work_path=work_path, network_enabled=network_enabled)
+    audit(run, instructions, runtime, skill, isolated_src, prompt, persist=instructions is None, model=model, work_path=work_path, network_enabled=network_enabled, effort=effort)
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model, work_path=work_path, network_enabled=network_enabled, effort=effort)
     cfg = json.loads((BASE / "configs/quota.json").read_text())
     observations = []
     process = None
@@ -393,7 +418,7 @@ def run_session(
         "status": "started",
         "model": model,
         "quota_monitor_only": monitor_only,
-        "reasoning": "low",
+        "reasoning": effort,
         "max_seconds": seconds,
         "fresh_conversation": True,
         "network_enabled": network_enabled,
@@ -402,7 +427,7 @@ def run_session(
     save(run / "run.json", row)
     try:
         meta = Metadata()
-        observations.append(meta.usage())
+        observe_usage(meta, observations, run, required=not monitor_only)
         if not monitor_only:
             enforce(observations[-1], cfg, [*prior_observations, *observations], True)
         row["skills_audit"] = meta.audit_skills(Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work"))
@@ -448,8 +473,7 @@ def run_session(
                 try:
                     process.wait(timeout=min(15, remaining))
                 except subprocess.TimeoutExpired:
-                    observations.append(meta.usage())
-                    save(run / "quota.json", observations)
+                    observe_usage(meta, observations, run, required=not monitor_only)
                     if not monitor_only:
                         enforce(
                             observations[-1], cfg, [*prior_observations, *observations], True,
@@ -471,9 +495,12 @@ def run_session(
         save(run / "run.json", row)
         if meta:
             try:
-                observations.append(meta.usage())
+                observe_usage(meta, observations, run)
             finally:
-                meta.close()
+                try:
+                    meta.close()
+                except Exception:
+                    pass
                 save(run / "quota.json", observations)
         else:
             save(run / "quota.json", observations)

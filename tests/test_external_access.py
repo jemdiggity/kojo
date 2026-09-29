@@ -23,6 +23,12 @@ class ExternalAccessTests(unittest.TestCase):
         self.assertEqual(r['events'][0]['kind'],'package_operation')
         self.assertIn('https://files.pythonhosted.org/packages/parser.whl',r['events'][0]['urls_in_output'])
 
+    def test_versioned_pip_executables_are_inventoried(self):
+        for command in ['pip3 install tree-sitter', '/usr/bin/pip3.12 install --target deps tree-sitter', 'python3 -m pip index versions tree-sitter']:
+            with self.subTest(command=command):
+                report=self.audit(command)
+                self.assertEqual(report['events'][0]['kind'],'package_operation')
+
     def test_benchmark_search_is_flagged_without_claiming_retrieval(self):
         r=self.audit('curl "https://www.google.com/search?q=SCBench+code_search+solutions"','curl: DNS failure')
         self.assertTrue(r['review_suggested'])

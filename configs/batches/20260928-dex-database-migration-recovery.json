@@ -1,0 +1,92 @@
+{
+  "batch_id": "20260928-dex-database-migration-recovery",
+  "max_parallel": 5,
+  "description": "User-approved infrastructure recovery; last completed checkpoint autodetected; Sonnet retained without rerun.",
+  "runs": [
+    {
+      "run_id": "20260928-database-migration-opus5-medium-02",
+      "factory_args": [
+        "--problem",
+        "database_migration",
+        "--build-model",
+        "claude-opus-5",
+        "--claude-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--resume-run",
+        "20260928-database-migration-opus5-medium-01"
+      ]
+    },
+    {
+      "run_id": "20260928-database-migration-opus55-medium-02",
+      "factory_args": [
+        "--problem",
+        "database_migration",
+        "--build-model",
+        "claude-opus-5-5",
+        "--claude-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--resume-run",
+        "20260928-database-migration-opus55-medium-01"
+      ]
+    },
+    {
+      "run_id": "20260928-database-migration-astra6-medium-02",
+      "factory_args": [
+        "--problem",
+        "database_migration",
+        "--build-model",
+        "gpt-6-astra",
+        "--codex-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--resume-run",
+        "20260928-database-migration-astra6-medium-01"
+      ]
+    },
+    {
+      "run_id": "20260928-database-migration-sol56-medium-02",
+      "factory_args": [
+        "--problem",
+        "database_migration",
+        "--build-model",
+        "gpt-5.6-sol",
+        "--codex-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--resume-run",
+        "20260928-database-migration-sol56-medium-01"
+      ]
+    },
+    {
+      "run_id": "20260928-database-migration-sol6-medium-02",
+      "factory_args": [
+        "--problem",
+        "database_migration",
+        "--build-model",
+        "gpt-6-sol",
+        "--codex-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--resume-run",
+        "20260928-database-migration-sol6-medium-01"
+      ]
+    }
+  ]
+}

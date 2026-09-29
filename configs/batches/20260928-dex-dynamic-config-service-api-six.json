@@ -1,0 +1,97 @@
+{
+  "batch_id": "20260928-dex-dynamic-config-service-api-six",
+  "max_parallel": 6,
+  "description": "User-approved Sonnet insertion and six-model continuation; original circuit results preserved.",
+  "runs": [
+    {
+      "run_id": "20260928-dynamic-config-service-api-opus5-medium-01",
+      "factory_args": [
+        "--problem",
+        "dynamic_config_service_api",
+        "--build-model",
+        "claude-opus-5",
+        "--claude-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-dynamic-config-service-api-opus55-medium-01",
+      "factory_args": [
+        "--problem",
+        "dynamic_config_service_api",
+        "--build-model",
+        "claude-opus-5-5",
+        "--claude-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-dynamic-config-service-api-astra6-medium-01",
+      "factory_args": [
+        "--problem",
+        "dynamic_config_service_api",
+        "--build-model",
+        "gpt-6-astra",
+        "--codex-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-dynamic-config-service-api-sol56-medium-01",
+      "factory_args": [
+        "--problem",
+        "dynamic_config_service_api",
+        "--build-model",
+        "gpt-5.6-sol",
+        "--codex-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-dynamic-config-service-api-sol6-medium-01",
+      "factory_args": [
+        "--problem",
+        "dynamic_config_service_api",
+        "--build-model",
+        "gpt-6-sol",
+        "--codex-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-dynamic-config-service-api-sonnet55-medium-01",
+      "factory_args": [
+        "--problem",
+        "dynamic_config_service_api",
+        "--build-model",
+        "claude-sonnet-5-5",
+        "--claude-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    }
+  ]
+}

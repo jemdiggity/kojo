@@ -40,6 +40,18 @@ and reproduction instructions before spending allowance.
 python3.12 -m unittest discover -s tests -v
 ```
 
+## Parallel runs
+
+Independent SCB factories can run concurrently while each checkpoint chain stays
+sequential. Inspect an example without inference:
+
+```sh
+python3.12 scripts/scb_batch.py configs/batches/parallel-example.json
+```
+
+Use `--audit` for concurrent no-inference CLI checks, or `--run --jobs 2` to execute
+the configured runs. [Configuration, tmux monitoring, and cancellation](docs/parallel-runs.md).
+
 ## Repository layout
 
 ```text

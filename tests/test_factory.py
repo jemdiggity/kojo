@@ -69,6 +69,30 @@ class FactoryTests(unittest.TestCase):
         usage={'input_tokens':1000,'cached_input_tokens':500,'output_tokens':100}
         self.assertAlmostEqual(cost(usage,'gpt-6-astra'),100*cost(usage))
 
+    def test_sol_high_uses_requested_effort_and_default_output_limit(self):
+        from kojo.factory import parse_args
+        args, models, options = parse_args(['audit', '--run-id', 'sol-audit',
+            '--build-model', 'gpt-5.6-sol', '--codex-effort', 'high', '--no-review'])
+        self.assertEqual(options['build'], {'effort': 'high'})
+        with tempfile.TemporaryDirectory() as d:
+            cmd = command(Path(d), None, model=models['build'], **options['build'])
+        self.assertIn('model="gpt-5.6-sol"', cmd)
+        efforts = [v for v in cmd if v.startswith('model_reasoning_effort=')]
+        self.assertEqual(efforts[-1], 'model_reasoning_effort="high"')
+        self.assertFalse(any('max_output_tokens' in v for v in cmd))
+        self.assertAlmostEqual(cost({'input_tokens':1000,'cached_input_tokens':500,
+                                     'output_tokens':100}, 'gpt-5.6-sol'), .0042)
+
+    def test_opus55_defaults_do_not_override_token_limits(self):
+        from kojo.claude_execution import environment
+        from kojo.factory import parse_args
+        _, _, options = parse_args(['audit', '--run-id', 'opus-audit',
+            '--build-model', 'claude-opus-5-5', '--claude-effort', 'high', '--no-review'])
+        self.assertEqual(options['build'], {'effort': 'high'})
+        env = environment('high', model='claude-opus-5-5')
+        self.assertNotIn('MAX_THINKING_TOKENS', env)
+        self.assertNotIn('CLAUDE_CODE_MAX_OUTPUT_TOKENS', env)
+
     def test_builder_uses_only_current_spec_and_upstream_renderer(self):
         spec=SimpleNamespace(spec=lambda name,n:f'PUBLIC SPEC {n}',b=SimpleNamespace(python='/python'))
         with patch('kojo.scb_prompt.render_checkpoint',return_value='upstream prompt') as render:

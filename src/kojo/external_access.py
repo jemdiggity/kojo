@@ -7,12 +7,12 @@ import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit, unquote
 
 URL = re.compile(r"(?:https?|git|ssh)://[^\s<>\"'`\\]+", re.I)
-NETWORK = re.compile(r'\b(?:curl|wget|urlopen|urlretrieve|urllib3|git\s+(?:clone|fetch|pull|ls-remote)|pip\s+(?:install|download)|uv\s+(?:add|sync|pip)|npm\s+(?:install|ci)|cargo\s+(?:fetch|install)|go\s+get|requests\.(?:get|post|request)|httpx\.(?:get|post|request)|fetch|socket\.(?:connect|create_connection)|Invoke-WebRequest)\b', re.I)
+NETWORK = re.compile(r'\b(?:curl|wget|urlopen|urlretrieve|urllib3|git\s+(?:clone|fetch|pull|ls-remote)|pip(?:\d+(?:\.\d+)*)?\s+(?:install|download|index)|uv\s+(?:add|sync|pip)|npm\s+(?:install|ci)|cargo\s+(?:fetch|install)|go\s+get|requests\.(?:get|post|request)|httpx\.(?:get|post|request)|fetch|socket\.(?:connect|create_connection)|Invoke-WebRequest)\b', re.I)
 BENCHMARK = re.compile(r'\b(?:scbench|slop[\s_-]*code(?:[\s_-]*bench)?|scb[\s_-]*(?:problems|bench))\b', re.I)
 SEARCH = re.compile(r'search|google|bing|duckduckgo|query|\bq=', re.I)
 TASK = re.compile(r'\bcode[\s_-]*search\b', re.I)
 SOLUTION = re.compile(r'solution|answer|reference[\s_-]*implementation|test_checkpoint|checkpoint_[1-5]', re.I)
-PACKAGE = re.compile(r'\b(?:pip\s+(?:install|download)|uv\s+(?:add|sync|pip)|npm\s+(?:install|ci)|cargo\s+(?:fetch|install)|go\s+get)\b', re.I)
+PACKAGE = re.compile(r'\b(?:pip(?:\d+(?:\.\d+)*)?\s+(?:install|download|index)|uv\s+(?:add|sync|pip)|npm\s+(?:install|ci)|cargo\s+(?:fetch|install)|go\s+get)\b', re.I)
 CALLS = {'custom_tool_call', 'function_call', 'web_search_call'}
 OUTPUTS = {'custom_tool_call_output', 'function_call_output', 'web_search_call_output'}
 
@@ -70,6 +70,16 @@ def audit_external_sources(path):
         except ValueError:errors.append(number)
     calls=[];outputs={}
     for number,row in rows:
+        if row.get('type') in {'assistant','user'}:
+            content=row.get('message',{}).get('content',[])
+            if isinstance(content,list):
+                for block in content:
+                    if block.get('type')=='tool_use':
+                        calls.append((number,{'type':'function_call','call_id':block['id'],
+                                              'name':block['name'],'input':block.get('input',{})}))
+                    elif block.get('type')=='tool_result':
+                        outputs.setdefault(block['tool_use_id'],[]).append((number,{'output':block.get('content')}))
+            continue
         if row.get('type')!='response_item':continue
         p=row.get('payload',{});kind=p.get('type');identity=p.get('call_id',p.get('id'))
         if kind in CALLS:calls.append((number,p))

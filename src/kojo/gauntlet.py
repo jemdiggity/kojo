@@ -61,8 +61,9 @@ def skill_valid(text, cfg):
 
 def hashes(directory, exclude_generated=False):
     result = {}
+    environments={p.parent for p in directory.rglob('pyvenv.cfg')} if exclude_generated else set()
     for path in sorted(directory.rglob("*")):
-        if exclude_generated and (any(part in EXCLUDED for part in path.relative_to(directory).parts) or path.name.endswith(".pyc")):
+        if exclude_generated and (any(part in EXCLUDED for part in path.relative_to(directory).parts) or path.name.endswith(".pyc") or any(path==env or env in path.parents for env in environments)):
             continue
         if path.is_symlink():
             raise RuntimeError("Symlinks are not allowed in frozen submissions")
@@ -73,7 +74,7 @@ def hashes(directory, exclude_generated=False):
 
 def copy_code(source, target):
     def ignore(directory, names):
-        return [n for n in names if n in EXCLUDED or n.endswith(".pyc")]
+        return [n for n in names if n in EXCLUDED or n.endswith(".pyc") or (Path(directory)/n/'pyvenv.cfg').is_file() or (Path(directory)/n).is_socket()]
 
     if source:
         hashes(source, exclude_generated=True)
@@ -102,14 +103,14 @@ def rank(rows):
     )
 
 
-def preflight(write=False):
+def preflight(write=False, *, check_codex=True):
     cfg = load_config()
     check_repositories(cfg)
     if (cfg["model"], cfg["reasoning"]) != ("gpt-6-luna", "low"):
         raise RuntimeError("This adapter is pinned to Luna low reasoning")
     if sys.version.split()[0] != cfg["python"]:
         raise RuntimeError("Use Python " + cfg["python"])
-    if (
+    if check_codex and (
         subprocess.check_output(["codex", "--version"], text=True).strip()
         != "codex-cli " + cfg["codex_version"]
     ):

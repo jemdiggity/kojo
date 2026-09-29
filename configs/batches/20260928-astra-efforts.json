@@ -1,0 +1,46 @@
+{
+  "batch_id": "20260928-astra-efforts",
+  "max_parallel": 3,
+  "description": "User-approved three fresh code_search Astra baselines, differing only in low/medium/high reasoning effort. Default output limit, 30 minutes per checkpoint, network enabled, no review, usage reporting without quota stops. Current pinned SCB suite, not paper replication.",
+  "runs": [
+    {
+      "run_id": "20260928-code-search-astra-low-default-01",
+      "factory_args": [
+        "--build-model",
+        "gpt-6-astra",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-code-search-astra-medium-default-01",
+      "factory_args": [
+        "--build-model",
+        "gpt-6-astra",
+        "--codex-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-code-search-astra-high-default-01",
+      "factory_args": [
+        "--build-model",
+        "gpt-6-astra",
+        "--codex-effort",
+        "high",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    }
+  ]
+}

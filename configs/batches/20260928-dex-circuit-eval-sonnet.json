@@ -1,0 +1,22 @@
+{
+  "batch_id": "20260928-dex-circuit-eval-sonnet",
+  "max_parallel": 1,
+  "description": "User-approved Sonnet insertion and six-model continuation; original circuit results preserved.",
+  "runs": [
+    {
+      "run_id": "20260928-circuit-eval-sonnet55-medium-01",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "claude-sonnet-5-5",
+        "--claude-effort",
+        "medium",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    }
+  ]
+}

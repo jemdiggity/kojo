@@ -1,0 +1,33 @@
+{
+  "batch_id": "20260928-opus55-sol56-high",
+  "max_parallel": 2,
+  "description": "User-requested fresh code_search baselines: high effort, default CLI output limits, 30 minutes per checkpoint, network on, no review, report-only usage. Same newer SCB dataset as previous runs; not a paper replication.",
+  "runs": [
+    {
+      "run_id": "20260928-code-search-opus55-high-default-01",
+      "factory_args": [
+        "--build-model",
+        "claude-opus-5-5",
+        "--claude-effort",
+        "high",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "20260928-code-search-sol56-high-default-01",
+      "factory_args": [
+        "--build-model",
+        "gpt-5.6-sol",
+        "--codex-effort",
+        "high",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    }
+  ]
+}

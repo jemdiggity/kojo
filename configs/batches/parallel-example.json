@@ -1,0 +1,14 @@
+{
+  "batch_id": "parallel-example",
+  "max_parallel": 2,
+  "runs": [
+    {
+      "run_id": "parallel-sonnet-a",
+      "factory_args": ["--build-model", "claude-sonnet-4-6", "--claude-effort", "medium", "--claude-max-output-tokens", "128000", "--seconds-per-session", "1800", "--no-review"]
+    },
+    {
+      "run_id": "parallel-sonnet-b",
+      "factory_args": ["--build-model", "claude-sonnet-4-6", "--claude-effort", "medium", "--claude-max-output-tokens", "128000", "--seconds-per-session", "1800", "--no-review"]
+    }
+  ]
+}

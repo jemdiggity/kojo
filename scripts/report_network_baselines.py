@@ -8,6 +8,7 @@ from network_baselines import PLANS
 
 BASE=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(BASE/'src'))
+from kojo.registry import register_runs
 from kojo.gauntlet import hashes
 from kojo.execution import cost
 from kojo.external_access import audit_external_sources
@@ -99,10 +100,7 @@ def main():
             '','Reproduce with new IDs in `scripts/network_baselines.py`; `--run` spends usage. Rebuild this report with `python3.12 scripts/report_network_baselines.py`. Pins and instruction hashes are recorded in each manifest.']
     for rid,_ in PLANS:lines.append(f"- [{rid}](../../runs/{rid}/RESULTS.md)")
     (OUT/'RESULTS.md').write_text('\n'.join(lines)+'\n')
-    index=BASE/'results/runs/index.json';items=read(index)
-    for rid,_ in PLANS:
-        if not any(x['run_id']==rid for x in items):items.append({'run_id':rid,'results':f'results/runs/{rid}','intermediate':f'intermediate/runs/{rid}','report':f'results/runs/{rid}/RESULTS.md','logs':f'results/runs/{rid}/TRANSCRIPTS.md'})
-    save(index,items)
+    register_runs([{'run_id':rid,'results':f'results/runs/{rid}','intermediate':f'intermediate/runs/{rid}','report':f'results/runs/{rid}/RESULTS.md','logs':f'results/runs/{rid}/TRANSCRIPTS.md'} for rid,_ in PLANS])
     print('\n'.join(lines[:15]))
 
 if __name__=='__main__':main()
