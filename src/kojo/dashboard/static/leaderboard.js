@@ -5,7 +5,7 @@ import { hashOptions, render } from './view.js';
 
 const METRICS = { strict: 'Strict', iso: 'Iso.', core: 'Core', partial: 'Partial' }; // % of checkpoints; the chart metric
 const QUALITY = { erosion: 'Erosion', verbosity: 'Verbosity' }; // static analysis, lower is better; columns and charts only
-const FILTERS = { batch: 'Batch', problem: 'Problem', model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort' };
+const FILTERS = { batch: 'Batch', run: 'Run', problem: 'Problem', model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort' };
 const GROUPS = { model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort', problem: 'Problem', batch: 'Batch', run: 'Run' };
 const PALETTE = ['#b3d4ff', '#fdf7b5', '#86e0c4', '#c76ea0', '#f4b183', '#a9a3f0', '#9adf8f', '#e58f8f'];
 const DEFINITIONS = `<b>Strict</b>: every test passes, including regressions. <b>Iso.</b>: every test introduced by
@@ -15,14 +15,13 @@ const DEFINITIONS = `<b>Strict</b>: every test passes, including regressions. <b
   standard deviation across checkpoints.`;
 
 // ---- state <-> URL -------------------------------------------------------
-// #leaderboard/<metric>/<by>/<then>?<filter>=a,b&experiment=<id>
+// #leaderboard/<metric>/<by>/<then>?<filter>=a,b   (runs are chosen only by filters)
 
 export function parseState({ parts, params }) {
   const [metric, by, then] = parts;
   const state = {
     metric: metric in METRICS ? metric : 'strict',
     by: by in GROUPS ? by : 'model',
-    experiment: params.get('experiment') || '',
     filters: {},
   };
   state.then = then in GROUPS && then !== state.by ? then : '';
@@ -35,13 +34,12 @@ export function parseState({ parts, params }) {
 export function stateHash(state) {
   const params = new URLSearchParams();
   for (const [name, values] of Object.entries(state.filters)) if (values.length) params.set(name, values.join(','));
-  if (state.experiment) params.set('experiment', state.experiment);
   const query = params.toString();
   return `leaderboard/${state.metric}/${state.by}/${state.then}${query ? `?${query}` : ''}`;
 }
 
 function apiQuery(state) {
-  const query = new URLSearchParams({ by: state.by, then: state.then, experiment: state.experiment });
+  const query = new URLSearchParams({ by: state.by, then: state.then });
   for (const [name, values] of Object.entries(state.filters)) values.forEach((v) => query.append(name, v));
   return query;
 }
@@ -81,17 +79,9 @@ function controls(state, data) {
   const groups = choose(GROUPS, (k) => k === state.by, (k) => next(state, { by: k, then: state.then === k ? '' : state.then }));
   const thenChoices = { '': '— none —', ...Object.fromEntries(Object.entries(GROUPS).filter(([k]) => k !== state.by)) };
   const thens = choose(thenChoices, (k) => k === state.then, (k) => next(state, { then: k }));
-  const experiments = hashOptions([
-    { hash: h(next(state, { experiment: '' })), label: '— all runs —', selected: !state.experiment },
-    ...data.experiments.map((e) => ({
-      hash: h(next(state, { experiment: e.id, filters: {}, by: e.vary, then: experimentThen(e) })),
-      label: h(experimentLabel(e)),
-      selected: e.id === state.experiment,
-    })),
-  ]);
+  const experiments = hashOptions(comparisonOptions(state, data));
   const filterMenus = Object.entries(FILTERS).map(([name, label]) => filterMenu(state, data, name, label)).join('');
-  const active = state.experiment || Object.values(state.filters).some((v) => v.length);
-  const clear = active ? `<a href="#${h(next(state, { filters: {}, experiment: '' }))}">clear filters</a>` : '';
+  const clear = hasFilters(state) ? `<a href="#${h(next(state, { filters: {} }))}">clear filters</a>` : '';
   return `
     <div class="ctl">
       <label>Metric <select data-nav>${metrics}</select></label>
@@ -100,35 +90,71 @@ function controls(state, data) {
       <span class="muted">% of checkpoints, final stage output graded per checkpoint</span>
     </div>
     <div class="ctl">
-      <label>Experiment <select class="wide" data-nav>${experiments}</select></label>
+      <label>Suggested comparison <select class="wide" data-nav>${experiments}</select></label>
       ${filterMenus}
       ${clear}
     </div>
     <p class="muted">${poolingNote(state, data)}</p>`;
 }
 
-/** A dropdown of checkboxes; each box links to the state with that value toggled. */
+/**
+ * A dropdown holding a multi-select list: click one value, shift-click a range, ctrl/cmd-click to toggle.
+ * The page wires its change event (see wireFilters) because the hash depends on the whole selection.
+ */
 function filterMenu(state, data, name, label) {
   const chosen = state.filters[name] || [];
-  const boxes = data.facets[name].map(([value, count]) => {
-    const toggled = chosen.includes(value) ? chosen.filter((v) => v !== value) : [...chosen, value];
-    const hash = h(next(state, { filters: { ...state.filters, [name]: toggled } }));
-    return `<label><input type="checkbox" data-nav="${hash}"${chosen.includes(value) ? ' checked' : ''}> ${h(value)} <span class="muted">${count}</span></label>`;
+  const options = data.facets[name]
+    .map(([value, count]) => `<option value="${h(value)}"${chosen.includes(value) ? ' selected' : ''}>${h(value)} (${count})</option>`)
+    .join('');
+  const size = Math.min(Math.max(data.facets[name].length, 2), 10);
+  return `<details class="menu" data-key="filter-${name}"><summary>${label}${chosen.length ? ` (${chosen.length})` : ''}</summary>
+    <div class="menu-box"><select multiple size="${size}" data-filter="${name}" aria-label="${label}">${options}</select></div></details>`;
+}
+
+/** Navigate to the state whose `name` filter is the list's current selection. */
+function wireFilters(state) {
+  document.querySelectorAll('select[data-filter]').forEach((list) => {
+    list.addEventListener('change', () => {
+      const values = [...list.selectedOptions].map((option) => option.value);
+      location.hash = next(state, { filters: { ...state.filters, [list.dataset.filter]: values } });
+    });
   });
-  return `<details class="menu" data-key="filter-${name}"><summary>${label}${chosen.length ? ` (${chosen.length})` : ''}</summary><div class="menu-box">${boxes.join('')}</div></details>`;
+}
+
+const hasFilters = (state) => Object.values(state.filters).some((values) => values.length);
+const sameValues = (a, b) => a.length === b.length && a.every((value) => b.includes(value));
+
+/**
+ * Suggested comparisons are only presets: picking one ticks the batch boxes (and groups by what
+ * varies), after which the filters can be edited like any others.
+ */
+function comparisonOptions(state, data) {
+  const active = Object.entries(state.filters).filter(([, values]) => values.length);
+  const matches = (e) => active.length === 1 && active[0][0] === 'batch' && sameValues(active[0][1], e.batches);
+  const presets = data.experiments.map((e) => ({
+    hash: h(next(state, { filters: { batch: e.batches }, by: e.vary, then: experimentThen(e) })),
+    label: h(experimentLabel(e)),
+    selected: matches(e),
+  }));
+  const custom = active.length && !data.experiments.some(matches);
+  return [
+    { hash: h(next(state, { filters: {} })), label: '— all runs —', selected: !active.length },
+    ...(custom ? [{ hash: h(next(state, {})), label: '— custom filters —', selected: true }] : []),
+    ...presets,
+  ];
 }
 
 const experimentLabel = (e) => {
   const fixedText = Object.entries(e.fixed).map(([name, values]) => `${name}=${values.join('/')}`).join(', ');
-  return `${FILTERS[e.vary]} varies (${e.values.length}) across ${plural(e.batches.length, 'batch')} · ${fixedText} · ${plural(e.runs.length, 'run')}`;
+  return `${FILTERS[e.vary]} varies (${e.values.length}) across ${plural(e.batches.length, 'batch', 'batches')} · ${fixedText} · ${plural(e.runs.length, 'run')}`;
 };
 
 /** The experiment's second axis: the first held setting that still varies inside each batch. */
 const experimentThen = (e) => Object.entries(e.fixed).find(([, values]) => values.length > 1)?.[0] ?? '';
 
-/** Which settings the included runs share, and which differ (batch is bookkeeping, not a setting). */
+/** Which settings the included runs share, and which differ (batch and run are identifiers, not settings). */
 function poolingNote(state, data) {
-  const settings = Object.entries(data.pooled).filter(([name]) => name !== 'batch');
+  const settings = Object.entries(data.pooled).filter(([name]) => name !== 'batch' && name !== 'run');
   const same = settings.filter(([, values]) => values.length === 1);
   const mixed = settings.filter(([name, values]) => values.length > 1 && name !== state.by && name !== state.then);
   let note = `Pooling ${plural(data.runs, 'run')}`;
@@ -221,4 +247,5 @@ export async function leaderboardView(route) {
     ? bars(rows, state) + table(rows, state) + qualityCharts(data, state)
     : '<p class="muted">No graded runs found.</p>';
   render(`${controls(state, data)}${content}`);
+  wireFilters(state);
 }

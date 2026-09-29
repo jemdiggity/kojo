@@ -14,6 +14,7 @@ export function render(html) {
  *   [data-href="<hash>"]           click goes to that hash
  *   [data-back]                    click goes back in history (falling back to its href)
  *   select[data-nav] / input[data-nav="<hash>"]   change goes to the select's value / the input's hash
+ * (multi-select lists are wired by the page that owns them, since their hash depends on the whole selection)
  */
 export function installNavigation() {
   const go = (hash) => {
@@ -32,6 +33,7 @@ export function installNavigation() {
   });
   document.addEventListener('change', (event) => {
     const { target } = event;
+    if (!target.matches('[data-nav]')) return;
     const hash = target.tagName === 'SELECT' ? target.value : target.dataset.nav;
     if (hash) go(hash);
   });
