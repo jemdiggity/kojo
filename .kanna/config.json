@@ -1,5 +1,5 @@
 {
   "$schema": "https://schemas.kanna.build/config.schema.json",
-  "setup": ["uv sync --frozen"],
+  "setup": ["sh scripts/scb_setup.sh"],
   "test": ["uv run python -m unittest discover -s tests"]
 }

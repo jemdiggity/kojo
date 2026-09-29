@@ -88,6 +88,19 @@ Software dependencies: macOS, Git, uv, Python 3, and Node.js/npm. Setup installs
 sh scripts/scb_setup.sh
 ```
 
+Kanna runs this setup automatically for every new worktree via `.kanna/config.json`.
+Ordinary checkouts run the normal installer each time. Linked Git worktrees (with
+or without Kanna) reuse a versioned cache in `~/Library/Caches/kojo/setup`; set
+`KOJO_SETUP_CACHE` to choose another location. The first setup fills the cache;
+subsequent fresh worktrees measured 2.2–2.5 seconds locally. Cache keys include
+setup scripts, lockfiles, Python version, and platform.
+
+Worktrees share the cached runner and provider CLIs at stable paths. Vendor
+checkouts use macOS copy-on-write copies, and solver environments stay local.
+Treat shared installations as read-only and retain the cache while worktrees use
+it. Existing installations from before caching continue using the normal installer.
+Setup fetches only pinned upstream commits and preserves dirty checkouts.
+
 Preview and audit without inference, then run:
 
 ```sh
