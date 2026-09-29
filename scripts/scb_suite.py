@@ -8,6 +8,10 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+# Runs must use the pinned project interpreter, however this script is invoked.
+VENV_PYTHON = ROOT / '.venv/bin/python'
+if VENV_PYTHON.exists() and Path(sys.prefix).resolve() != (ROOT / '.venv').resolve():
+    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), *sys.argv])
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.batch import identifier, load_plan
 from kojo.known_skill_sets import KNOWN, resolve
