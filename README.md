@@ -74,29 +74,54 @@ future experiment, with no weight training or fine-tuning involved.
 - [Full suite analysis and reproduction](results/comparisons/20260928-dex-subset/SUITE_ANALYSIS.md)
 - [Detailed code-quality measurements](results/comparisons/20260928-dex-subset/quality-suite/QUALITY.md)
 - [Earlier build/review/fix experiment](results/comparisons/20260928-checkpoint-factory-10m/RESULTS.md)
-- [Setup and reproduction](docs/reproduction.md)
 - [Protocol and context isolation](docs/protocol.md)
 - [Local run registry](results/runs/README.md)
 
-## Quick start
+## Run the experiment
 
-Python 3.12.8 is pinned. The controller uses only the standard library; Codex CLI,
-tmux, and SCB's evaluator are separate tools. From the repository root:
+Software dependencies: macOS, Git, uv, Python 3, and Node.js/npm. Setup installs Python 3.12.8, Codex CLI 0.158.0, Claude Code 2.1.283, and the pinned benchmark dependencies. Authenticated provider accounts with access to the selected models are required. No Docker or tmux is needed.
 
-```sh
-python3.12 scripts/kojo.py status --once
-python3.12 scripts/kojo.py report
-python3.12 scripts/kojo.py tmux watch
-tmux attach -t scb
-```
-
-These commands do not call a model. The monitor displays saved history and follows
-new events. Generation requires the explicit `generate` command; see the protocol
-and reproduction instructions before spending allowance.
+**Account risk:** Anthropic may suspend or terminate accounts for terms violations. Its consumer terms restrict automated access except where explicitly permitted. Kojo invokes the official Claude Code CLI, but that is not a guarantee that this benchmark workload is permitted under your subscription. Review the [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) and [Claude Code usage rules](https://code.claude.com/docs/en/legal-and-compliance) before running it. See Anthropic’s [enforcement policy](https://www.anthropic.com/transparency/system-trust-reporting).
 
 ```sh
-python3.12 -m unittest discover -s tests -v
+sh scripts/scb_setup.sh
 ```
+
+Preview and audit without inference, then run:
+
+```sh
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56 --audit
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56 --run
+```
+
+Select models with a space-separated list:
+
+```sh
+.venv/bin/python scripts/scb_suite.py --id repro-02 --models sonnet55 opus55 astra6 --run
+```
+
+Supported suite aliases map to exact provider IDs; they are not moving “latest” aliases:
+
+| CLI alias | Provider model ID |
+|---|---|
+| `sonnet55` | `claude-sonnet-5-5` |
+| `opus55` | `claude-opus-5-5` |
+| `sol6` | `gpt-6-sol` |
+| `astra6` | `gpt-6-astra` |
+| `opus5` | `claude-opus-5` |
+| `sol56` | `gpt-5.6-sol` |
+| `fable51` | `claude-fable-5-1` |
+
+`--models` is required; no models are selected implicitly. Duplicate models are rejected. Use the same selection for audit and run.
+
+Use a fresh ID for each experiment. Use `--models sonnet55` for a single model. The example runs six models through all three problems: 102 sessions
+at medium effort, with 30 minutes per session and no review. **`--run` consumes
+provider allowance; usage is reported but there is no spending cap.** Your accounts
+must have access to the selected models. No Docker or tmux is required.
+
+Progress appears in the terminal. Results are saved under `results/runs/`; raw
+transcripts and logs under `intermediate/runs/`. Ctrl-C stops the controller.
 
 ## Parallel runs
 

@@ -30,7 +30,7 @@ figs=[(1,'strict-pass-bars','Strict pass rate'),(2,'checkpoint-grid','Checkpoint
 figure_numbers=json.loads((BASE/'figure_numbers.json').read_text())
 for _,file,title in figs:
  n=figure_numbers[file]
- lines+=['',f'### Figure {n}. '+(title.replace('circuit_eval','`circuit_eval`')),'',f'![Figure {n}. {title}]({BASE}/charts/figure-{n:02d}-{file}.png)']
+ lines+=['',f'### Figure {n}. '+(title.replace('circuit_eval','`circuit_eval`')),'',f'![Figure {n}. {title}](../charts/figure-{n:02d}-{file}.png)']
 lines+=['','## Metric and coverage details','',
 '- Analyzer: `scb-check==0.1.3`, Python 3.12.8, with dependencies pinned in `scripts/quality-requirements.lock`; the same rule engine and `include_all=True` setting used by the pinned benchmark runner.',
 '- Erosion is the analyzer’s share of complexity mass in high-complexity callables; verbosity is its union of flagged lines, structural clone lines, and trivial-wrapper lines divided by source LOC. The trivial-wrapper term and current rules mean this is not an exact recreation of the historical paper analyzer.',

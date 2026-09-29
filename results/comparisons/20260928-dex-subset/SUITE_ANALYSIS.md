@@ -34,27 +34,27 @@ Costs include failed attempts and deduplicate native session IDs across original
 
 ## At a glance
 
-![Figure 1. Strict checkpoint pass rates](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-01-strict-pass-bars.png)
+![Figure 1. Strict checkpoint pass rates](charts/figure-01-strict-pass-bars.png)
 
 **Figure 1. Strict checkpoint pass rates.**
 
-![Figure 2. All checkpoint results](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-02-checkpoint-grid.png)
+![Figure 2. All checkpoint results](charts/figure-02-checkpoint-grid.png)
 
 **Figure 2. All checkpoint results.**
 
 ## How failures accumulate
 
-![Figure 3. Failing tests by checkpoint](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-03-failure-trajectories.png)
+![Figure 3. Failing tests by checkpoint](charts/figure-03-failure-trajectories.png)
 
 **Figure 3. Failing tests by checkpoint.**
 
 These charts follow the questions in [Dex Horthy’s write-up](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/benchmarking-opus-5-on-slop-code-bench.md), using our own measurements. Failing tests are not necessarily distinct defects. Skips are excluded from failure counts. `dynamic_config_service_api` checkpoints 3–4 intentionally exclude prior tests, so changes in these curves do not by themselves establish regressions.
 
-![Figure 4. Final-checkpoint failures by problem](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-04-final-failures.png)
+![Figure 4. Final-checkpoint failures by problem](charts/figure-04-final-failures.png)
 
 **Figure 4. Final-checkpoint failures by problem.**
 
-![Figure 5. Problem cost versus final-checkpoint failures](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-05-cost-failures.png)
+![Figure 5. Problem cost versus final-checkpoint failures](charts/figure-05-cost-failures.png)
 
 **Figure 5. Problem cost versus final-checkpoint failures.**
 
@@ -62,11 +62,11 @@ These charts follow the questions in [Dex Horthy’s write-up](https://github.co
 
 Figures 6–7 add Dexter’s Opus 4.8, Sonnet 5 and Opus 5 results, with separate study labels and chronological model ordering. Totals cover only the same three problems and sum their final failing-test counts once. These are descriptive cross-study comparisons: Dexter’s exact test collections, effort and skipped-test counts are unavailable. Failing tests are not necessarily distinct defects.
 
-![Figure 6. Final failing tests per problem, model and study](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-06-external-final-failures.png)
+![Figure 6. Final failing tests per problem, model and study](charts/figure-06-external-final-failures.png)
 
 **Figure 6. Final failing tests per problem, model and study.**
 
-![Figure 7. Total final failing tests across the three problems](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-07-external-total-failures.png)
+![Figure 7. Total final failing tests across the three problems](charts/figure-07-external-total-failures.png)
 
 **Figure 7. Total final failing tests across the three problems.**
 
@@ -74,7 +74,7 @@ The original SCB paper does not supply matching final failing-test counts in its
 
 ## Partial-pass value versus model release date
 
-![Figure 8. Partial-pass value versus model release date](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-08-value-release-date.png)
+![Figure 8. Partial-pass value versus model release date](charts/figure-08-value-release-date.png)
 
 **Figure 8. Partial-pass value versus model release date.**
 
@@ -141,43 +141,43 @@ All 102 checkpoint snapshots now have static quality analysis. The [complete qua
 
 Across the three final snapshots, Opus 5 leaves 21.8K Python SLOC versus Sol 6’s 3.8K. Opus 5 has the lowest mean final erosion (0.455) despite the weakest strict result. Astra has the lowest all-Python verbosity (0.252), but excluding test-named files raises that to 0.366. These metrics describe code structure; they do not prove maintainability or correctness.
 
-![Figure 9. Final source volume and function counts](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-09-code-volume.png)
+![Figure 9. Final source volume and function counts](charts/figure-09-code-volume.png)
 
 **Figure 9. Final source volume and function counts.**
 
 Figure 9 counts Python function and method definitions in each final submission, summed across the three problems. These are definitions, not runtime calls. Generated tests are included; earlier checkpoint copies are not counted again.
 
-![Figure 10. Test-named versus other Python code](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-10-test-code-split.png)
+![Figure 10. Test-named versus other Python code](charts/figure-10-test-code-split.png)
 
 **Figure 10. Test-named versus other Python code.**
 
-![Figure 11. Complexity and duplication trajectories](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-11-complexity-duplication.png)
+![Figure 11. Complexity and duplication trajectories](charts/figure-11-complexity-duplication.png)
 
 **Figure 11. Complexity and duplication trajectories.**
 
-![Figure 12. Function count versus mean complexity](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-12-functions-complexity.png)
+![Figure 12. Function count versus mean complexity](charts/figure-12-functions-complexity.png)
 
 **Figure 12. Function count versus mean complexity.**
 
-![Figure 13. Functions referenced once](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-13-single-use-functions.png)
+![Figure 13. Functions referenced once](charts/figure-13-single-use-functions.png)
 
 **Figure 13. Functions referenced once.**
 
-![Figure 14. Paper-style erosion and verbosity across normalized progress](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-14-quality-progress.png)
+![Figure 14. Paper-style erosion and verbosity across normalized progress](charts/figure-14-quality-progress.png)
 
 **Figure 14. Paper-style erosion and verbosity across normalized progress.**
 
-![Figure 15. Erosion and verbosity by problem](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-15-quality-by-problem.png)
+![Figure 15. Erosion and verbosity by problem](charts/figure-15-quality-by-problem.png)
 
 **Figure 15. Erosion and verbosity by problem.**
 
-![Figure 16. Quality scores with and without generated tests](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-16-quality-test-sensitivity.png)
+![Figure 16. Quality scores with and without generated tests](charts/figure-16-quality-test-sensitivity.png)
 
 **Figure 16. Quality scores with and without generated tests.**
 
 In Figure 16, each row is one model. The circle is its score with all discovered Python; the square is its score after removing test-named files and rerunning the analyzer. The connecting line shows how much including tests changes the measurement, not improvement over time. Both axes run from 0 to 1; lower is better according to these proxies. Each point averages the three final problem snapshots equally. For example, Astra’s verbosity changes from 0.252 with tests to 0.366 without them. Test detection uses filenames, so this is an approximate separation.
 
-![Figure 17. Relative metric growth in circuit_eval](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-17-metric-spread.png)
+![Figure 17. Relative metric growth in circuit_eval](charts/figure-17-metric-spread.png)
 
 **Figure 17. Relative metric growth in circuit_eval.**
 
@@ -201,22 +201,48 @@ All 102 accepted checkpoints passed frozen-source hash, source-handoff, native-t
 
 Horthy reported Opus 5 at 4/17 on this named subset. Ours also scores 4/17, but on different checkpoints: ours `circuit_eval` 1–2, `database_migration` 1, `dynamic_config_service_api` 1; his `circuit_eval` 1–3 and `database_migration` 1. His effort and exact dataset pin are unspecified in the fetched write-up. Equal totals do not constitute an exact replication. One trajectory per model and three problems are preliminary evidence, not a statistically established universal ranking.
 
-## Reproduction
+## Run the experiment yourself
 
-Run from the repository root; raw receipts must remain available. The reporting environment is separate from the active harness.
+Software dependencies: macOS, Git, uv, Python 3, and Node.js/npm. Setup installs Python 3.12.8, Codex CLI 0.158.0, Claude Code 2.1.283, and the pinned benchmark dependencies. Authenticated provider accounts with access to the selected models are required. No Docker or tmux is needed.
+
+**Account risk:** Anthropic may suspend or terminate accounts for terms violations. Its consumer terms restrict automated access except where explicitly permitted. Kojo invokes the official Claude Code CLI, but that is not a guarantee that this benchmark workload is permitted under your subscription. Review the [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) and [Claude Code usage rules](https://code.claude.com/docs/en/legal-and-compliance) before running it. See Anthropic’s [enforcement policy](https://www.anthropic.com/transparency/system-trust-reporting).
 
 ```sh
-python3 results/comparisons/20260928-dex-subset/reproduce_suite_analysis.py
-python3 results/comparisons/20260928-dex-subset/verify_suite.py
-uv venv intermediate/reporting-venv
-uv pip install --python intermediate/reporting-venv/bin/python -r results/comparisons/20260928-dex-subset/chart-requirements.txt
-intermediate/reporting-venv/bin/python results/comparisons/20260928-dex-subset/render_suite_charts.py
-intermediate/reporting-venv/bin/python results/comparisons/20260928-dex-subset/render_quality_charts.py
-intermediate/reporting-venv/bin/python results/comparisons/20260928-dex-subset/render_external_defect_charts.py
-python3 results/comparisons/20260928-dex-subset/refresh_suite_report.py
+sh scripts/scb_setup.sh
 ```
 
-`suite_analysis.json` preserves exact numeric precision, checkpoint outcomes, paired test differences and unique session receipts. `chart_values.json` preserves derived value metrics. PNG and SVG figures are in `charts/`. Compact K/M formatting is presentation-only.
+Preview, check the native harness without inference, then launch the experiment:
+
+```sh
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56 --audit
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56 --run
+```
+
+Select models with a space-separated list:
+
+```sh
+.venv/bin/python scripts/scb_suite.py --id repro-02 --models sonnet55 opus55 astra6 --run
+```
+
+Supported suite aliases map to exact provider IDs; they are not moving “latest” aliases:
+
+| CLI alias | Provider model ID |
+|---|---|
+| `sonnet55` | `claude-sonnet-5-5` |
+| `opus55` | `claude-opus-5-5` |
+| `sol6` | `gpt-6-sol` |
+| `astra6` | `gpt-6-astra` |
+| `opus5` | `claude-opus-5` |
+| `sol56` | `gpt-5.6-sol` |
+| `fable51` | `claude-fable-5-1` |
+
+`--models` is required; no models are selected implicitly. Duplicate models are rejected. Use the same selection for audit and run.
+
+
+Use a new ID for each experiment. Use `--models sonnet55` for one model. The example selects six models, medium effort, no review, default output limits and 30-minute sessions: 102 sessions across the three problems. Models run in parallel within each problem; problems and each model’s checkpoints run sequentially. `--run` consumes provider allowance with usage reporting but no spending cap. Required model access remains account-dependent.
+
+Progress prints in the terminal; Ctrl-C stops the controller. Grades and submissions go to `results/runs/<run-id>/`; transcripts and logs go to `intermediate/runs/<run-id>/`. Both stay local. New stochastic runs need not match our scores or historical interruptions. Our raw run evidence is not included in this repository.
 
 ---
 

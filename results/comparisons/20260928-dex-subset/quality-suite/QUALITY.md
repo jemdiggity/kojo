@@ -32,47 +32,47 @@ The following charts adapt the questions and presentation in [Dex Horthy’s wri
 
 ### Figure 1. Strict pass rate
 
-![Figure 1. Strict pass rate](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-01-strict-pass-bars.png)
+![Figure 1. Strict pass rate](../charts/figure-01-strict-pass-bars.png)
 
 ### Figure 2. Checkpoint pass grid
 
-![Figure 2. Checkpoint pass grid](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-02-checkpoint-grid.png)
+![Figure 2. Checkpoint pass grid](../charts/figure-02-checkpoint-grid.png)
 
 ### Figure 9. Final code volume and function counts
 
-![Figure 9. Final code volume and function counts](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-09-code-volume.png)
+![Figure 9. Final code volume and function counts](../charts/figure-09-code-volume.png)
 
 ### Figure 10. Test-named versus other Python source
 
-![Figure 10. Test-named versus other Python source](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-10-test-code-split.png)
+![Figure 10. Test-named versus other Python source](../charts/figure-10-test-code-split.png)
 
 ### Figure 11. Complexity and duplication across checkpoints
 
-![Figure 11. Complexity and duplication across checkpoints](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-11-complexity-duplication.png)
+![Figure 11. Complexity and duplication across checkpoints](../charts/figure-11-complexity-duplication.png)
 
 ### Figure 12. Callable count versus mean complexity
 
-![Figure 12. Callable count versus mean complexity](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-12-functions-complexity.png)
+![Figure 12. Callable count versus mean complexity](../charts/figure-12-functions-complexity.png)
 
 ### Figure 13. Callables with one statically detected use
 
-![Figure 13. Callables with one statically detected use](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-13-single-use-functions.png)
+![Figure 13. Callables with one statically detected use](../charts/figure-13-single-use-functions.png)
 
 ### Figure 14. Paper-style normalized erosion and verbosity trajectories
 
-![Figure 14. Paper-style normalized erosion and verbosity trajectories](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-14-quality-progress.png)
+![Figure 14. Paper-style normalized erosion and verbosity trajectories](../charts/figure-14-quality-progress.png)
 
 ### Figure 15. Erosion and verbosity for each problem
 
-![Figure 15. Erosion and verbosity for each problem](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-15-quality-by-problem.png)
+![Figure 15. Erosion and verbosity for each problem](../charts/figure-15-quality-by-problem.png)
 
 ### Figure 16. Quality scores with and without generated tests
 
-![Figure 16. Quality scores with and without generated tests](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-16-quality-test-sensitivity.png)
+![Figure 16. Quality scores with and without generated tests](../charts/figure-16-quality-test-sensitivity.png)
 
 ### Figure 17. Relative metric growth in `circuit_eval`
 
-![Figure 17. Relative metric growth in circuit_eval](/Users/jeremyhale/work/kojo/results/comparisons/20260928-dex-subset/charts/figure-17-metric-spread.png)
+![Figure 17. Relative metric growth in circuit_eval](../charts/figure-17-metric-spread.png)
 
 ## Metric and coverage details
 
