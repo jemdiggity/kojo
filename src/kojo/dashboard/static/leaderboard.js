@@ -96,7 +96,7 @@ function controls(state, data) {
       <span class="muted">% of checkpoints, build output graded per checkpoint</span>
     </div>
     <div class="ctl">
-      <label>Experiment <select data-nav>${experiments}</select></label>
+      <label>Experiment <select class="wide" data-nav>${experiments}</select></label>
       ${filterMenus}
       ${clear}
     </div>

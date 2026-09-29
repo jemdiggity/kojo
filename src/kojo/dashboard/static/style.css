@@ -9,10 +9,11 @@ h2{font-size:15px;margin:22px 0 8px}
 h2.first{margin-top:0}
 nav a{margin-right:12px;color:var(--link);cursor:pointer}
 nav a.on{font-weight:600;text-decoration:underline}
-main{padding:16px;max-width:1200px;margin:auto}
+main{padding:16px;max-width:1200px;margin:auto;min-width:0}
 img{max-width:100%;border:1px solid var(--line);margin:8px 0}
 pre{background:var(--card);padding:10px;overflow:auto;max-height:420px;font-size:12px}
-select{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
+select{max-width:min(420px,100%);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
+select.wide{width:420px;max-width:100%}
 a{cursor:pointer;color:var(--link)}
 
 .muted{color:var(--mute)}
@@ -37,14 +38,14 @@ details>summary{cursor:pointer;color:var(--mute)}
 
 /* controls */
 .ctl{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:8px 0 14px}
-.ctl label{color:var(--mute)}
+.ctl label{color:var(--mute);max-width:100%}
 .menu{position:relative}
 .menu-box{position:absolute;z-index:2;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;
   display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto;min-width:200px}
 .menu-box label{color:var(--fg)}
 
 /* leaderboard chart: name | bar | value, one row per .hit */
-.bars{display:grid;grid-template-columns:minmax(120px,240px) 1fr 64px;gap:8px 12px;align-items:center;margin:6px 0 4px}
+.bars{display:grid;grid-template-columns:min(240px,30%) minmax(0,1fr) 56px;gap:8px 12px;align-items:center;margin:6px 0 4px}
 .bars .hit{display:contents;cursor:pointer}
 .bars .hit:hover .track{outline:2px solid var(--link)}
 .bars .hit:hover .name{text-decoration:underline}

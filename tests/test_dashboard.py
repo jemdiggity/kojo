@@ -163,6 +163,14 @@ class StoreOverviewTests(Fixture):
         status = {r['id']: r['status'] for r in Store(self.base).overview()['runs']}
         self.assertEqual(status, {'done': 'complete', 'exited': 'finished', 'mystery': 'unknown'})
 
+    def test_run_summary_counts_checkpoints_not_roles(self):
+        self.add_run('run-a')
+        fix = self.base / 'results/runs/run-a/fix/checkpoint_1'
+        write(fix / 'run.json', {'status': 'complete', 'model': 'm', 'reasoning': 'low'})
+        write(fix / 'evaluation.json', passing('checkpoint_1-Core'))
+        (run,) = Store(self.base).overview()['runs']
+        self.assertEqual((run['checkpoints_graded'], run['strict_passed']), (1, 1))
+
     def test_run_detail_is_none_for_unknown_runs(self):
         self.assertIsNone(Store(self.base).run_detail('nope'))
 
