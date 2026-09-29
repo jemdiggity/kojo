@@ -32,3 +32,6 @@ __pycache__/
 
 # Machine-local Kanna overrides
 /.kanna/config.local.json
+
+# Agent scratch files (Kanna)
+/.tmp/
