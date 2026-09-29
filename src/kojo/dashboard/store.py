@@ -134,7 +134,10 @@ class Store:
             rows = final_checkpoints(self.checkpoint_rows(run_id))
             if not rows:
                 continue
-            rows = [{**row, **quality.get((run_id, row['checkpoint']), {'erosion': None, 'verbosity': None})} for row in rows]
+            # The analysis covers build snapshots only, so it doesn't describe a fixer's output.
+            none = {'erosion': None, 'verbosity': None}
+            rows = [{**row, **(quality.get((run_id, row['checkpoint']), none) if row['role'] == 'build' else none)}
+                    for row in rows]
             manifest = load_json(self.results / 'runs' / run_id / 'manifest.json') or {}
             config = load_json(self.results / 'runs' / run_id / 'run-config.json') or {}
             settings = {'model': rows[0]['model'] or UNKNOWN, 'effort': rows[0]['effort'] or UNKNOWN,

@@ -176,6 +176,17 @@ class StoreTests(Fixture):
         self.assertEqual((runs['run-a'].checkpoints[0]['erosion'], runs['run-a'].checkpoints[0]['verbosity']), (0.3, 0.2))
         self.assertEqual(runs['run-b'].checkpoints[0]['erosion'], 0.5)
 
+    def test_quality_is_not_attached_to_fixer_output(self):
+        self.add_run('run-a')
+        fix = self.base / 'results/runs/run-a/fix/checkpoint_1'
+        write(fix / 'run.json', {'status': 'complete', 'model': 'm', 'reasoning': 'low'})
+        write(fix / 'evaluation.json', passing('checkpoint_1-Core'))
+        write(self.base / 'results/comparisons/flat/quality.json', {'rows': [
+            {'run_id': 'run-a', 'checkpoint': 1, 'variant': 'entrypoint-normalized', 'metrics': {'erosion': 0.5, 'verbosity': 0.4}}]})
+        (run,) = Store(self.base).graded_runs()
+        self.assertEqual(run.checkpoints[0]['role'], 'fix')
+        self.assertIsNone(run.checkpoints[0]['erosion'])
+
     def test_unanalyzed_runs_have_no_quality(self):
         self.add_run('run-a')
         (run,) = Store(self.base).graded_runs()
