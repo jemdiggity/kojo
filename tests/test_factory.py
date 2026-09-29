@@ -69,6 +69,16 @@ class FactoryTests(unittest.TestCase):
         usage={'input_tokens':1000,'cached_input_tokens':500,'output_tokens':100}
         self.assertAlmostEqual(cost(usage,'gpt-6-astra'),100*cost(usage))
 
+    def test_pricing_table_covers_every_codex_model_and_rejects_unknown_ones(self):
+        import re
+        from kojo import execution
+        allowed = re.search(r'model not in \(([^)]*)\)', Path(execution.__file__).read_text())[1]
+        for model in re.findall(r'"([^"]+)"', allowed):
+            with self.subTest(model=model):
+                self.assertGreater(execution.pricing(model)['output'], 0)
+        with self.assertRaises(ValueError):
+            cost({'input_tokens':1,'output_tokens':1}, 'gpt-unknown')
+
     def test_sol_high_uses_requested_effort_and_default_output_limit(self):
         from kojo.factory import parse_args
         args, models, options = parse_args(['audit', '--run-id', 'sol-audit',

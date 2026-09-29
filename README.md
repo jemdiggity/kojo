@@ -128,6 +128,15 @@ must have access to the selected models. No Docker or tmux is required.
 Progress appears in the terminal. Results are saved under `results/runs/`; raw
 transcripts and logs under `intermediate/runs/`. Ctrl-C stops the controller.
 
+### Pricing
+
+`configs/pricing.json` is the table of per-model rates (USD per million input,
+cached-input, and output tokens) behind the Codex `api_price_equivalent_usd`
+figures. Add or correct a model there; no code change is needed, and a model
+without an entry is rejected. Claude runs report their own cost from the CLI. The
+current rates are legacy harness estimates and are not verified against provider
+price lists.
+
 ### Efforts
 
 `--efforts` adds reasoning effort as another dimension: every problem × model ×
