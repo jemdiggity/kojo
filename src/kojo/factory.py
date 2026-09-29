@@ -11,7 +11,7 @@ import time
 from kojo.catalog import BASE, DATA_ROOT, protocol_digest, harness_digest, factory_instruction_hashes, metadata
 from kojo.execution import audit, run_session, save, session_paths
 from kojo.external_access import audit_external_sources
-from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read
+from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read, split_counts
 from kojo.run_chain import ChainBackend, compose_prompt
 from kojo import claude_execution, factory_spec
 
@@ -391,14 +391,15 @@ def main(argv=None):
         scores=[]
         for row in frozen:
             label=row.get('label',f"checkpoint_{row['checkpoint']}")
-            score=experiment.score([row])[0]; score['role']=row['role']; scores.append(score)
+            score=experiment.score([row])[0]; score['role']=row['role']; score['label']=label; scores.append(score)
             shutil.copy2(row['run']/'grading/evaluation.json',output/row['role']/label/'evaluation.json')
+            score.update(split_counts(read(row['run']/'grading/evaluation.json'),row['checkpoint']))
             for filename in ['dependency-install.json','dependency-freeze.txt']:
                 receipt=row['run']/filename
                 if receipt.exists():
                     shutil.copy2(receipt,output/row['role']/label/filename)
             save(output/'scores.json',scores)
-            print(f"Graded {row['role']} {label}: {score['passed']}/{score['total']}",flush=True)
+            print(f"Graded {row['role']} {label}: {score['passed']}/{score['total']} (new {score['new']['passed']}/{score['new']['total']}, regression {score['regression']['passed']}/{score['regression']['total']})",flush=True)
         if failure:
             raise failure
 
