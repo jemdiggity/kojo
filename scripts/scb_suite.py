@@ -193,6 +193,21 @@ def finish(passed, total, code):
     return code
 
 
+def launch_summary(args, skill_sets, configs):
+    """Runs are the unit of parallelism; each run works through its checkpoints in order."""
+    runs = sum(len(c['runs']) for c in configs)
+    parallel = max(c['max_parallel'] for c in configs)
+    checkpoints = sum(PROBLEMS[p] for p in args.problems)
+    sessions = len(args.models) * max(1, len(skill_sets)) * len(args.efforts or [0]) * checkpoints
+    noun = lambda n, word: f'{n} {word}' + ('' if n == 1 else 's')
+    return (f'Launching {noun(runs, "run")} ({noun(len(args.models), "model")} x '
+            f'{noun(max(1, len(skill_sets)), "skill set")} x {noun(len(args.efforts or [0]), "effort")} x '
+            f'{noun(len(args.problems), "problem")}), {parallel} at a time; each run does its checkpoints '
+            f'one after another ({sessions} checkpoint sessions in total). '
+            f'{", ".join(args.efforts or ["medium"])} effort, 30 minutes per session, no review, '
+            'default output limits. Usage is monitored, not capped.')
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     if not argv:
@@ -267,8 +282,7 @@ def main(argv=None):
         parser.error(str(error))
     if args.audit:
         return audit(paths, configs, args.verbose)
-    print(f'Launching {len(args.models) * max(1, len(skill_sets)) * len(args.efforts or [0]) * sum(PROBLEMS[p] for p in args.problems)} sessions: {", ".join(args.efforts or ["medium"])} effort, 30 minutes each, '
-          'no review, default output limits. Usage is monitored, not capped.', flush=True)
+    print(launch_summary(args, skill_sets, configs), flush=True)
     cmd = [sys.executable, str(ROOT / 'scripts/scb_dex_sonnet_series.py'),
            '--run', '--series-id', args.id, '--tmux-session', args.tmux_session or '']
     for path in paths:

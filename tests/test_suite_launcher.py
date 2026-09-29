@@ -1,4 +1,5 @@
 import importlib.util
+import argparse
 import json
 import tempfile
 import unittest
@@ -139,6 +140,15 @@ class SuiteLauncherTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 suite.reset_audit('exp', two)
 
+    def test_launch_summary_counts_runs_not_sessions(self):
+        skills = [{'name': n, 'path': None, 'sha256': None} for n in ('none', 'a', 'b')]
+        args = argparse.Namespace(models=['haiku45'], problems=['code_search'], efforts=['low'])
+        configs = suite.plans('x', ['haiku45'], ['code_search'], skills, 'all', ['low'])
+        text = suite.launch_summary(args, skills, configs)
+        self.assertIn('Launching 3 runs (1 model x 3 skill sets x 1 effort x 1 problem)', text)
+        self.assertIn('3 at a time', text)
+        self.assertIn('15 checkpoint sessions in total', text)
+
     def test_model_list_selects_only_requested_models(self):
         with patch.object(suite, 'plans', wraps=suite.plans) as build, patch('builtins.print'):
             self.assertEqual(suite.main(['--problems', 'circuit_eval', 'database_migration', '--id', 'preview', '--models', 'sonnet55', 'opus55', 'astra6']), 0)
@@ -183,7 +193,8 @@ class SuiteLauncherTests(unittest.TestCase):
             command = call.call_args.args[0]
             paths = [command[i+1] for i, arg in enumerate(command) if arg == '--plan']
             self.assertEqual([Path(p).stem for p in paths], ['example-dynamic-config-service-api', 'example-code-search'])
-            self.assertIn('Launching 18 sessions', output.call_args.args[0])
+            self.assertIn('Launching 4 runs', output.call_args.args[0])
+            self.assertIn('18 checkpoint sessions in total', output.call_args.args[0])
 
     def test_cartesian_modes_preserve_every_chain_and_barriers(self):
         skills=[{'name':s,'path':'/fixture/'+s,'sha256':s} for s in ['one','two','three']]
