@@ -7,6 +7,12 @@ const METRICS = { strict: 'Strict', iso: 'Iso.', core: 'Core', partial: 'Partial
 const QUALITY = { erosion: 'Erosion', verbosity: 'Verbosity' }; // static analysis, lower is better; columns and charts only
 const FILTERS = { batch: 'Batch', run: 'Run', problem: 'Problem', model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort' };
 const GROUPS = { model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort', problem: 'Problem', batch: 'Batch', run: 'Run' };
+// Table columns: header label, and how to read a sortable value from a row. `text` columns start ascending.
+const COLUMNS = {
+  key: { text: true }, sub: { text: true }, runs: {}, checkpoints: {},
+  strict: {}, iso: {}, core: {}, partial: {},
+  cost_mean: {}, cost_total: {}, minutes_mean: {}, erosion: {}, verbosity: {},
+};
 const MAX_LIST_ROWS = 6; // filter lists share one height so they line up
 const PALETTE = ['#b3d4ff', '#fdf7b5', '#86e0c4', '#c76ea0', '#f4b183', '#a9a3f0', '#9adf8f', '#e58f8f'];
 const DEFINITIONS = `<b>Strict</b>: every test passes, including regressions. <b>Iso.</b>: every test introduced by
@@ -16,7 +22,7 @@ const DEFINITIONS = `<b>Strict</b>: every test passes, including regressions. <b
   standard deviation across checkpoints.`;
 
 // ---- state <-> URL -------------------------------------------------------
-// #leaderboard/<metric>/<by>/<then>?<filter>=a,b   (runs are chosen only by filters)
+// #leaderboard/<metric>/<by>/<then>?<filter>=a,b&sort=<column>&dir=asc|desc   (runs are chosen only by filters)
 
 export function parseState({ parts, params }) {
   const [metric, by, then] = parts;
@@ -24,6 +30,8 @@ export function parseState({ parts, params }) {
     metric: metric in METRICS ? metric : 'strict',
     by: by in GROUPS ? by : 'model',
     filters: {},
+    sort: params.get('sort') in COLUMNS ? params.get('sort') : '',
+    dir: params.get('dir') === 'asc' ? 'asc' : 'desc',
   };
   state.then = then in GROUPS && then !== state.by ? then : '';
   for (const name of Object.keys(FILTERS)) {
@@ -35,6 +43,10 @@ export function parseState({ parts, params }) {
 export function stateHash(state) {
   const params = new URLSearchParams();
   for (const [name, values] of Object.entries(state.filters)) if (values.length) params.set(name, values.join(','));
+  if (state.sort) {
+    params.set('sort', state.sort);
+    params.set('dir', state.dir);
+  }
   const query = params.toString();
   return `leaderboard/${state.metric}/${state.by}/${state.then}${query ? `?${query}` : ''}`;
 }
@@ -68,6 +80,24 @@ function sortRows(rows, state) {
       (state.then ? subs.indexOf(a.sub) - subs.indexOf(b.sub) : score(b) - score(a)),
   );
 }
+
+/** Table order: the chosen column (missing values last either way), else the bar order. */
+function sortTable(rows, state) {
+  if (!state.sort) return rows;
+  const sign = state.dir === 'asc' ? 1 : -1;
+  const value = (row) => (state.sort === 'sub' ? row.sub : row[state.sort]);
+  const missing = (v) => v == null;
+  return [...rows].sort((a, b) => {
+    const x = value(a);
+    const y = value(b);
+    if (missing(x) || missing(y)) return missing(x) - missing(y);
+    return sign * (COLUMNS[state.sort].text ? String(x).localeCompare(String(y)) : x - y);
+  });
+}
+
+/** Clicking a header sorts by it; clicking the sorted column again flips the direction. */
+const sortHash = (state, column) =>
+  next(state, { sort: column, dir: state.sort === column ? (state.dir === 'asc' ? 'desc' : 'asc') : COLUMNS[column].text ? 'asc' : 'desc' });
 
 const subValues = (rows) => [...new Set(rows.map((r) => r.sub))].filter((s) => s != null).sort();
 
@@ -195,8 +225,14 @@ function bars(rows, state) {
 }
 
 function table(rows, state) {
-  const header = (name) =>
-    `<th class="num metric${name === state.metric ? ' sel' : ''}" data-href="${h(next(state, { metric: name }))}">${METRICS[name]}</th>`;
+  rows = sortTable(rows, state);
+  const header = (column, label, extra = '') => {
+    const sorted = state.sort === column;
+    const arrow = sorted ? (state.dir === 'asc' ? ' ▲' : ' ▼') : '';
+    const selected = column === state.metric ? ' sel' : '';
+    return `<th class="${extra}${selected} sortable" data-href="${h(sortHash(state, column))}" title="Sort by ${h(label)}"` +
+      `${sorted ? ` aria-sort="${state.dir === 'asc' ? 'ascending' : 'descending'}"` : ''}>${h(label)}${arrow}</th>`;
+  };
   const cell = (name, content) => `<td class="num${name === state.metric ? ' sel' : ''}">${content}</td>`;
   const body = rows.map((row) => `
     <tr class="click" data-href="${h(runsHash(row.run_ids))}">
@@ -208,10 +244,10 @@ function table(rows, state) {
       ${Object.keys(QUALITY).map((name) => `<td class="num">${meanSd(row[name], row[`${name}_sd`], 2)}</td>`).join('')}</tr>`).join('');
   const title = `Per-${GROUPS[state.by].toLowerCase()}${state.then ? ` × ${GROUPS[state.then].toLowerCase()}` : ''} performance`;
   return `<h2>${h(title)}</h2><div class="scroll"><table>
-    <tr><th>${GROUPS[state.by]}</th>${state.then ? `<th>${GROUPS[state.then]}</th>` : ''}<th class="num">Runs</th><th class="num">Ckpts</th>
-    ${Object.keys(METRICS).map(header).join('')}<th class="num">$/CKPT</th><th class="num">Net $</th><th class="num">Min/CKPT</th>
-    ${Object.values(QUALITY).map((label) => `<th class="num">${label}</th>`).join('')}</tr>
-    ${body}</table></div><p class="muted">${DEFINITIONS}</p>`;
+    <tr>${header('key', GROUPS[state.by])}${state.then ? header('sub', GROUPS[state.then]) : ''}${header('runs', 'Runs', 'num')}${header('checkpoints', 'Ckpts', 'num')}
+    ${Object.entries(METRICS).map(([name, label]) => header(name, label, 'num')).join('')}${header('cost_mean', '$/CKPT', 'num')}${header('cost_total', 'Net $', 'num')}${header('minutes_mean', 'Min/CKPT', 'num')}
+    ${Object.entries(QUALITY).map(([name, label]) => header(name, label, 'num')).join('')}</tr>
+    ${body}</table></div><p class="muted">${DEFINITIONS} Click a column header to sort; the highlighted column is the chart metric chosen above.</p>`;
 }
 
 /** Erosion and verbosity across normalized progress, one line per group; nothing if none were analyzed. */

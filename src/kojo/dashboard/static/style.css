@@ -32,7 +32,8 @@ th{color:var(--mute);font-weight:500}
 tr.click{cursor:pointer}
 tr.click:hover{background:var(--card)}
 tr.click td:first-child{color:var(--link)}
-th.metric{cursor:pointer}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--fg)}
 th.sel,td.sel{color:var(--fg);font-weight:600;background:var(--card)}
 details>summary{cursor:pointer;color:var(--mute)}
 
