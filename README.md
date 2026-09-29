@@ -132,7 +132,8 @@ transcripts and logs under `intermediate/runs/`. Ctrl-C stops the controller.
 
 `--efforts` adds reasoning effort as another dimension: every problem × model ×
 skill set runs at each effort listed (`--efforts low medium high`). Claude models
-accept `low`, `medium`, and `high`; Codex models also accept `xhigh` and `max`, and
+accept `low`, `medium`, and `high` (Haiku 4.5 has no effort setting, so these
+select a fixed thinking budget of 4,000, 10,000, or 31,999 tokens instead); Codex models also accept `xhigh` and `max`, and
 a combination a provider does not support is rejected. Omit it for the published
 setting, a single `medium` run whose run IDs carry no effort suffix. Otherwise each
 run ID and batch ID includes the effort.

@@ -52,6 +52,18 @@ class ClaudeTests(unittest.TestCase):
             with self.subTest(key=key),self.assertRaises(RuntimeError):
                 claude.verify_request({**request,key:value},'exact task',claude.MODELS[0],'high')
 
+    def test_haiku_effort_is_a_thinking_budget(self):
+        haiku=claude.BUDGET_EFFORT_MODELS[0]
+        request={**self.request(),'model':haiku,'thinking':{'type':'enabled','budget_tokens':4000}}
+        del request['output_config']
+        receipt,_=claude.verify_request(request,'exact task',haiku,'low')
+        self.assertEqual(receipt['reasoning'],'low')
+        for bad in [{'thinking':{'type':'enabled','budget_tokens':10000}},
+                    {'thinking':{'type':'adaptive'}},
+                    {'output_config':{'effort':'low'}}]:
+            with self.subTest(bad=bad),self.assertRaises(RuntimeError):
+                claude.verify_request({**request,**bad},'exact task',haiku,'low')
+
     def test_command_preserves_stock_and_fresh_conversation(self):
         with tempfile.TemporaryDirectory() as d, patch.object(claude.subprocess,'run'):
             root=Path(d)
