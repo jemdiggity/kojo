@@ -73,9 +73,7 @@ future experiment, with no weight training or fine-tuning involved.
 
 - [Full suite analysis and reproduction](results/comparisons/20260928-dex-subset/SUITE_ANALYSIS.md)
 - [Detailed code-quality measurements](results/comparisons/20260928-dex-subset/quality-suite/QUALITY.md)
-- [Earlier build/review/fix experiment](results/comparisons/20260928-checkpoint-factory-10m/RESULTS.md)
 - [Protocol and context isolation](docs/protocol.md)
-- [Local run registry](results/runs/README.md)
 
 ## Run the experiment
 
@@ -143,23 +141,22 @@ scripts/       CLI entry points and explicit experiment launchers
 skills/        Initial-skill and revision-writer prompts
 configs/       Experiment/split definitions, pinned dependencies, and quota limits
 tests/         Offline quota, isolation, and artifact integrity checks
-results/       Versioned comparison reports, charts, and compact run registry
+results/       Versioned comparison reports and charts; ignored local runs
 docs/          Protocol, reproduction, and upstream investigation
 intermediate/  Ignored local traces, scratch data, vendor checkouts, and environments
 ```
 
 Raw traces, credentials, virtual environments, and vendored repositories are not
 committed. Per-run evidence under `results/runs/<run-id>/` also stays local, including
-submissions and their installed dependencies. The small registry, comparison reports,
-chart data, and reproduction scripts remain versioned. Recomputing reports requires
+submissions, installed dependencies, the generated registry, and relocation metadata.
+Comparison reports, chart data, and reproduction scripts remain versioned. Recomputing reports requires
 the local run evidence; a Git clone alone does not include it. Dependency pins are
 versioned, and the maintained harness lives under `src/kojo`.
 
 The current factory enables network access and audits external-source evidence
 after each session. Role instructions are separate versioned Markdown files.
 See [factory protocol](docs/factory.md),
-[audit policy](docs/external-access-audit.md), and
-[no-inference verification](results/harness/network-enabled-v1/REPORT.md).
+[audit policy](docs/external-access-audit.md).
 Earlier restricted-network diagnostics are retained separately from the network-enabled suite.
 
 ---

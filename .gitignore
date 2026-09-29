@@ -10,10 +10,22 @@ __pycache__/
 /.ruff_cache/
 /configs/gauntlet-approval.json
 
-# Per-run evidence stays local; keep the small registry and its documentation.
-/results/runs/*/
+# Run evidence, generated registry, and relocation metadata stay local.
+/results/runs/
 /runs/
 
 # Legacy unnumbered chart copies are regenerated, not versioned.
 /results/comparisons/20260928-dex-subset/charts/*
 !/results/comparisons/20260928-dex-subset/charts/figure-*
+
+# Publish only the current comparison; retain historical evidence locally.
+/results/*
+!/results/comparisons/
+/results/comparisons/*
+!/results/comparisons/20260928-dex-subset/
+/results/comparisons/20260928-dex-subset/API_INTERRUPTION.md
+/results/comparisons/20260928-dex-subset/API_PARTIAL_RESULTS.md
+/results/comparisons/20260928-dex-subset/INTERRUPTION.md
+/results/comparisons/20260928-dex-subset/FABLE_PLAN.md
+/results/comparisons/20260928-dex-subset/PLAN.md
+/results/comparisons/20260928-dex-subset/quality-circuit/

@@ -23,7 +23,7 @@ sortedrows=rows
 y=np.arange(len(models));rates=[100*r['strict']/17 for r in sortedrows]
 ax.barh(y,rates,color=[colors[r['model']] for r in sortedrows]);ax.set_yticks(y,[names[r['model']] for r in sortedrows]);ax.invert_yaxis();ax.set_xlim(0,100);ax.set_xlabel('Strict checkpoint pass rate (%)');ax.grid(axis='x',alpha=.2)
 for i,(r,v) in enumerate(zip(sortedrows,rates)):ax.text(v+1,i,f"{r['strict']}/17 · {v:.1f}%",va='center')
-fig.suptitle('Figure 1. How often did every required test pass?',fontsize=17)
+fig.suptitle('Figure 1. How many checkpoints passed every required test?',fontsize=17)
 save(fig,'strict-pass-bars','All three problems; one run per model. No paper-wide reference bars: those use different datasets and protocols.')
 fig,axs=plt.subplots(1,3,figsize=(15,5),layout='constrained',gridspec_kw={'width_ratios':[8,5,4]})
 from matplotlib.colors import ListedColormap
