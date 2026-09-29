@@ -7,7 +7,7 @@ import shutil
 import time
 from pathlib import Path
 
-from kojo.catalog import BASE, digest, protocol_digest
+from kojo.catalog import BASE, DATA_ROOT, digest, protocol_digest
 from kojo.execution import audit, run_session, save, session_paths
 from kojo.gauntlet import Backend, Experiment, copy_code, hashes, preflight, read
 
@@ -35,8 +35,8 @@ def main(argv=None):
     if not args.run_id or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.run_id):
         parser.error('Use a lowercase run ID with digits and hyphens')
     cfg, manifest = preflight()
-    data = BASE / 'intermediate/runs' / args.run_id / 'gauntlet'
-    output = BASE / 'results/runs' / args.run_id
+    data = DATA_ROOT/'intermediate/runs' / args.run_id / 'gauntlet'
+    output = DATA_ROOT/'results/runs' / args.run_id
     guide_path = (BASE / args.guidance).resolve()
     guidance = guide_path.read_text()
     backend = ChainBackend(cfg, manifest, data, output)
@@ -55,7 +55,7 @@ def main(argv=None):
         'The following guidance is supplied explicitly; no other skills are enabled.'
     )
     if args.action == 'audit':
-        probe = BASE / 'intermediate/runs' / args.run_id / 'offline-audit'
+        probe = DATA_ROOT/'intermediate/runs' / args.run_id / 'offline-audit'
         audit(probe, instructions, backend.runtime, guidance, True, compose_prompt(experiment, 1), persist=True)
         if list((probe / 'src').iterdir()):
             raise RuntimeError('Audit polluted initial src')

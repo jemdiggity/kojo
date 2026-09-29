@@ -141,11 +141,31 @@ must have access to the selected models. No Docker or tmux is required.
 Progress appears in the terminal. Results are saved under `results/runs/`; raw
 transcripts and logs under `intermediate/runs/`. Ctrl-C stops the controller.
 
+### Where run output goes
+
+Run output (`results/runs/` and `intermediate/runs/`) is written under the main
+checkout of the repository, however many worktrees launch runs, so it survives
+deleting a worktree. Set `KOJO_DATA_DIR` to store it somewhere else, such as a
+directory outside the repo; every command reads the same setting. Plans, batch
+records, vendor checkouts, and virtual environments stay in the working tree.
+Both locations are gitignored.
+
+### Pricing
+
+`configs/pricing.json` is the table of per-model rates (USD per million input,
+cached-input, and output tokens) behind the Codex `api_price_equivalent_usd`
+figures. Add or correct a model there; no code change is needed, and a model
+without an entry is rejected. Each entry records its source and date; the rates
+were taken from OpenAI's and Anthropic's published standard-tier price lists on
+2026-09-29. Claude runs report their own cost from the CLI, so their entries are
+for reference and cross-checks.
+
 ### Efforts
 
 `--efforts` adds reasoning effort as another dimension: every problem × model ×
 skill set runs at each effort listed (`--efforts low medium high`). Claude models
-accept `low`, `medium`, and `high`; Codex models also accept `xhigh` and `max`, and
+accept `low`, `medium`, and `high` (Haiku 4.5 has no effort setting, so these
+select a fixed thinking budget of 4,000, 10,000, or 31,999 tokens instead); Codex models also accept `xhigh` and `max`, and
 a combination a provider does not support is rejected. Omit it for the published
 setting, a single `medium` run whose run IDs carry no effort suffix. Otherwise each
 run ID and batch ID includes the effort.

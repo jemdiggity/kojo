@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 
-from kojo.catalog import BASE, protocol_digest
+from kojo.catalog import BASE, DATA_ROOT, protocol_digest
 from kojo.execution import save
 from kojo.factory import parse_args
 from kojo.registry import register_runs
@@ -84,10 +84,13 @@ def log_window(session, rid, path):
                         shlex.join(['tail', '-n', '+1', '-F', str(path)])], check=True)
 
 
-def execute(plan, batch_dir, jobs, *, action='run', base=BASE, tmux_session=None,
+def execute(plan, batch_dir, jobs, *, action='run', base=None, data=None, tmux_session=None,
             command_list=None, expected_protocol=None):
     """Bounded process scheduler. command_list enables real-process offline tests."""
-    base = Path(base)
+    # Code and working directory come from `base` (the worktree); run output goes to `data`.
+    # Tests that pass only `base` keep everything under it.
+    data = Path(data) if data else (Path(base) if base else DATA_ROOT)
+    base = Path(base or BASE)
     command_list = commands(plan, action) if command_list is None else command_list
     if jobs < 1:
         raise ValueError('jobs must be positive')
@@ -95,11 +98,11 @@ def execute(plan, batch_dir, jobs, *, action='run', base=BASE, tmux_session=None
     # Another batch/single-run launcher cannot reserve the same ID concurrently.
     with contextlib.ExitStack() as stack:
         for rid, _ in command_list:
-            root = base / 'intermediate/runs' / rid
+            root = data / 'intermediate/runs' / rid
             root.mkdir(parents=True, exist_ok=True)
             lock = stack.enter_context((root / 'launcher.lock').open('a'))
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            if (root/'controller.log').exists() or (root/'gauntlet/ledger.json').exists() or (base/'results/runs'/rid).exists():
+            if (root/'controller.log').exists() or (root/'gauntlet/ledger.json').exists() or (data/'results/runs'/rid).exists():
                 raise RuntimeError(f'Run ID already used: {rid}')
         batch_dir = Path(batch_dir)
         batch_dir.mkdir(parents=True, exist_ok=False)
@@ -134,7 +137,7 @@ def execute(plan, batch_dir, jobs, *, action='run', base=BASE, tmux_session=None
                     cancel(None, None)
                 while pending and len(active) < jobs and not cancelled:
                     rid, cmd = pending.popleft()
-                    root = base/'intermediate/runs'/rid
+                    root = data/'intermediate/runs'/rid
                     record = {'run_id':rid, 'batch_id':plan['batch_id'], 'action':action,
                               'command':cmd, 'protocol_sha256':expected_protocol,
                               'plan':next((p for p in plan['runs'] if p['run_id']==rid or f"{plan['batch_id']}-{p['run_id']}-audit"==rid), None)}
@@ -164,14 +167,14 @@ def execute(plan, batch_dir, jobs, *, action='run', base=BASE, tmux_session=None
                     del active[rid]
                     states[rid].update(status='cancelled' if cancelled else ('complete' if code==0 else 'failed'),
                                        exit_code=code,finished_at=time.time())
-                    root=base/'intermediate/runs'/rid
+                    root=data/'intermediate/runs'/rid
                     save(root/'launcher-exit.json',{'exit_code':code})
-                    output=base/'results/runs'/rid
+                    output=data/'results/runs'/rid
                     if output.exists():
                         shutil.copy2(root/'run-config.json',output/'run-config.json')
                         register_runs([{'run_id':rid,'results':f'results/runs/{rid}',
                                         'intermediate':f'intermediate/runs/{rid}',
-                                        'batch_id':plan['batch_id']}],base)
+                                        'batch_id':plan['batch_id']}],data)
                     print(f'[{rid}] {states[rid]["status"]}; exit={code}',flush=True)
                     snapshot()
                 if cancelled:
@@ -191,7 +194,7 @@ def execute(plan, batch_dir, jobs, *, action='run', base=BASE, tmux_session=None
                 code=process.wait()
                 log.close()
                 states[rid].update(status='cancelled',exit_code=code,finished_at=time.time())
-                save(base/'intermediate/runs'/rid/'launcher-exit.json',{'exit_code':code})
+                save(data/'intermediate/runs'/rid/'launcher-exit.json',{'exit_code':code})
             for rid,_ in pending:
                 states[rid]['status']='cancelled_before_start'
             snapshot()

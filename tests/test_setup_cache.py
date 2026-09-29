@@ -88,7 +88,7 @@ class SetupCacheTests(unittest.TestCase):
         with patch.object(setup, 'ROOT', self.root), patch.object(setup.platform, 'system', return_value='Darwin'), \
              patch.object(setup, 'linked_worktree', return_value=True), patch.object(setup, 'run') as run, \
              patch.object(setup, 'prepare_cache') as cache, patch.object(setup, 'attach') as attach, \
-             patch.dict(os.environ, {'KOJO_SETUP_CACHE': str(self.cache.parent)}):
+             patch.dict(os.environ, {'KOJO_SETUP_CACHE': str(self.cache.parent), 'KOJO_DATA_DIR': str(self.root)}):
             setup.main()
             cache.assert_called_once()
             attach.assert_called_once()
@@ -111,6 +111,10 @@ class SetupCacheTests(unittest.TestCase):
                        check=True, capture_output=True)
         self.assertFalse(setup.linked_worktree(self.root))
         self.assertTrue(setup.linked_worktree(linked))
+        with patch.dict(os.environ, {'KOJO_DATA_DIR': ''}):
+            self.assertEqual(setup.data_root(linked), self.root)
+        with patch.dict(os.environ, {'KOJO_DATA_DIR': str(self.root / 'custom-data')}):
+            self.assertEqual(setup.data_root(linked), self.root / 'custom-data')
 
     @unittest.skipUnless(os.uname().sysname == 'Darwin', 'macOS copy-on-write')
     def test_vendor_copies_are_isolated_and_dirty_edits_preserved(self):

@@ -11,6 +11,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.batch import identifier, load_plan
+from kojo.catalog import DATA_ROOT
 from kojo.known_skill_sets import KNOWN, resolve
 
 NONE = 'none'
@@ -117,15 +118,15 @@ def reset_audit(experiment, configs):
     saved = plans_dir / 'schedule.json'
     previous = json.loads(saved.read_text()) if saved.exists() else []
     ids = {run['run_id'] for config in configs + previous for run in config['runs']}
-    started = [rid for rid in sorted(ids) if (ROOT / 'intermediate/runs' / rid).exists()
-               or (ROOT / 'results/runs' / rid).exists()]
+    started = [rid for rid in sorted(ids) if (DATA_ROOT / 'intermediate/runs' / rid).exists()
+               or (DATA_ROOT / 'results/runs' / rid).exists()]
     shape = lambda cs: [(c['batch_id'], c['max_parallel'], [r['run_id'] for r in c['runs']]) for c in cs]
     if started and previous and shape(previous) != shape(configs):
         raise ValueError(f'Run {started[0]} has started under this --id; choose a new --id to change the plan.')
     for config in configs:
         shutil.rmtree(ROOT / 'intermediate/batches' / (config['batch_id'] + '-audit'), ignore_errors=True)
         for run in config['runs']:
-            shutil.rmtree(ROOT / 'intermediate/runs' / f"{config['batch_id']}-{run['run_id']}-audit", ignore_errors=True)
+            shutil.rmtree(DATA_ROOT / 'intermediate/runs' / f"{config['batch_id']}-{run['run_id']}-audit", ignore_errors=True)
     if not started:
         shutil.rmtree(plans_dir, ignore_errors=True)  # Nothing has run, so the plan is still editable.
 
@@ -174,7 +175,7 @@ def audit(paths, configs, verbose):
             batch_passed += ok
             print(f"{mark(ok)} {label(run['factory_args'])}")
             if not ok:
-                log = ROOT / 'intermediate/runs' / rid / 'controller.log'
+                log = DATA_ROOT / 'intermediate/runs' / rid / 'controller.log'
                 tail = log.read_text().strip().splitlines()[-5:] if log.exists() else ['(no controller log)']
                 print('     ' + '\n     '.join(tail) + f'\n     log: {log}')
         if code:
@@ -191,6 +192,21 @@ def audit(paths, configs, verbose):
 def finish(passed, total, code):
     print(f'Audit: {passed}/{total} passed; no inference was run.' + ('' if code == 0 else ' FAILED.'))
     return code
+
+
+def launch_summary(args, skill_sets, configs):
+    """Runs are the unit of parallelism; each run works through its checkpoints in order."""
+    runs = sum(len(c['runs']) for c in configs)
+    parallel = max(c['max_parallel'] for c in configs)
+    checkpoints = sum(PROBLEMS[p] for p in args.problems)
+    sessions = len(args.models) * max(1, len(skill_sets)) * len(args.efforts or [0]) * checkpoints
+    noun = lambda n, word: f'{n} {word}' + ('' if n == 1 else 's')
+    return (f'Launching {noun(runs, "run")} ({noun(len(args.models), "model")} x '
+            f'{noun(max(1, len(skill_sets)), "skill set")} x {noun(len(args.efforts or [0]), "effort")} x '
+            f'{noun(len(args.problems), "problem")}), {parallel} at a time; each run does its checkpoints '
+            f'one after another ({sessions} checkpoint sessions in total). '
+            f'{", ".join(args.efforts or ["medium"])} effort, 30 minutes per session, no review, '
+            'default output limits. Usage is monitored, not capped.')
 
 
 def main(argv=None):
@@ -267,8 +283,7 @@ def main(argv=None):
         parser.error(str(error))
     if args.audit:
         return audit(paths, configs, args.verbose)
-    print(f'Launching {len(args.models) * max(1, len(skill_sets)) * len(args.efforts or [0]) * sum(PROBLEMS[p] for p in args.problems)} sessions: {", ".join(args.efforts or ["medium"])} effort, 30 minutes each, '
-          'no review, default output limits. Usage is monitored, not capped.', flush=True)
+    print(launch_summary(args, skill_sets, configs), flush=True)
     cmd = [sys.executable, str(ROOT / 'scripts/scb_dex_sonnet_series.py'),
            '--run', '--series-id', args.id, '--tmux-session', args.tmux_session or '']
     for path in paths:

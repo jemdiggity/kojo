@@ -6,6 +6,7 @@ import shlex
 import sys
 BASE=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(BASE/'src'))
+from kojo.catalog import DATA_ROOT
 from kojo import gauntlet
 from kojo.catalog import metadata
 from kojo.run_chain import ChainBackend
@@ -15,7 +16,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('run_id');parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
-    run=BASE/'results/runs'/args.run_id
+    run=DATA_ROOT/'results/runs'/args.run_id
     manifest=json.loads((run/'manifest.json').read_text());problem=manifest['problem']
     original=gauntlet.evaluation_environment
     def environment(python,dependency_report=None):

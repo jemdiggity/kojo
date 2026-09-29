@@ -28,16 +28,17 @@ def main():
     if plan.get('resume_run'):
         cmd+=['--resume-run',plan['resume_run'],'--resume-checkpoint',str(plan['resume_checkpoint'])]
     sys.path.insert(0,str(BASE/'src'))
+    from kojo.catalog import DATA_ROOT
     from kojo.factory import parse_args
     parse_args(cmd[4:])
     print(shlex.join(cmd),flush=True)
     if not args.run:return
     if not plan['approval_status'].startswith('approved'):raise RuntimeError('Run not approved')
-    run=BASE/'intermediate/runs'/plan['run_id']
+    run=DATA_ROOT/'intermediate/runs'/plan['run_id']
     run.mkdir(parents=True,exist_ok=True)
     with (run/'launcher.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX | fcntl.LOCK_NB)
-        output=BASE/'results/runs'/plan['run_id']
+        output=DATA_ROOT/'results/runs'/plan['run_id']
         if output.exists() or (run/'controller.log').exists():
             raise RuntimeError('Run ID already used')
         (run/'experiment-plan.json').write_text(json.dumps(plan,indent=2)+'\n')

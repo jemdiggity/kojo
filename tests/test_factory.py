@@ -55,7 +55,7 @@ class FactoryTests(unittest.TestCase):
             for role in ['build','review','fix']:(prompts/f'{role}.md').write_text('')
             for name in ['scripts/kojo.py','scripts/scb_entrypoint.py','pyproject.toml','uv.lock','.python-version']:
                 path=base/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text('fixture')
-            with patch.object(catalog,'BASE',base), patch.object(factory,'BASE',base):
+            with patch.object(catalog,'BASE',base), patch.object(factory,'BASE',base), patch.object(factory,'DATA_ROOT',base):
                 before=catalog.protocol_digest();harness=catalog.harness_digest()
                 (prompts/'review.md').write_text('A changed reviewer request.\n')
                 self.assertEqual(factory.instructions(None,'review'),'A changed reviewer request.')
@@ -68,6 +68,16 @@ class FactoryTests(unittest.TestCase):
             self.assertIn('model="gpt-6-astra"',cmd)
         usage={'input_tokens':1000,'cached_input_tokens':500,'output_tokens':100}
         self.assertAlmostEqual(cost(usage,'gpt-6-astra'),100*cost(usage))
+
+    def test_pricing_table_covers_every_codex_model_and_rejects_unknown_ones(self):
+        import re
+        from kojo import execution
+        allowed = re.search(r'model not in \(([^)]*)\)', Path(execution.__file__).read_text())[1]
+        for model in re.findall(r'"([^"]+)"', allowed):
+            with self.subTest(model=model):
+                self.assertGreater(execution.pricing(model)['output'], 0)
+        with self.assertRaises(ValueError):
+            cost({'input_tokens':1,'output_tokens':1}, 'gpt-unknown')
 
     def test_sol_high_uses_requested_effort_and_default_output_limit(self):
         from kojo.factory import parse_args
