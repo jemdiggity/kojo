@@ -180,12 +180,19 @@ class SuiteLauncherTests(unittest.TestCase):
 
     def test_launch_summary_counts_runs_not_sessions(self):
         skills = [{'name': n, 'path': None, 'sha256': None} for n in ('none', 'a', 'b')]
-        args = argparse.Namespace(models=['haiku45'], problems=['code_search'], efforts=['low'])
+        args = argparse.Namespace(models=['haiku45'], factory=None, problems=['code_search'], efforts=['low'])
         configs = suite.plans('x', ['haiku45'], ['code_search'], skills, 'all', ['low'])
         text = suite.launch_summary(args, skills, configs)
         self.assertIn('Launching 3 runs (1 model x 3 skill sets x 1 effort x 1 problem)', text)
         self.assertIn('3 at a time', text)
         self.assertIn('15 checkpoint sessions in total', text)
+
+    def test_launch_summary_for_factories(self):
+        args = argparse.Namespace(models=None, factory=['luna-review-astra', 'luna-opus-qa'], problems=['code_search'], efforts=None)
+        configs = suite.plans('x', None, ['code_search'], None, 'all', None, args.factory)
+        text = suite.launch_summary(args, [], configs)
+        self.assertIn('Launching 2 runs (2 factories x 1 skill set x 1 problem), 2 at a time', text)
+        self.assertIn('up to 125 sessions', text)  # (3 + 22) worst-case sessions per checkpoint x 5 checkpoints
 
     def test_model_list_selects_only_requested_models(self):
         with patch.object(suite, 'plans', wraps=suite.plans) as build, patch('builtins.print'):

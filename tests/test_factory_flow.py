@@ -186,7 +186,7 @@ class ControllerTests(unittest.TestCase):
 
         fake_meta = lambda name, repo=None: {'name': name, 'entry_file': 'code_search', 'checkpoints': [1, 2]}
         with contextlib.ExitStack() as stack:
-            for name, value in [('BASE', base), ('protocol_digest', lambda: 'fixed'), ('preflight', lambda **kw: ({}, {'problems': {}})),
+            for name, value in [('BASE', base), ('DATA_ROOT', base), ('protocol_digest', lambda: 'fixed'), ('preflight', lambda **kw: ({}, {'problems': {}})),
                                 ('ChainBackend', lambda *a: backend), ('Experiment', lambda *a: SimpleNamespace(score=score, spec=lambda p, n: f'SPEC {n}')),
                                 ('audit_external_sources', lambda *a: {'status': 'ok'}), ('metadata', fake_meta),
                                 ('run_session', inference)]:
