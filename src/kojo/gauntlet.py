@@ -110,6 +110,16 @@ def split_counts(report, checkpoint):
     return {name: {"passed": p, "total": t} for name, (p, t) in counts.items()}
 
 
+def test_diff(report, before):
+    """(passing, broken, gained) against `before`, the tests passing after the previous session.
+    A test is Core/Functionality/Error in its own checkpoint and Regression later, so tests are
+    matched by checkpoint and name."""
+    passing = {(g.split("-")[0], t) for g, r in report.get("tests", {}).items() for t in r["passed"]}
+    failing = [(g, t) for g, r in report.get("tests", {}).items() for t in r["failed"]]
+    broken = sorted(f for f in failing if (f[0].split("-")[0], f[1]) in before)
+    return passing, broken, passing - before
+
+
 def rank(rows):
     return (
         sum(r["strict"] for r in rows),

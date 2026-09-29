@@ -215,6 +215,8 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(manifest['factory']['edges'][1], {'from': 'review', 'to': 'fix', 'when': 'fail', 'max': 3})
         self.assertEqual([t['stage'] for t in json.loads((root/'flow-trace.json').read_text())],
                          ['build', 'review', 'fix', 'review', 'build', 'review'])
+        self.assertEqual([(r['role'], r['label'], r['broken'], r['gained']) for r in json.loads((root/'scores.json').read_text())][:2],
+                         [('build', 'checkpoint_1', 0, 0), ('fix', 'checkpoint_1', 0, 0)])
         self.assertTrue((root/'fix/checkpoint_1/submission/code_search').exists())
         self.assertTrue((root/'build/checkpoint_2/evaluation.json').exists())
 

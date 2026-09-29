@@ -8,6 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.catalog import DATA_ROOT
+from kojo.gauntlet import test_diff
 
 
 def base(name):
@@ -24,11 +25,8 @@ def report(run, failures=False):
     for score in scores:
         label = score.get('label', f"checkpoint_{score['checkpoint']}")
         report = json.loads((path / score['role'] / label / 'evaluation.json').read_text())
-        # A test is Core/Functionality/Error in its own checkpoint but Regression later; match by checkpoint and name.
-        passed = {(g.split('-')[0], t) for g, r in report['tests'].items() for t in r['passed']}
+        passed, broken, gained = test_diff(report, before)
         failed = {(g, t) for g, r in report['tests'].items() for t in r['failed']}
-        broken = sorted(f for f in failed if (f[0].split('-')[0], f[1]) in before)
-        gained = passed - before
         cell = lambda c: f"{c['passed']}/{c['total']}"
         print(f"  {score['role'] + ' ' + label:22} {cell(score):>9}  -{len(broken)} / +{len(gained)}")
         if failures:
