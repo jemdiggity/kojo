@@ -1,0 +1,78 @@
+:root{--bg:#fff;--fg:#1c2024;--mute:#68707a;--line:#e2e5e9;--card:#f6f7f9;--ok:#1a7f4b;--bad:#c62f3a;--run:#b7791f;--link:#2456c8}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#14171a;--fg:#e6e8eb;--mute:#8d96a0;--line:#2a2f35;--card:#1c2025;--ok:#4cc38a;--bad:#f0616b;--run:#e0a94a;--link:#7ba2ff}
+}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
+header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+h1{font-size:16px;margin:0}
+h2{font-size:15px;margin:22px 0 8px}
+h2.first{margin-top:0}
+nav a{margin-right:12px;color:var(--link);cursor:pointer}
+nav a.on{font-weight:600;text-decoration:underline}
+main{padding:16px;max-width:1200px;margin:auto;min-width:0}
+img{max-width:100%;border:1px solid var(--line);margin:8px 0}
+pre{background:var(--card);padding:10px;overflow:auto;max-height:420px;font-size:12px}
+select{max-width:min(420px,100%);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit}
+select.wide{width:420px;max-width:100%}
+a{cursor:pointer;color:var(--link)}
+
+.muted{color:var(--mute)}
+.warn{color:var(--run)}
+.ok,.complete,.finished{color:var(--ok)}
+.bad,.failed,.launch_failed{color:var(--bad)}
+.running{color:var(--run)}
+.pill{padding:1px 8px;border-radius:9px;font-size:12px;background:var(--card);border:1px solid var(--line)}
+
+/* tables */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover{background:var(--card)}
+tr.click td:first-child{color:var(--link)}
+th.metric{cursor:pointer}
+th.sel,td.sel{color:var(--fg);font-weight:600;background:var(--card)}
+details>summary{cursor:pointer;color:var(--mute)}
+
+/* controls */
+.ctl{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:8px 0 14px}
+.ctl label{color:var(--mute);max-width:100%}
+.filters{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 14px}
+.filter{display:flex;flex-direction:column;gap:3px;color:var(--mute);font-size:12px}
+.filter select{width:190px;font-size:12px}
+.filter option.empty{color:var(--mute);opacity:.55}
+
+/* leaderboard chart: name | bar | value, one row per .hit */
+.bars{display:grid;grid-template-columns:min(240px,30%) minmax(0,1fr) 56px;gap:8px 12px;align-items:center;margin:6px 0 4px}
+.bars .hit{display:contents;cursor:pointer}
+.bars .hit:hover .track{outline:2px solid var(--link)}
+.bars .hit:hover .name{text-decoration:underline}
+.bars .cluster{grid-column:1/-1;font-weight:600;margin-top:10px}
+.bars .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bars .track{height:26px;background:var(--card);border-radius:3px;overflow:hidden}
+.bars .fill{height:100%;border-radius:3px}
+.bars .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.bars .axis{display:flex;justify-content:space-between;color:var(--mute);font-size:12px}
+
+/* published comparison grid */
+.grid{display:flex;gap:2px;flex-wrap:wrap}
+.cell{width:14px;height:14px;border-radius:3px;background:var(--bad)}
+.cell.strict{background:var(--ok)}
+
+/* line charts */
+.charts{display:flex;gap:24px;flex-wrap:wrap}
+.line-chart{margin:0;flex:1 1 340px;max-width:520px}
+.line-chart figcaption{font-weight:600;margin-bottom:4px}
+.line-chart svg{width:100%;height:auto}
+.grid-line{stroke:var(--line);stroke-width:1}
+.axis-text{fill:var(--mute);font-size:11px}
+.legend{display:flex;gap:4px 14px;flex-wrap:wrap;color:var(--mute);font-size:12px}
+.legend .key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+code{background:var(--card);padding:1px 5px;border-radius:4px;font-size:12px}
+
+/* copy button beside a title */
+.copy{background:none;border:1px solid var(--line);border-radius:6px;color:var(--mute);cursor:pointer;
+  padding:2px 5px;vertical-align:middle;line-height:0}
+.copy:hover{color:var(--fg);background:var(--card)}
