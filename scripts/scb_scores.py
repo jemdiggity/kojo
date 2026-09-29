@@ -1,4 +1,4 @@
-"""Per-checkpoint scores of finished runs: new-spec tests and regressions apart, plus newly broken tests."""
+"""Per-session scores of finished runs as a compact diff: -tests that broke / +tests now passing."""
 import argparse
 import json
 from pathlib import Path
@@ -8,7 +8,6 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.catalog import DATA_ROOT
-from kojo.gauntlet import split_counts
 
 
 def base(name):
@@ -20,23 +19,22 @@ def report(run, failures=False):
     path = Path(run) if Path(run).is_dir() else DATA_ROOT / 'results/runs' / run
     scores = json.loads((path / 'scores.json').read_text())
     print(f'{path.name}')
-    print(f"  {'session':22} {'total':>9} {'new':>9} {'regression':>11}  newly broken")
+    print(f"  {'session':22} {'passed':>9}  -broken / +gained")
     before = set()  # Tests passing after the previous session.
     for score in scores:
         label = score.get('label', f"checkpoint_{score['checkpoint']}")
         report = json.loads((path / score['role'] / label / 'evaluation.json').read_text())
-        parts = split_counts(report, score['checkpoint'])
         # A test is Core/Functionality/Error in its own checkpoint but Regression later; match by checkpoint and name.
         passed = {(g.split('-')[0], t) for g, r in report['tests'].items() for t in r['passed']}
         failed = {(g, t) for g, r in report['tests'].items() for t in r['failed']}
         broken = sorted(f for f in failed if (f[0].split('-')[0], f[1]) in before)
+        gained = passed - before
         cell = lambda c: f"{c['passed']}/{c['total']}"
-        print(f"  {score['role'] + ' ' + label:22} {cell(score):>9} {cell(parts['new']):>9} "
-              f"{cell(parts['regression']):>11}  {len(broken)}")
+        print(f"  {score['role'] + ' ' + label:22} {cell(score):>9}  -{len(broken)} / +{len(gained)}")
         if failures:
             for title, tests in (('new failures', [f for f in sorted(failed) if f[0].startswith(f"checkpoint_{score['checkpoint']}-")]),
                                  ('regression failures', [f for f in sorted(failed) if not f[0].startswith(f"checkpoint_{score['checkpoint']}-")]),
-                                 ('newly broken (passed before)', broken)):
+                                 ('broken (passed before)', broken)):
                 names = sorted({f'{g}: {base(t)}' for g, t in tests})
                 if names:
                     print(f'      {title} ({len(tests)} tests): ' + ('; '.join(names[:12]) + (' ...' if len(names) > 12 else '')))
