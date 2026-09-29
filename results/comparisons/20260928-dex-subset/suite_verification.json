@@ -917,6 +917,159 @@
       "native_transcript_hash_matches": true,
       "exact_prompt_verified": true,
       "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 1,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 2,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 3,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 4,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 5,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 6,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 7,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 8,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 1,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 2,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 3,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 4,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 5,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 1,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 2,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 3,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 4,
+      "source_hashes_match": true,
+      "source_handoff_match": true,
+      "native_transcript_hash_matches": true,
+      "exact_prompt_verified": true,
+      "model_effort_receipt_matches": true
     }
   ],
   "external_access": [
@@ -4282,6 +4435,681 @@
           "action_excerpt": "const r=await tools.exec_command({cmd:\"curl -sS -i -H 'Content-Type: application/json; charset=utf-8' --data '{\\\"rego_modules\\\":{\\\"main.rego\\\":\\\"package guardrails\\\\ndeny := []\\\\nwarn := []\\\"}}' http://127.0.0.1:18080/v1/policies/bundles/empty/versions\",\"max_output_tokens\":500});text(r);\n",
           "output_excerpt": "input_text\nScript completed\nWall time 0.2 seconds\nOutput:\n\ninput_text\nb538cd\nHTTP/1.1 201 Created\r\nServer: BaseHTTP/0.6 Python/3.12.8\r\nDate: Tue, 29 Sep 2026 00:58:37 GMT\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 36\r\n\r\n{\"bundle_name\":\"empty\",\"version\":1}\n",
           "action_sha256": "64562a1f94b062bf540abad3ae8e60e533c9335ec36e73923ea2aeb842605b39",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 1,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "5c39193e84da82a125058bf39faa9bf05d7acdc1b6d5e25475455be9819e1d21",
+      "records": 44,
+      "tool_calls": 4,
+      "events": [
+        {
+          "record": 34,
+          "output_records": [
+            35
+          ],
+          "call_id": "toolu_01RMJDjUcpMK3rUaLJnTTDB7",
+          "tool": "Bash",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "cd \"$PWD\" && chmod +x circopt && printf '# circopt has no third-party dependencies (Python 3.12 standard library only)\\n' > requirements.txt && /Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m venv .venv && .venv/bin/pip install -q -r requirements.txt && printf '.venv/\\nnode-compile-cache/\\n__pycache__/\\n' > .gitignore && echo done\nCreate venv, requirements.txt, and .gitignore",
+          "output_excerpt": "WARNING: The directory '/Users/jeremyhale/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.\ndone",
+          "action_sha256": "68fb2764489946073b64efc951330ea170729302bf10de0d7454522713e1cd9f",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 2,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "8edfa0031c2bb917fc08397ef6af7914034442c4c5b33e3dcd8f47c3116a8ebd",
+      "records": 81,
+      "tool_calls": 10,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 3,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "71c176b9c13666da6bb50ff06be5c8608b33921f7496b3cdbd05f1f3df59ffd3",
+      "records": 71,
+      "tool_calls": 8,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 4,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "8ddababc13d1d858f595bc040389012e8631a45740f113ed3763da5173fd8446",
+      "records": 96,
+      "tool_calls": 13,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 5,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "a1c91e4d204add97b9ef50b607c168c1cb23606de7c8b02a659f6f9a9a02a562",
+      "records": 124,
+      "tool_calls": 20,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 6,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "13c829d9d6204016c48f36c0c9167e1340096aae03f4175725881d15887da0b2",
+      "records": 109,
+      "tool_calls": 17,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 7,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "277f7399da6944c2f17a544128526634aede46b60b4a0db2b77fa414d83adba0",
+      "records": 114,
+      "tool_calls": 16,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-circuit-eval-fable51-medium-01",
+      "checkpoint": 8,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "f31c24ade1f45ba2e2cbeeb8317b9ff9ff144bfcc71675c70c6054e45a792ad4",
+      "records": 253,
+      "tool_calls": 41,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 1,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "34e42658e2335822ee8a91fe89a6b342593333c627422e75fcc29f846bbe18ac",
+      "records": 112,
+      "tool_calls": 16,
+      "events": [
+        {
+          "record": 62,
+          "output_records": [
+            63
+          ],
+          "call_id": "toolu_01C4u7zYuNuxzmTBkEGeXSNk",
+          "tool": "Write",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-database-migration-fable51-medium-01/gauntlet/builder-workspace/src/requirements.txt\n# No third-party dependencies: the tool uses only the Python standard library\n# (argparse, json, sqlite3). This file is kept so `pip install -r requirements.txt`\n# works as part of the standard setup.\n",
+          "output_excerpt": "File created successfully at: /Users/jeremyhale/work/kojo/intermediate/runs/20260929-database-migration-fable51-medium-01/gauntlet/builder-workspace/src/requirements.txt (file state is current in your context \u2014 no need to Read it back)",
+          "action_sha256": "a57845b55f9c2ac8ddf17497796c9ca72fcab70caf15e8babe868bf280a07366",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 70,
+          "output_records": [
+            71
+          ],
+          "call_id": "toolu_01NrTMMRNLfopHJtkCsBk3Dh",
+          "tool": "Bash",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "cd \"$PWD\" && /Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m venv .venv && .venv/bin/pip install -q -r requirements.txt && echo venv-ok\nCreate virtual environment and install requirements",
+          "output_excerpt": "WARNING: The directory '/Users/jeremyhale/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.\nvenv-ok",
+          "action_sha256": "ac3523b62eebfbf68e9d7000fb72aa54cc6a82151c609ba798454ce877952ceb",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 2,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "5424faa0c00ccde933dd82a48dab1df74864fcb0f40d3326456870a77fc7f842",
+      "records": 92,
+      "tool_calls": 17,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 3,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "82655ca639ceb9f065cd64c68dd4c4e8ddb08ca2bb2764e9cebafb8cf72799ef",
+      "records": 146,
+      "tool_calls": 24,
+      "events": [],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 4,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "deb5d3e83f8db62290352472af2a7bbc6908c297e64478a32dd10a88cc65eed7",
+      "records": 156,
+      "tool_calls": 33,
+      "events": [
+        {
+          "record": 150,
+          "output_records": [
+            151
+          ],
+          "call_id": "toolu_01Fn4nMFiRmJrzmzgifdboiH",
+          "tool": "Write",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-database-migration-fable51-medium-01/gauntlet/builder-workspace/src/requirements.txt\n# No third-party dependencies: the tool uses only the Python standard library\n# (argparse, json, sqlite3), including the rollback support added in\n# Checkpoint 4. This file is kept so `pip install -r requirements.txt` works as\n# part of the standard setup.\n",
+          "output_excerpt": "The file /Users/jeremyhale/work/kojo/intermediate/runs/20260929-database-migration-fable51-medium-01/gauntlet/builder-workspace/src/requirements.txt has been updated successfully. (file state is current in your context \u2014 no need to Read it back)",
+          "action_sha256": "2b2ab0d80ac7b66a7214fa2248534275bddc09db733a0914a8e4669225e328b3",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-database-migration-fable51-medium-01",
+      "checkpoint": 5,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "41beea967f983478b9cafc147dd8a6038c366648737bbe855705899a1166e95d",
+      "records": 136,
+      "tool_calls": 27,
+      "events": [
+        {
+          "record": 127,
+          "output_records": [
+            128
+          ],
+          "call_id": "toolu_018rZt8zH84he4KTR6TykVtn",
+          "tool": "Write",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-database-migration-fable51-medium-01/gauntlet/builder-workspace/src/requirements.txt\n# No third-party dependencies: the tool uses only the Python standard library\n# (argparse, json, sqlite3, heapq), including the rollback support added in\n# Checkpoint 4 and the dependency resolution (validate / migrate-all) added in\n# Checkpoint 5. This file is kept so `pip install -r requirements.txt` works as\n# part of the standard setup.\n",
+          "output_excerpt": "The file /Users/jeremyhale/work/kojo/intermediate/runs/20260929-database-migration-fable51-medium-01/gauntlet/builder-workspace/src/requirements.txt has been updated successfully. (file state is current in your context \u2014 no need to Read it back)",
+          "action_sha256": "c634cdc51a48695ddd0a0903c0ba111ee3de28949738998e6f16822b3f0098e4",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 1,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "1b6772c11ccdcdce0cf2969524a05b3df9dede873724c9e68cab22b4d4589036",
+      "records": 135,
+      "tool_calls": 21,
+      "events": [
+        {
+          "record": 44,
+          "output_records": [
+            45
+          ],
+          "call_id": "toolu_01CcwFFEWsCfXxYeZQyyQvtS",
+          "tool": "Write",
+          "kind": "search",
+          "requested_urls": [
+            "[unparseable URL]"
+          ],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/config_service/server.py\n\"\"\"HTTP/JSON front-end for the config store.\"\"\"\n\nimport argparse\nimport json\nimport re\nimport sys\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\nfrom urllib.parse import unquote, urlsplit\n\nfrom . import errors\nfrom .store import (\n    Store,\n    is_int,\n    validate_config,\n    validate_includes,\n    validate_scope,\n    validate_version_number,\n)\n\nMAX_BODY_BYTES = 1024 * 1024\nCONTENT_TYPE = \"application/json; charset=utf-8\"\n\nACTIONS = (\"versions\", \"active\", \"rollback\", \"resolve\", \"activate\")\n\n\n# ---------------------------------------------------------------------------\n# Canonical JSON\n# ---------------------------------------------------------------------------\n\ndef _canon(value):\n    if isinstance(value, dict):\n        return {str(k): _canon(v) for k, v in value.items()}\n    if isinstance(value, list):\n        return [_canon(v) for v in value]\n    if isinstance(value, float):\n        if value.is_integer():\n            return int(value)\n        return value\n    return value\n\n\ndef canonical_json(value):\n   ",
+          "output_excerpt": "File created successfully at: /Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/config_service/server.py (file state is current in your context \u2014 no need to Read it back)",
+          "action_sha256": "3c7a211cdf998f9f6a8727dd01dc3f632a0fe24dc9116df654e0e7991edaae69",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 71,
+          "output_records": [
+            72
+          ],
+          "call_id": "toolu_01Jay1KHNwCEbaSWWYTYyTHu",
+          "tool": "Bash",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "cd \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src\" && chmod +x config_server && python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt && .venv/bin/python -m unittest tests.test_e2e -v 2>&1 | grep -v \" - \" | tail -40\nCreate venv, install requirements, run end-to-end tests",
+          "output_excerpt": "WARNING: The directory '/Users/jeremyhale/Library/Caches/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.\nTraceback (most recent call last):\n  File \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/tests/test_e2e.py\", line 170, in test_too_large\n    s, b, _ = self.post(\"/v1/configs/big\", raw=raw)\n              ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/tests/test_e2e.py\", line 43, in post\n    return self.req(\"POST\", path, body, raw)\n           ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/tests/test_e2e.py\", line 34, in req\n    conn.request(method, path, body=data, headers=headers)\n    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3",
+          "action_sha256": "8b9b69e43de958a89823558961cd1e19b1a6edd3620d933effe27a88b449e28b",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 101,
+          "output_records": [
+            102
+          ],
+          "call_id": "toolu_01C92bwSb23VZApbbCxhYAvJ",
+          "tool": "Bash",
+          "kind": "network_capable_operation",
+          "requested_urls": [
+            "http://127.0.0.1:18080/healthz",
+            "http://127.0.0.1:18080/v1/configs/base",
+            "http://127.0.0.1:18080/v1/configs/billing",
+            "http://127.0.0.1:18080/v1/configs/billing:resolve",
+            "http://127.0.0.1:18080/v1/configs/billing:rollback"
+          ],
+          "urls_in_output": [
+            "http://127.0.0.1:18080"
+          ],
+          "action_excerpt": "cd \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src\" && (.venv/bin/python ./config_server --address 127.0.0.1 --port 18080 & echo $! > $TMPDIR/cs.pid; sleep 1; curl -s -i http://127.0.0.1:18080/healthz echo; curl -s -X POST http://127.0.0.1:18080/v1/configs/base -d '{\"scope\":{\"env\":\"prod\"},\"config\":{\"db\":{\"host\":\"prod.db\",\"pool\":4}}}'; curl -s -X POST http://127.0.0.1:18080/v1/configs/billing -d '{\"scope\":{\"env\":\"prod\",\"app\":\"billing\"},\"includes\":[{\"name\":\"base\",\"scope\":{\"env\":\"prod\"}}],\"config\":{\"db\":{\"pool\":8},\"feature_flags\":[\"a\",\"b\"]}}'; curl -s -X POST http://127.0.0.1:18080/v1/configs/billing:resolve -d '{\"scope\":{\"env\":\"prod\",\"app\":\"billing\"}}'; curl -s -X POST http://127.0.0.1:18080/v1/configs/billing:rollback -d '{\"scope\":{\"env\":\"prod\",\"app\":\"billing\"},\"to_version\":5}'; kill $(cat $TMPDIR/cs.pid)) 2>&1 | grep -v \" - \"\nBoot config_server and exercise spec example with curl",
+          "output_excerpt": "(eval):1: nice(5) failed: operation not permitted\nconfig_server listening on http://127.0.0.1:18080\nHTTP/1.1 200 OK\r\nServer: config_server/1.0 \r\nDate: Tue, 29 Sep 2026 04:30:38 GMT\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 12\r\n\r\n{\"ok\":true}\n\n{\"active\":true,\"name\":\"base\",\"scope\":{\"env\":\"prod\"},\"version\":1}\n{\"active\":true,\"name\":\"billing\",\"scope\":{\"app\":\"billing\",\"env\":\"prod\"},\"version\":1}\n{\"name\":\"billing\",\"resolution_graph\":[{\"name\":\"base\",\"scope\":{\"env\":\"prod\"},\"version_used\":1},{\"name\":\"billing\",\"scope\":{\"app\":\"billing\",\"env\":\"prod\"},\"version_used\":1}],\"resolved_config\":{\"db\":{\"host\":\"prod.db\",\"pool\":8},\"feature_flags\":[\"a\",\"b\"]},\"scope\":{\"app\":\"billing\",\"env\":\"prod\"},\"version_used\":1}\n{\"error\":{\"code\":\"conflict\",\"details\":{\"active_version\":1,\"name\":\"billing\",\"scope\":{\"app\":\"billing\",\"env\":\"prod\"},\"to_version\":5},\"message\":\"rollback target must not be newer than the active version\"}}",
+          "action_sha256": "6ce1f54759f627fe0cbe2513d9af67015a4e1d98851a0e1599c52bb8c0c2bcb2",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 119,
+          "output_records": [
+            120
+          ],
+          "call_id": "toolu_01E8ENgDvjSxwJtSEUXi8BMY",
+          "tool": "Write",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md\n# config_server\n\nA single-process REST service that stores JSON configuration objects with\nimmutable versions, exact-match scoping, rollback, and ordered\nimports/inheritance across configs. Standard library only.\n\n## Run\n\n```sh\npython3 -m venv .venv\n.venv/bin/pip install -r requirements.txt   # no third-party deps\n./config_server --address 0.0.0.0 --port 8080\n```\n\n`pip install -e .` also installs a `config_server` console script.\n\n## Test\n\n```sh\n.venv/bin/python -m unittest discover -s tests -v\n```\n\n## Endpoints (all under `/v1`, JSON in / canonical JSON out)\n\n| Method | Path | Purpose |\n| --- | --- | --- |\n| GET | `/healthz` | liveness, `{\"ok\":true}` |\n| POST | `/v1/configs/{name}` | create a new immutable version |\n| POST | `/v1/configs/{name}:versions` | list versions for a `(name, scope)` |\n| POST | `/v1/configs/{name}/{version}` | raw stored version |\n| POST | `/v1/configs/{name}:active` | raw active version |\n| POST | `/v1/configs/{name}/{version}:activate` | make a version active |\n| POST | `/v1/configs/{name}:rollback` | activate an ea",
+          "output_excerpt": "File created successfully at: /Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md (file state is current in your context \u2014 no need to Read it back)",
+          "action_sha256": "9559195bef54fc0f32a6604b0e092467deef947a0e27d63b417f99bfd91c3e15",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 2,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "78d991480410092134e591f687e3ad1a679e0854bcafae6ab3ced4aa624ac723",
+      "records": 187,
+      "tool_calls": 41,
+      "events": [
+        {
+          "record": 45,
+          "output_records": [
+            46
+          ],
+          "call_id": "toolu_01KSGah4wtJ6jwrM4ZuWBKar",
+          "tool": "Bash",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "cd \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src\" && .venv/bin/pip install \"jsonschema>=4.18\" \"PyYAML>=6.0\" 2>&1 | tail -5 && .venv/bin/pip list\nInstall jsonschema and PyYAML into the venv\npypi.org\nfiles.pythonhosted.org",
+          "output_excerpt": "Permission to use Bash has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this denial in malicious ways, e.g. do not use your ability to run tests to execute non-test actions. You should only try to work around this restriction in reasonable ways that do not attempt to bypass the intent behind this denial. If you believe this capability is essential to complete the user's request, STOP and explain to the user what you were trying to do and why you need this permission. Let the user decide how to proceed.",
+          "action_sha256": "fe760048105a1bdc9ce1832978035e63d65d992f6548b8dce9c3ed875e87ee5b",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 52,
+          "output_records": [
+            53
+          ],
+          "call_id": "toolu_0195XKatEm93TjeWBFob6wqN",
+          "tool": "Bash",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "cd \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src\" && .venv/bin/pip install \"jsonschema>=4.18\" \"PyYAML>=6.0\" 2>&1 | tail -5; .venv/bin/pip list\nInstall jsonschema and PyYAML into the venv",
+          "output_excerpt": "Permission to use Bash has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this denial in malicious ways, e.g. do not use your ability to run tests to execute non-test actions. You should only try to work around this restriction in reasonable ways that do not attempt to bypass the intent behind this denial. If you believe this capability is essential to complete the user's request, STOP and explain to the user what you were trying to do and why you need this permission. Let the user decide how to proceed.",
+          "action_sha256": "d82d675959aab667f73c9da78681f72d27c5beb656a074d9156426458386cd04",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 85,
+          "output_records": [
+            86
+          ],
+          "call_id": "toolu_014VYDJeTVKKHvnABcLAM95r",
+          "tool": "Write",
+          "kind": "search",
+          "requested_urls": [
+            "https://json-schema.org/draft/2020-12/schema"
+          ],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/config_service/jsonschema_lite.py\n\"\"\"Self-contained JSON Schema Draft 2020-12 validator.\n\nSupports the validation and applicator vocabularies (type, enum, const,\nnumeric/string/array/object constraints, properties/patternProperties/\nadditionalProperties/propertyNames, prefixItems/items/contains,\nallOf/anyOf/oneOf/not, if/then/else, dependentRequired/dependentSchemas,\nunevaluatedProperties/unevaluatedItems, $ref/$dynamicRef with in-document\nresolution via JSON pointers, ``$anchor``/``$dynamicAnchor`` and ``$id``).\n\n``format`` is treated as an annotation only (the 2020-12 default).  Remote\nreferences are rejected at construction time; nothing touches the network.\n\"\"\"\n\nimport re\nfrom urllib.parse import unquote, urljoin\n\nMETA_URIS = frozenset(\n    (\n        \"https://json-schema.org/draft/2020-12/schema\",\n        \"https://json-schema.org/draft/2020-12/schema\",\n    )\n)\nTYPE_NAMES = frozenset(\n    (\"array\", \"boolean\", \"integer\", \"null\", \"number\", \"object\", \"string\")\n)\n_ANCHOR_RE = re.compile(r\"[A-Za-z_][-A-Za-z0-9._]*\")\nMAX_REF_DEPTH = 256\n\n\nclass SchemaInval",
+          "output_excerpt": "File created successfully at: /Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/config_service/jsonschema_lite.py (file state is current in your context \u2014 no need to Read it back)",
+          "action_sha256": "687a7399f8480527ee3bf42796c51ef326386c37ffb41d5bcdbfa894ff27a41e",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 170,
+          "output_records": [
+            171
+          ],
+          "call_id": "toolu_01Kuee1eg2ZwtWvVnagrLC7n",
+          "tool": "Edit",
+          "kind": "package_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md\n# config_server\n\nA single-process REST service that stores JSON configuration objects with\nimmutable versions, exact-match scoping, rollback, and ordered\nimports/inheritance across configs. Standard library only.\n\n## Run\n\n```sh\npython3 -m venv .venv\n.venv/bin/pip install -r requirements.txt   # no third-party deps\n./config_server --address 0.0.0.0 --port 8080\n```\n# config_server\n\nA single-process REST service that stores JSON configuration objects with\nimmutable versions, exact-match scoping, rollback, ordered\nimports/inheritance across configs, a versioned JSON Schema registry with\nper-config bindings, and raw YAML/TOML/JSON ingestion. Standard library only\n(Python 3.11+; `tomli` is pulled in on older interpreters).\n\n## Run\n\n```sh\npython3 -m venv .venv\n.venv/bin/pip install -r requirements.txt   # no third-party deps on 3.11+\n./config_server --address 0.0.0.0 --port 8080\n```",
+          "output_excerpt": "The file /Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md has been updated successfully.",
+          "action_sha256": "4ea29ce8229649c8164c4ff8510d4135b45aef31c5060983b70d3c2e54dd2d57",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 172,
+          "output_records": [
+            173
+          ],
+          "call_id": "toolu_01QKNjZGm2RmCJDP3XVNCbqu",
+          "tool": "Edit",
+          "kind": "network_capable_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md\n| POST | `/v1/configs/{name}:resolve` | apply includes with deterministic deep merge |\n\n## Behavioural notes\n| POST | `/v1/configs/{name}:resolve` | apply includes with deterministic deep merge, then validate |\n| POST | `/v1/schemas/{schema_name}` | create a new immutable JSON Schema (2020-12) version |\n| POST | `/v1/schemas/{schema_name}/versions` | list schema versions ascending |\n| POST | `/v1/schemas/{schema_name}/{version}` | fetch a stored schema |\n| POST | `/v1/configs/{name}:bind` | bind a `(schema_name, version)` to a `(name, scope)` |\n| POST | `/v1/configs/{name}/schema` | read the active binding |\n| POST | `/v1/configs/{name}:validate` | validate a stored/resolved version without changing state |\n\n## Schemas, bindings and validation\n\n* **Schema versions** are immutable, numbered from 1 per `schema_name`\n  (max 1,000; `409 conflict` beyond). Bodies are `{\"schema\": {...}}` or\n  `{\"raw_schema\": \"...\", \"raw_format\": \"json|yaml\"}` (max 1 MiB \u2192 `413`).\n* Schemas are checked structurally against Draft 2020-12 at creation\n  (`422 schema_inv",
+          "output_excerpt": "The file /Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md has been updated successfully.",
+          "action_sha256": "6977ac688254c1ca84af79072c8eb456e90e0ab16051f5088cd4e4fb4679f556",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 180,
+          "output_records": [
+            181
+          ],
+          "call_id": "toolu_01Kw6tviXB5ekbS8hzF9kNMS",
+          "tool": "Bash",
+          "kind": "network_capable_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "cd \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src\" && (./config_server --address 127.0.0.1 --port 18099 2>/dev/null & echo $! > \"$TMPDIR/cs.pid\"; sleep 1; curl -s -X POST localhost:18099/v1/schemas/cfg -H 'Content-Type: application/json; charset=utf-8' -d '{\"raw_schema\":\"type: object\\nproperties:\\n  db: {type: object, properties: {pool: {type: integer}}}\\n\",\"raw_format\":\"yaml\"}'; curl -s -X POST localhost:18099/v1/configs/billing:bind -H 'Content-Type: application/json' -d '{\"scope\":{\"env\":\"prod\"},\"schema_ref\":{\"name\":\"cfg\",\"version\":1}}'; curl -s -X POST localhost:18099/v1/configs/billing -H 'Content-Type: application/json' -d '{\"scope\":{\"env\":\"prod\"},\"raw_config\":\"[db]\\npool = \\\"8\\\"\",\"raw_format\":\"toml\"}'; curl -s -X POST localhost:18099/v1/configs/billing -H 'Content-Type: application/json' -d '{\"scope\":{\"env\":\"prod\"},\"raw_config\":\"[db]\\npool = 8\",\"raw_format\":\"toml\"}'; curl -s -X POST localhost:18099/v1/configs/billing:resolve -H 'Content-Type: application/json' -d '{\"scope\":{\"env\":\"prod\"}}'; kill $(cat \"$TMPDIR/cs.pid\"))\nBoot real config_server binary and exercise it with curl",
+          "output_excerpt": "(eval):1: nice(5) failed: operation not permitted\n{\"name\":\"cfg\",\"version\":1}\n{\"active\":true,\"name\":\"billing\",\"schema_ref\":{\"name\":\"cfg\",\"version\":1},\"scope\":{\"env\":\"prod\"}}\n{\"error\":{\"code\":\"validation_failed\",\"details\":{\"actual\":\"string\",\"expected\":\"integer\",\"path\":\"/db/pool\",\"rule\":\"type\"},\"message\":\"Config does not conform to schema\"}}\n{\"active\":true,\"name\":\"billing\",\"scope\":{\"env\":\"prod\"},\"version\":1}\n{\"name\":\"billing\",\"resolution_graph\":[{\"name\":\"billing\",\"scope\":{\"env\":\"prod\"},\"version_used\":1}],\"resolved_config\":{\"db\":{\"pool\":8}},\"scope\":{\"env\":\"prod\"},\"validated_against\":{\"name\":\"cfg\",\"version\":1},\"version_used\":1}",
+          "action_sha256": "f8bc098b276694718889fbb46316bde3732586878b9c2fe0fc2bbb600afef4bc",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 3,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "31c26e1bc64011bbf90ac7bf1bfce798736f1e30c080ce3e638fbf879be44828",
+      "records": 260,
+      "tool_calls": 67,
+      "events": [
+        {
+          "record": 234,
+          "output_records": [
+            235
+          ],
+          "call_id": "toolu_017z2oSsNfLck5fR2iGstKZV",
+          "tool": "Edit",
+          "kind": "network_capable_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md\n| POST | `/v1/configs/{name}` | create a new immutable version |\n| POST | `/v1/configs/{name}:versions` | list versions for a `(name, scope)` |\n| POST | `/v1/configs/{name}/{version}` | raw stored version |\n| POST | `/v1/configs/{name}:active` | raw active version |\n| POST | `/v1/configs/{name}/{version}:activate` | make a version active |\n| POST | `/v1/configs/{name}:rollback` | activate an earlier (or the same) version |\n| POST | `/v1/configs/{name}` | create a new immutable **draft** version |\n| POST | `/v1/configs/{name}:versions` | list versions for a `(name, scope)` |\n| POST | `/v1/configs/{name}/{version}` | raw stored version |\n| POST | `/v1/configs/{name}:active` | raw active version |\n| POST | `/v1/configs/{name}/versions/{version}:activate` | activate a version via an approved proposal (`/{name}/{version}:activate` also accepted) |\n| POST | `/v1/configs/{name}:rollback` | activate an earlier (or the same) version via an approved proposal |\n| POST | `/v1/configs/{name}:policy` | get or set the approval policy for a `(name, scope)` |\n",
+          "output_excerpt": "The file /Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md has been updated successfully.",
+          "action_sha256": "da49ac77973b8148e4844cc54642c9d34bf87f7fe63775e30252a85d7f4727d2",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 246,
+          "output_records": [
+            249
+          ],
+          "call_id": "toolu_01TM9YGxmk8MEDUDuaCVG5rt",
+          "tool": "Bash",
+          "kind": "network_capable_operation",
+          "requested_urls": [
+            "http://127.0.0.1:18099/healthz",
+            "http://127.0.0.1:18099/v1/configs/x:policy",
+            "http://127.0.0.1:18099/v1/proposals/1:get"
+          ],
+          "urls_in_output": [
+            "http://127.0.0.1:18099"
+          ],
+          "action_excerpt": "cd \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src\" && (.venv/bin/python ./config_server --address 127.0.0.1 --port 18099 2>$TMPDIR/srv.log & echo $! > $TMPDIR/srv.pid); sleep 1; curl -s -i http://127.0.0.1:18099/healthz echo; curl -s -X POST http://127.0.0.1:18099/v1/configs/x:policy -d '{\"scope\":{}}'; curl -s -X POST http://127.0.0.1:18099/v1/proposals/1:get kill $(cat $TMPDIR/srv.pid); cat $TMPDIR/srv.log | head -3\nBoot the entrypoint with flags and probe it",
+          "output_excerpt": "(eval):1: nice(5) failed: operation not permitted\nHTTP/1.1 200 OK\r\nServer: config_server/1.0 \r\nDate: Tue, 29 Sep 2026 05:03:33 GMT\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 12\r\n\r\n{\"ok\":true}\n\n{\"allow_author_approval\":false,\"allowed_reviewers\":null,\"name\":\"x\",\"required_approvals\":2,\"scope\":{}}\n{\"error\":{\"code\":\"not_found\",\"details\":{\"proposal_id\":1},\"message\":\"proposal not found\"}}\nconfig_server listening on http://127.0.0.1:18099\n127.0.0.1 - \"GET /healthz HTTP/1.1\" 200 -\n127.0.0.1 - \"POST /v1/configs/x:policy HTTP/1.1\" 200 -",
+          "action_sha256": "5e31e2b4aedc0a6696928f8b060755ad244fa1abec66fdd8300a96da3c0e8334",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        }
+      ],
+      "flagged_records": [],
+      "parse_or_coverage_errors": [],
+      "coverage_notes": [],
+      "limitations": [
+        "Heuristic transcript audit, not a complete egress log or proof of no contamination.",
+        "Silent/encoded/generated scripts, redirects, package transitive fetches and truncated output may hide destinations.",
+        "Report only: no automatic stop, exclusion or validity verdict. The user judges whether external sources contaminated the experiment."
+      ]
+    },
+    {
+      "run_id": "20260929-dynamic-config-service-api-fable51-medium-01",
+      "checkpoint": 4,
+      "schema_version": 2,
+      "status": "no_benchmark_access_observed",
+      "review_suggested": false,
+      "transcript_sha256": "76214095181d13b3014241ef546fb6d334643aa6a409f534b74b8455581e5d36",
+      "records": 244,
+      "tool_calls": 55,
+      "events": [
+        {
+          "record": 209,
+          "output_records": [
+            210
+          ],
+          "call_id": "toolu_01BXCsUMZKbAr1RBAYQeTG9t",
+          "tool": "Edit",
+          "kind": "network_capable_operation",
+          "requested_urls": [],
+          "urls_in_output": [],
+          "action_excerpt": "/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md\n| POST | `/v1/configs/{name}:validate` | validate a stored/resolved version without changing state |\n| POST | `/v1/configs/{name}:validate` | validate a stored/resolved version without changing state |\n| POST | `/v1/policies/bundles/{bundle}/versions` | create an immutable policy bundle version (Rego modules + data) |\n| POST | `/v1/policies/bundles/{bundle}/versions:list` | list bundle versions ascending with metadata summaries |\n| POST | `/v1/policies/bundles/{bundle}/versions/{version}:get` | fetch stored modules, data and metadata |\n| POST | `/v1/policies/bindings` | bind a bundle version to an exact-match selector |\n| POST | `/v1/policies/bindings:list` | list bindings |\n| POST | `/v1/policies/bindings/{id}:get` / `:delete` | read or remove a binding |\n| POST | `/v1/policies/stack` | the sorted policy stack that applies to a `(name, scope)` |\n| POST | `/v1/policies/evaluate` | run the stack against a resolved config and its graph (read-only) |\n| POST | `/v1/policies/explain` | human-readable lines describing one violation (read-only) |\n\n##",
+          "output_excerpt": "The file /Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src/README.md has been updated successfully.",
+          "action_sha256": "cbbde18925c2c9f86ab5af33f67a89ab5ab57af2fa08049367768f630a0c919b",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 217,
+          "output_records": [
+            220
+          ],
+          "call_id": "toolu_012KTu6MqsyPQP4jcFaSwFdu",
+          "tool": "Bash",
+          "kind": "network_capable_operation",
+          "requested_urls": [
+            "[unparseable URL]"
+          ],
+          "urls_in_output": [
+            "http://127.0.0.1:18477"
+          ],
+          "action_excerpt": "cd \"/Users/jeremyhale/work/kojo/intermediate/runs/20260929-dynamic-config-service-api-fable51-medium-01/gauntlet/builder-workspace/src\" && PORT=18477 && (.venv/bin/python ./config_server --address 127.0.0.1 --port $PORT >\"$TMPDIR/server.log\" 2>&1 &) && sleep 1 && curl -s -i [unparseable URL] | head -8 && echo && curl -s -X POST [unparseable URL] -H 'Content-Type: application/json' -d '{\"name\":\"x\",\"scope\":{\"env\":\"prod\"}}' && curl -s -X POST [unparseable URL] -H 'Content-Type: application/json' -d '{\"rego_modules\":{\"main.rego\":\"package guardrails\\ndeny[v] { v := {\\\"id\\\":\\\"x\\\"} }\"}}' && curl -s -X POST [unparseable URL] -H 'Content-Type: application/json' -d '{\"bundle\":{\"name\":\"demo\",\"version\":1},\"selector\":{\"env\":\"prod\"}}' && curl -s -X POST [unparseable URL] -H 'Content-Type: application/json' -d '{\"name\":\"x\",\"scope\":{\"env\":\"prod\"}}'; pkill -f \"config_server --address 127.0.0.1 --port $PORT\"; echo; cat \"$TMPDIR/server.log\" | head -3\nStart the real server process and probe healthz plus policy routes",
+          "output_excerpt": "(eval):1: nice(5) failed: operation not permitted\nHTTP/1.1 200 OK\r\nServer: config_server/1.0 \r\nDate: Tue, 29 Sep 2026 05:28:52 GMT\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 12\r\n\r\n{\"ok\":true}\n\n[]\n{\"bundle_name\":\"demo\",\"version\":1}\n{\"binding_id\":1,\"bundle\":{\"name\":\"demo\",\"version\":1},\"created_at\":\"2026-09-29T05:28:52Z\",\"graph_keys\":[\"env\",\"tenant\"],\"priority\":0,\"selector\":{\"env\":\"prod\"}}\n[{\"binding_id\":1,\"bundle\":{\"name\":\"demo\",\"version\":1},\"graph_keys\":[\"env\",\"tenant\"],\"priority\":0,\"selector\":{\"env\":\"prod\"}}]\nsysmon request failed with error: sysmond service not found\npkill: Cannot get process list\n\nconfig_server listening on http://127.0.0.1:18477\n127.0.0.1 - \"GET /healthz HTTP/1.1\" 200 -\n127.0.0.1 - \"POST /v1/policies/stack HTTP/1.1\" 200 -",
+          "action_sha256": "4951e1a7eabbdaf5ac7f5e04cd55be822800cb33906847b39559b46cd0ae7721",
+          "flags": [],
+          "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
+        },
+        {
+          "record": 225,
+          "output_records": [
+            226
+          ],
+          "call_id": "toolu_011tqqXDHvoPKQ2XzZajKp4Y",
+          "tool": "Bash",
+          "kind": "network_capable_operation",
+          "requested_urls": [
+            "http://127.0.0.1:18477/healthz"
+          ],
+          "urls_in_output": [],
+          "action_excerpt": "(lsof -ti tcp:18477 | xargs -r kill) 2>&1; sleep 0.5; (curl -s --max-time 1 http://127.0.0.1:18477/healthz && echo \"STILL RUNNING\") || echo \"server stopped\"\nStop the background smoke-test server",
+          "output_excerpt": "kill: 72208: Operation not permitted\n{\"ok\":true}\nSTILL RUNNING",
+          "action_sha256": "e9ee42497f02c9d929692545a27912f92b04362066626c2f0d9f85bf47e796f3",
           "flags": [],
           "evidence": "Recorded tool action/output; URLs may be attempted targets or references, not confirmed individual fetches."
         }

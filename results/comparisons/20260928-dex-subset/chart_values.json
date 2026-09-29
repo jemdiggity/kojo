@@ -36,6 +36,15 @@
     "upper_bound": true
   },
   {
+    "model": "fable51",
+    "scope": "suite",
+    "release_date": "2026-09-01",
+    "partial_percent": 85.0534218926718,
+    "cost": 69.8409235,
+    "percentage_points_per_dollar": 1.217816398041641,
+    "upper_bound": false
+  },
+  {
     "model": "opus5",
     "scope": "suite",
     "release_date": "2026-07-24",

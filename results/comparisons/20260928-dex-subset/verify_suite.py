@@ -5,12 +5,12 @@ ROOT=Path(__file__).resolve().parents[3];OUT=Path(__file__).resolve().parent
 sys.path.insert(0,str(ROOT/'src'))
 from kojo.gauntlet import hashes
 from kojo.external_access import audit_external_sources
-models={'opus5':'claude-opus-5','opus55':'claude-opus-5-5','sonnet55':'claude-sonnet-5-5','astra6':'gpt-6-astra','sol56':'gpt-5.6-sol','sol6':'gpt-6-sol'}
+models={'opus5':'claude-opus-5','opus55':'claude-opus-5-5','sonnet55':'claude-sonnet-5-5','astra6':'gpt-6-astra','sol56':'gpt-5.6-sol','sol6':'gpt-6-sol','fable51':'claude-fable-5-1'}
 checks=[];external=[]
 for tag,model in models.items():
  for problem,count in [('circuit_eval',8),('database_migration',5),('dynamic_config_service_api',4)]:
-  date='20260929' if problem=='dynamic_config_service_api' and tag in ['opus55','sonnet55'] else '20260928'
-  attempt='02' if (problem=='database_migration' and tag!='sonnet55') or date=='20260929' else '01'
+  date='20260929' if tag=='fable51' or (problem=='dynamic_config_service_api' and tag in ['opus55','sonnet55']) else '20260928'
+  attempt='02' if (problem=='database_migration' and tag not in ['sonnet55','fable51']) or (date=='20260929' and tag!='fable51') else '01'
   rid=f'{date}-{problem.replace("_","-")}-{tag}-medium-{attempt}'
   for n in range(1,count+1):
    cp=ROOT/'results/runs'/rid/f'build/checkpoint_{n}';raw=ROOT/'intermediate/runs'/rid/f'gauntlet/training-build/{problem}/checkpoint_{n}'

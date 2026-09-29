@@ -2,7 +2,7 @@
 
 September 28, 2026
 
-We ran six coding models through three evolving software problems: `circuit_eval`,
+We ran seven coding models through three evolving software problems: `circuit_eval`,
 `database_migration`, and `dynamic_config_service_api`. Each model worked through
 17 checkpoints at medium effort, carrying its code into a fresh conversation each
 time. No reviewer, fixer, or learned skills were supplied in this comparison.
@@ -10,15 +10,14 @@ time. No reviewer, fixer, or learned skills were supplied in this comparison.
 **Astra 6 led on correctness and was the only completed model to fully pass a
 problem: all eight checkpoints of `circuit_eval`.** Sonnet 5.5 matched Opus 5.5’s
 strict score at about one third of its API-equivalent cost. Static code-quality
-scores did not track correctness: Opus 5 had the lowest measured erosion but the
-fewest fully passing checkpoints.
+scores did not track correctness: Opus 5 had the lowest measured erosion despite weak
+strict correctness.
 
 **[Read the full results, checkpoint breakdown, quality analysis, and methodology →](results/comparisons/20260928-dex-subset/SUITE_ANALYSIS.md)**
 
 ## Results at a glance
 
-Models are listed newest release first. These are the six completed baselines;
-Fable 5.1 is being evaluated separately and is not included below.
+Models are listed newest release first. All seven baselines are complete.
 
 | Model | Strict checkpoints passed | Partial pass | API-equivalent cost |
 |---|---:|---:|---:|
@@ -26,6 +25,7 @@ Fable 5.1 is being evaluated separately and is not included below.
 | Opus 5.5 | 7/17 | 90.7% | $21.07 |
 | Sol 6 | 5/17 | 90.3% | ≥$4.03 |
 | Astra 6 | 11/17 | 90.8% | ≥$15.89 |
+| Fable 5.1 | 3/17 | 85.1% | $69.84 |
 | Opus 5 | 4/17 | 85.8% | $72.85 |
 | Sol 5.6 | 8/17 | 90.6% | ≥$13.29 |
 
@@ -61,6 +61,9 @@ Figure numbers match the full report; this README includes only three highlights
 One trajectory per model on three problems is preliminary evidence. Checkpoints
 share regression tests and are not independent tasks. Provider interruptions and
 harness recovery affected some runs; the full report preserves those limitations.
+Fable’s `dynamic_config_service_api` run encountered two denied package-install
+attempts and wrote replacements; network-enabled configuration did not guarantee
+unrestricted dependency installation. This is disclosed in the full report.
 Astra submitted a shell wrapper around Python for `dynamic_config_service_api`;
 we corrected our launcher and regraded unchanged source against unchanged tests.
 
@@ -88,9 +91,9 @@ sh scripts/scb_setup.sh
 Preview and audit without inference, then run:
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56 --audit
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 opus5 sol56 --run
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --audit
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --run
 ```
 
 Select models with a space-separated list:
@@ -113,7 +116,7 @@ Supported suite aliases map to exact provider IDs; they are not moving “latest
 
 `--models` is required; no models are selected implicitly. Duplicate models are rejected. Use the same selection for audit and run.
 
-Use a fresh ID for each experiment. Use `--models sonnet55` for a single model. The example runs six models through all three problems: 102 sessions
+Use a fresh ID for each experiment. Use `--models sonnet55` for a single model. The example runs seven models through all three problems: 119 sessions
 at medium effort, with 30 minutes per session and no review. **`--run` consumes
 provider allowance; usage is reported but there is no spending cap.** Your accounts
 must have access to the selected models. No Docker or tmux is required.

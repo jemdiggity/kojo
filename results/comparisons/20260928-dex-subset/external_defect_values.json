@@ -74,6 +74,23 @@
       "total_failed": 53
     },
     {
+      "model": "fable51",
+      "name": "Fable 5.1",
+      "study": "Kojo",
+      "release_date": "2026-09-01",
+      "failed": [
+        60,
+        21,
+        17
+      ],
+      "skipped": [
+        0,
+        1,
+        15
+      ],
+      "total_failed": 98
+    },
+    {
       "model": "opus5",
       "name": "Opus 5",
       "study": "Dexter",

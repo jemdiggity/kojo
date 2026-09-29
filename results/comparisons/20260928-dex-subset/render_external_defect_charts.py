@@ -31,7 +31,7 @@ plt.rcParams.update({'font.family':'DejaVu Sans','font.size':10,'axes.spines.top
 labels=[r['name']+' · '+r['study'] for r in rows];y=np.arange(len(rows));D=P/'charts'
 foot=('Final checkpoint only; no sum across checkpoint copies. Counts are failing tests, not distinct root causes. Lower is better.\n'
       'Dexter: published chart labels; test counts/pin/effort/skips unavailable. Kojo: skips excluded and disclosed. Cross-study descriptive comparison.\n'
-      'Newest release first; same-day ties alphabetical. Original paper: matching counts unavailable, not zero. Fable omitted until its suite completes.')
+      'Newest release first; same-day ties alphabetical. Original paper: matching counts unavailable, not zero.')
 figure_numbers=json.loads((P/'figure_numbers.json').read_text())
 def save(fig,stem):
     number=figure_numbers[stem]

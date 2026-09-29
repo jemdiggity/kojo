@@ -3,7 +3,7 @@ import json,statistics
 from pathlib import Path
 P=Path(__file__).resolve().parent;BASE=P.parent
 rows=json.loads((P/'quality.json').read_text())['rows']
-models=['opus5','opus55','sonnet55','astra6','sol56','sol6'];names=dict(zip(models,['Opus 5','Opus 5.5','Sonnet 5.5','Astra 6','Sol 5.6','Sol 6']))
+models=['opus5','opus55','sonnet55','astra6','sol56','sol6','fable51'];names=dict(zip(models,['Opus 5','Opus 5.5','Sonnet 5.5','Astra 6','Sol 5.6','Sol 6','Fable 5.1']))
 release=json.loads((BASE/'model_release_dates.json').read_text())['models']
 models.sort(key=lambda m:(-int(release[m]['date'].replace('-','')),names[m]))
 problems=['circuit_eval','database_migration','dynamic_config_service_api']
@@ -11,9 +11,9 @@ def subset(m,p):return sorted([r for r in rows if '-'+m+'-medium-' in r['run_id'
 def finals(m):return [subset(m,p)[-1] for p in problems]
 def meanfinal(m,k,v='entrypoint-normalized'):return statistics.mean(r['variants'][v]['metrics'][k] for r in finals(m))
 lines=['# Code quality across the complete three-problem suite','',
-'All 102 accepted checkpoint snapshots analyzed without executing submissions or calling models. Main results include all discovered Python, with extensionless Python entrypoints renamed only in analysis copies. Native filename-discovery and non-test-Python sensitivity results are retained.','',
+'All 119 accepted checkpoint snapshots analyzed without executing submissions or calling models. Main results include all discovered Python, with extensionless Python entrypoints renamed only in analysis copies. Native filename-discovery and non-test-Python sensitivity results are retained.','',
 '## Main findings','',
-'Opus 5 leaves the most code and the lowest mean final erosion, but achieves the lowest strict correctness score. Astra has the lowest mean final verbosity on all discovered Python; excluding test-named files raises its score substantially. No single static metric provides an overall model ranking.','',
+'Opus 5 leaves the most code and the lowest mean final erosion, despite weak strict correctness. Astra has the lowest mean final verbosity on all discovered Python; excluding test-named files raises its score substantially. No single static metric provides an overall model ranking.','',
 '| Model | Final SLOC, summed | Test-named SLOC | Final erosion, mean | Final verbosity, mean | Non-test erosion | Non-test verbosity |','|---|---:|---:|---:|---:|---:|---:|']
 for m in models:
  fs=finals(m);loc=sum(r['variants']['entrypoint-normalized']['metrics']['total_loc'] for r in fs);test=sum(r['variants']['entrypoint-normalized']['metrics']['test_sloc'] for r in fs)
@@ -25,7 +25,7 @@ for m in models:
  for k in ['erosion','verbosity']:counts.append(sum(subset(m,p)[-1]['variants']['entrypoint-normalized']['metrics'][k]>subset(m,p)[0]['variants']['entrypoint-normalized']['metrics'][k] for p in problems))
  lines.append(f'| {names[m]} | {counts[0]}/3 | {counts[1]}/3 |')
 lines+=['','## Chart guide','',
-'The following charts adapt the questions and presentation in [Dex Horthy’s write-up](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/benchmarking-opus-5-on-slop-code-bench.md) and [SlopCodeBench v2](https://arxiv.org/pdf/2603.24755v2). They use our six models and three problems; they do not reproduce the papers’ measured populations.']
+'The following charts adapt the questions and presentation in [Dex Horthy’s write-up](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/benchmarking-opus-5-on-slop-code-bench.md) and [SlopCodeBench v2](https://arxiv.org/pdf/2603.24755v2). They use our seven models and three problems; they do not reproduce the papers’ measured populations.']
 figs=[(1,'strict-pass-bars','Strict pass rate'),(2,'checkpoint-grid','Checkpoint pass grid'),(9,'code-volume','Final code volume and function counts'),(10,'test-code-split','Test-named versus other Python source'),(11,'complexity-duplication','Complexity and duplication across checkpoints'),(12,'functions-complexity','Callable count versus mean complexity'),(13,'single-use-functions','Callables with one statically detected use'),(14,'quality-progress','Paper-style normalized erosion and verbosity trajectories'),(15,'quality-by-problem','Erosion and verbosity for each problem'),(16,'quality-test-sensitivity','Quality scores with and without generated tests'),(17,'metric-spread','Relative metric growth in circuit_eval')]
 figure_numbers=json.loads((BASE/'figure_numbers.json').read_text())
 for _,file,title in figs:

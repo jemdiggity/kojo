@@ -1,5 +1,5 @@
 {
-  "unique_checkpoints": 102,
+  "unique_checkpoints": 119,
   "variants_per_checkpoint": 3,
   "source_hashes_verified_before_and_after": true,
   "file_counts_and_sloc_sums_verified": true,
@@ -17,5 +17,7 @@
   "regression_tests_passed": 3,
   "analyzer_fix": "physical-lines-v1",
   "unicode_affected_snapshots": 6,
-  "shell_entrypoint_snapshots": 8
+  "shell_entrypoint_snapshots": 8,
+  "original_six_model_quality_unchanged": true,
+  "original_six_model_scores_usage_unchanged": true
 }

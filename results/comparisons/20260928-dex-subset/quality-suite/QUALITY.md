@@ -1,10 +1,10 @@
 # Code quality across the complete three-problem suite
 
-All 102 accepted checkpoint snapshots analyzed without executing submissions or calling models. Main results include all discovered Python, with extensionless Python entrypoints renamed only in analysis copies. Native filename-discovery and non-test-Python sensitivity results are retained.
+All 119 accepted checkpoint snapshots analyzed without executing submissions or calling models. Main results include all discovered Python, with extensionless Python entrypoints renamed only in analysis copies. Native filename-discovery and non-test-Python sensitivity results are retained.
 
 ## Main findings
 
-Opus 5 leaves the most code and the lowest mean final erosion, but achieves the lowest strict correctness score. Astra has the lowest mean final verbosity on all discovered Python; excluding test-named files raises its score substantially. No single static metric provides an overall model ranking.
+Opus 5 leaves the most code and the lowest mean final erosion, despite weak strict correctness. Astra has the lowest mean final verbosity on all discovered Python; excluding test-named files raises its score substantially. No single static metric provides an overall model ranking.
 
 | Model | Final SLOC, summed | Test-named SLOC | Final erosion, mean | Final verbosity, mean | Non-test erosion | Non-test verbosity |
 |---|---:|---:|---:|---:|---:|---:|
@@ -12,6 +12,7 @@ Opus 5 leaves the most code and the lowest mean final erosion, but achieves the 
 | Opus 5.5 | 10.4K | 0.4K (4%) | 0.747 | 0.381 | 0.740 | 0.388 |
 | Sol 6 | 3.8K | 0.0K (0%) | 0.869 | 0.430 | 0.869 | 0.430 |
 | Astra 6 | 5.4K | 1.9K (36%) | 0.752 | 0.252 | 0.836 | 0.366 |
+| Fable 5.1 | 14.3K | 2.4K (17%) | 0.656 | 0.411 | 0.661 | 0.447 |
 | Opus 5 | 21.8K | 9.4K (43%) | 0.455 | 0.299 | 0.535 | 0.393 |
 | Sol 5.6 | 4.6K | 0.0K (0%) | 0.818 | 0.482 | 0.818 | 0.482 |
 
@@ -23,12 +24,13 @@ Final metrics are equal-weight means over the three problems. SLOC is summed acr
 | Opus 5.5 | 2/3 | 2/3 |
 | Sol 6 | 2/3 | 1/3 |
 | Astra 6 | 2/3 | 1/3 |
+| Fable 5.1 | 2/3 | 2/3 |
 | Opus 5 | 3/3 | 2/3 |
 | Sol 5.6 | 3/3 | 2/3 |
 
 ## Chart guide
 
-The following charts adapt the questions and presentation in [Dex Horthy’s write-up](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/benchmarking-opus-5-on-slop-code-bench.md) and [SlopCodeBench v2](https://arxiv.org/pdf/2603.24755v2). They use our six models and three problems; they do not reproduce the papers’ measured populations.
+The following charts adapt the questions and presentation in [Dex Horthy’s write-up](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/benchmarking-opus-5-on-slop-code-bench.md) and [SlopCodeBench v2](https://arxiv.org/pdf/2603.24755v2). They use our seven models and three problems; they do not reproduce the papers’ measured populations.
 
 ### Figure 1. Strict pass rate
 

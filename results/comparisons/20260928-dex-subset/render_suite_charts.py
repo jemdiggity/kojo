@@ -43,7 +43,7 @@ for ax,p in zip(axs,problems):
  for r in rows:
   cs=checks(r,p);ax.plot([c['checkpoint'] for c in cs],[c['failed'] for c in cs],marker='o',markersize=4,color=colors[r['model']],label=names[r['model']])
  ax.set_title(p,fontfamily='DejaVu Sans Mono',fontsize=11);ax.set_xlabel('Checkpoint');ax.set_ylabel('Failing tests');ax.set_xticks(range(1,counts[problems.index(p)]+1));ax.set_ylim(bottom=-1);ax.grid(axis='y',alpha=.2)
-fig.legend(*axs[0].get_legend_handles_labels(),loc='upper center',bbox_to_anchor=(.5,1.09),ncol=6,frameon=False)
+fig.legend(*axs[0].get_legend_handles_labels(),loc='upper center',bbox_to_anchor=(.5,1.09),ncol=len(models),frameon=False)
 fig.suptitle('Figure 3. Failures across successive checkpoint implementations',y=1.16,fontsize=17)
 save(fig,'failure-trajectories','Skipped tests are excluded. Missing checkpoints are not zeros. Tests change across checkpoints; one failing test is not necessarily one defect.')
 fig,axs=plt.subplots(1,3,figsize=(15,5),layout='constrained')
@@ -65,7 +65,7 @@ for ax,p in zip(axs,problems):
   if p=='dynamic_config_service_api':ax.annotate(names[r['model']],(cost(r,[p]),checks(r,p)[-1]['failed']),xytext=offset,textcoords='offset points',ha='right' if offset[0]<0 else 'left',fontsize=8,arrowprops={'arrowstyle':'-','color':colors[r['model']],'lw':.6})
  ax.set_title(p,fontfamily='DejaVu Sans Mono',fontsize=11);ax.set_xlabel('Total problem cost · API-equivalent USD');ax.set_ylabel('Final-checkpoint failing tests');ax.margins(x=.15,y=.25);ax.set_xlim(left=0);ax.set_ylim(bottom=-.5);ax.grid(alpha=.2)
 fig.suptitle('Figure 5. Cost versus remaining failures',fontsize=17,y=1.16)
-fig.legend(*axs[0].get_legend_handles_labels(),loc='upper center',bbox_to_anchor=(.5,1.09),ncol=6,frameon=False)
+fig.legend(*axs[0].get_legend_handles_labels(),loc='upper center',bbox_to_anchor=(.5,1.09),ncol=len(models),frameon=False)
 save(fig,'cost-failures','Includes failed attempts, excludes duplicate resume receipts. Codex database_migration costs are lower bounds. Pending final checkpoints omitted.')
 fig,axis=plt.subplots(figsize=(10,5.6),layout='constrained');value_rows=[]
 for ax,ps,title in [(axis,problems,'All 17 checkpoints · completed runs')]:

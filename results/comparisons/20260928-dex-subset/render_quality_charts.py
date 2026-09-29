@@ -17,7 +17,7 @@ by={(next(m for m in models if '-'+m+'-medium-' in r['run_id']),r['problem'],r['
 def metrics(m,p,cp,variant='entrypoint-normalized'):return by[m,p,cp]['variants'][variant]['metrics']
 def total(m,k):return sum(metrics(m,p,n)[k] for p,n in zip(problems,counts))
 def title(ax,p):ax.set_title(p,fontfamily='DejaVu Sans Mono',fontsize=11)
-def legend(fig,ax):fig.legend(*ax.get_legend_handles_labels(),loc='upper center',bbox_to_anchor=(.5,1.09),ncol=6,frameon=False)
+def legend(fig,ax):fig.legend(*ax.get_legend_handles_labels(),loc='upper center',bbox_to_anchor=(.5,1.09),ncol=len(models),frameon=False)
 fig,ax=plt.subplots(figsize=(10,5),layout='constrained')
 sortedrows=rows
 y=np.arange(len(models));rates=[100*r['strict']/17 for r in sortedrows]
@@ -38,17 +38,17 @@ for ax,p,n in zip(axs,problems,counts):
   r=next(r for r in rows if r['model']==m)
   for c in range(1,n+1):
    v=next(x for x in r['checkpoints'] if x['problem']==p and x['checkpoint']==c);ax.text(c-1,i,("100%" if v["strict"] else f"{100*v['passed']/sum(v[s] for s in ['passed','failed','skipped']):.1f}%"),ha='center',va='center',fontsize=9)
- ax.set_xticks(range(n),range(1,n+1));ax.set_yticks(range(6),[names[m] for m in models]);ax.set_xlabel('Checkpoint');title(ax,p)
+ ax.set_xticks(range(n),range(1,n+1));ax.set_yticks(range(len(models)),[names[m] for m in models]);ax.set_xlabel('Checkpoint');title(ax,p)
 fig.suptitle('Figure 2. Every checkpoint at a glance',fontsize=17)
 save(fig,'checkpoint-grid','Green: all collected tests passed. Peach: not a strict pass. Text: passed/collected %, including skips. Not an independent-task heatmap.')
 fig,axs=plt.subplots(1,2,figsize=(13,5),layout='constrained')
 for ax,k,lab in [(axs[0],'total_loc','Final Python source lines'),(axs[1],'total_functions','Functions and methods in final submissions')]:
- vals=[total(m,k) for m in models];ax.barh(range(6),vals,color=[colors[m] for m in models]);ax.set_yticks(range(6),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,max(vals)*1.25);ax.set_xlabel(lab);ax.grid(axis='x',alpha=.2)
+ vals=[total(m,k) for m in models];ax.barh(range(len(models)),vals,color=[colors[m] for m in models]);ax.set_yticks(range(len(models)),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,max(vals)*1.25);ax.set_xlabel(lab);ax.grid(axis='x',alpha=.2)
  for i,v in enumerate(vals):ax.text(v+max(vals)*.015,i,f'{v/1000:.1f}K' if v>=1000 else str(v),va='center')
 fig.suptitle('Figure 9. How much code did each model leave behind?',fontsize=17)
 save(fig,'code-volume','Sum of the three final snapshots, not summed checkpoint copies or cumulative lines written. Includes agent-written tests; Python only.')
 fig,ax=plt.subplots(figsize=(11,5),layout='constrained')
-other=np.array([total(m,'other_sloc') for m in models]);tests=np.array([total(m,'test_sloc') for m in models]);ax.barh(range(6),other,color='#477e95',label='Other Python');ax.barh(range(6),tests,left=other,color='#dfa44a',label='Test-named Python');ax.set_yticks(range(6),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,max(other+tests)*1.28);ax.set_xlabel('Python source lines · sum of final snapshots');ax.legend(loc='lower right',frameon=False)
+other=np.array([total(m,'other_sloc') for m in models]);tests=np.array([total(m,'test_sloc') for m in models]);ax.barh(range(len(models)),other,color='#477e95',label='Other Python');ax.barh(range(len(models)),tests,left=other,color='#dfa44a',label='Test-named Python');ax.set_yticks(range(len(models)),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,max(other+tests)*1.28);ax.set_xlabel('Python source lines · sum of final snapshots');ax.legend(loc='lower right',frameon=False)
 for i,(a,b) in enumerate(zip(other,tests)):ax.text(a+b+max(other+tests)*.015,i,f'{100*b/(a+b):.0f}% tests',va='center')
 fig.suptitle('Figure 10. How much of that code is tests?',fontsize=17)
 save(fig,'test-code-split','Filename/directory heuristic; “other” may include utilities or vendored code. SLOC uses the pinned analyzer, not physical line count.')
@@ -68,7 +68,7 @@ for ax,p,n in zip(axs,problems,counts):
 legend(fig,axs[0]);fig.suptitle('Figure 12. Many small functions or fewer complex ones?',y=1.16,fontsize=17)
 save(fig,'functions-complexity','One point per model/problem final snapshot. Includes tests. A lower mean can reflect many small tests rather than simpler production code.')
 fig,ax=plt.subplots(figsize=(11,5),layout='constrained');vals=[100*total(m,'single_use_functions')/total(m,'total_functions') for m in models]
-ax.barh(range(6),vals,color=[colors[m] for m in models]);ax.set_yticks(range(6),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,100);ax.set_xlabel('Callables with exactly one statically detected use (%)')
+ax.barh(range(len(models)),vals,color=[colors[m] for m in models]);ax.set_yticks(range(len(models)),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,100);ax.set_xlabel('Callables with exactly one statically detected use (%)')
 for i,v in enumerate(vals):ax.text(v+1,i,f'{v:.1f}%',va='center')
 fig.suptitle('Figure 13. Functions referenced once',fontsize=17)
 save(fig,'single-use-functions','Pooled final-snapshot callable counts. Static references are not runtime call counts; frameworks, dynamic dispatch and tests affect this proxy.')
@@ -96,7 +96,7 @@ for ax,k in zip(axs,['erosion','verbosity']):
  for i,m in enumerate(models):
   allv=np.mean([metrics(m,p,n)[k] for p,n in zip(problems,counts)]);prod=np.mean([metrics(m,p,n,'non-test-python')[k] for p,n in zip(problems,counts)])
   ax.plot([allv,prod],[i,i],color=colors[m],lw=3);ax.scatter([allv],[i],color=colors[m],marker='o',s=55);ax.scatter([prod],[i],color=colors[m],marker='s',s=55)
- ax.set_yticks(range(6),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,1);ax.set_xlabel('Mean final '+k+' (lower is better)');ax.grid(axis='x',alpha=.2)
+ ax.set_yticks(range(len(models)),[names[m] for m in models]);ax.invert_yaxis();ax.set_xlim(0,1);ax.set_xlabel('Mean final '+k+' (lower is better)');ax.grid(axis='x',alpha=.2)
 fig.suptitle('Figure 16. Quality scores with and without generated tests',fontsize=17)
 save(fig,'quality-test-sensitivity','● All discovered Python; ■ excludes test-named files and recomputes metrics. Equal mean of three final snapshots. Heuristic classification.')
 # Relative change panel in Horthy's style; zero baselines are not ratios.
@@ -106,7 +106,7 @@ for k in keys:
   a=metrics(m,'circuit_eval',1)[k];b=metrics(m,'circuit_eval',8)[k];deltas[k].append(None if not a else 100*(b/a-1))
 idx=sorted(range(len(keys)),key=lambda i:max(x for x in deltas[keys[i]] if x is not None)-min(x for x in deltas[keys[i]] if x is not None),reverse=True)
 fig,ax=plt.subplots(figsize=(12,6),layout='constrained')
-for j,m in enumerate(models):ax.scatter([deltas[keys[i]][j] for i in idx],np.arange(6)+(j-2.5)*.07,color=colors[m],label=names[m],s=45)
+for j,m in enumerate(models):ax.scatter([deltas[keys[i]][j] for i in idx],np.arange(6)+(j-(len(models)-1)/2)*.07,color=colors[m],label=names[m],s=45)
 ax.set_yticks(range(6),[labels[i] for i in idx]);ax.invert_yaxis();ax.axvline(0,color='#888',lw=1);ax.grid(axis='x',alpha=.2);ax.set_xlabel('Change from checkpoint 1 to checkpoint 8 (%)');ax.legend(frameon=False,ncol=3,loc='lower right')
 fig.suptitle('Figure 17. Relative metric growth in circuit_eval',fontfamily='DejaVu Sans Mono',fontsize=14)
 save(fig,'metric-spread','Change = 100 × (CP8 / CP1 − 1), not the metric itself. Zero-baseline ratios omitted (Opus 5.5/Sonnet 5.5 duplication). Includes generated tests.')

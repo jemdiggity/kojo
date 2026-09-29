@@ -4,14 +4,15 @@ from pathlib import Path
 from itertools import combinations
 ROOT=Path(__file__).resolve().parents[3]
 OUT=Path(__file__).resolve().parent
-models=['opus5','opus55','astra6','sol56','sol6','sonnet55']
+models=['opus5','opus55','astra6','sol56','sol6','sonnet55','fable51']
 problems=['circuit_eval','database_migration','dynamic_config_service_api']
 rows=[]
 for model in models:
     sessions=[];seen=set();checks=[]
     for problem in problems:
-        stem=f'20260928-{problem.replace("_","-")}-{model}-medium-'
-        attempt='02' if problem=='database_migration' and model!='sonnet55' else '01'
+        date='20260929' if model=='fable51' else '20260928'
+        stem=f'{date}-{problem.replace("_","-")}-{model}-medium-'
+        attempt='02' if problem=='database_migration' and model not in ['sonnet55','fable51'] else '01'
         selected=ROOT/'results/runs'/(stem+attempt)/'build'
         evaluations={}
         if problem=='dynamic_config_service_api' and model in ['opus55','sonnet55']:
@@ -33,6 +34,8 @@ for model in models:
             seen.add(ident);cost=r.get('api_price_equivalent_usd')
             if model=='sonnet55' and r.get('provider_usage'):
                 u=r['provider_usage'];c=u['cache_creation'];cost=(u['input_tokens']*2+u['cache_read_input_tokens']*.2+u['output_tokens']*10+c['ephemeral_1h_input_tokens']*4+c['ephemeral_5m_input_tokens']*2.5)/1e6
+            if model=='fable51' and r.get('provider_usage'):
+                u=r['provider_usage'];c=u['cache_creation'];cost=(u['input_tokens']*10+u['cache_read_input_tokens']*.25+u['output_tokens']*50+c['ephemeral_1h_input_tokens']*20+c['ephemeral_5m_input_tokens']*12.5)/1e6
             sessions.append(dict(problem=problem,receipt=str(p.relative_to(ROOT)),identity=ident,status=r['status'],seconds=r.get('elapsed_seconds',0),cost=cost,usage=r.get('usage'),transcript=r.get('transcript')))
     rows.append(dict(model=model,checkpoints=checks,attempts=sessions,strict=sum(c['strict'] for c in checks),accepted_checkpoints=len(checks),cost=sum(s['cost'] or 0 for s in sessions),minutes=sum(s['seconds'] for s in sessions)/60,unmetered=sum(s['usage'] is None for s in sessions),tokens={k:sum((s['usage'] or {}).get(k,0) for s in sessions) for k in ['input_tokens','cached_input_tokens','output_tokens']}))
 pairs=[]

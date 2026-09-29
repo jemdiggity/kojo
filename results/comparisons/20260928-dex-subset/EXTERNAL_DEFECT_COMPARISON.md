@@ -10,6 +10,7 @@ Figures 6–7 compare our final-checkpoint failing tests with [Dexter’s publis
 | Opus 5.5 | Kojo | 4 | 13 | 23 | 40 | 16 |
 | Sol 6 | Kojo | 4 | 16 | 40 | 60 | 16 |
 | Astra 6 | Kojo | 0 | 13 | 40 | 53 | 16 |
+| Fable 5.1 | Kojo | 60 | 21 | 17 | 98 | 16 |
 | Opus 5 | Dexter | 2 | 11 | 9 | 22 | Not reported |
 | Opus 5 | Kojo | 58 | 21 | 17 | 96 | 16 |
 | Sol 5.6 | Kojo | 7 | 12 | 36 | 55 | 15 |
