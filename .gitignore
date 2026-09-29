@@ -29,3 +29,6 @@ __pycache__/
 /results/comparisons/20260928-dex-subset/FABLE_PLAN.md
 /results/comparisons/20260928-dex-subset/PLAN.md
 /results/comparisons/20260928-dex-subset/quality-circuit/
+
+# Machine-local Kanna overrides
+/.kanna/config.local.json
