@@ -113,6 +113,10 @@ Supported suite aliases map to exact provider IDs; they are not moving “latest
 | `opus5` | `claude-opus-5` |
 | `sol56` | `gpt-5.6-sol` |
 | `fable51` | `claude-fable-5-1` |
+| `opus46` | `claude-opus-4-6` |
+| `sonnet46` | `claude-sonnet-4-6` |
+| `haiku45` | `claude-haiku-4-5-20251001` |
+| `luna6` | `gpt-6-luna` |
 
 `--models` and `--problems` are both required; neither has an implicit selection. Supported problems: `code_search` (5 checkpoints), `circuit_eval` (8), `database_migration` (5), and `dynamic_config_service_api` (4). Without `--parallel`, all runs execute in series, in the order supplied. Duplicate or unknown names are rejected. Use the same selections for audit and run.
 

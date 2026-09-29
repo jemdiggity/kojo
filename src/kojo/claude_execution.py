@@ -18,7 +18,7 @@ import uuid
 from kojo.execution import save, shell_environment
 
 VERSION = "2.1.283"
-MODELS = ("claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1")
+MODELS = ("claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1", "claude-haiku-4-5-20251001")
 EFFORTS = ("low", "medium", "high")
 THINKING_TOKENS = {"low": 4000, "medium": 10000, "high": 31999}
 
