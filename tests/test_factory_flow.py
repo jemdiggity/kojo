@@ -244,3 +244,39 @@ class PromptTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ScoreSplitTests(unittest.TestCase):
+    REPORT = {'tests': {
+        'checkpoint_1-Regression': {'passed': ['a', 'b'], 'failed': ['c'], 'skipped': []},
+        'checkpoint_2-Core': {'passed': ['d'], 'failed': [], 'skipped': []},
+        'checkpoint_2-Functionality': {'passed': [], 'failed': ['e', 'f'], 'skipped': ['g']},
+    }}
+
+    def test_new_and_regression_tests_are_counted_apart(self):
+        from kojo.gauntlet import split_counts
+        self.assertEqual(split_counts(self.REPORT, 2), {'new': {'passed': 1, 'total': 4}, 'regression': {'passed': 2, 'total': 3}})
+        self.assertEqual(split_counts({}, 2), {'new': {'passed': 0, 'total': 0}, 'regression': {'passed': 0, 'total': 0}})
+
+    def test_report_names_tests_that_broke_after_the_previous_session(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('scb_scores', REAL/'scripts/scb_scores.py')
+        scores = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(scores)
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            rows = [{'role': 'build', 'checkpoint': 1, 'passed': 3, 'total': 3},
+                    {'role': 'build', 'checkpoint': 2, 'passed': 1, 'total': 3, 'label': 'checkpoint_2'}]
+            (run/'scores.json').write_text(json.dumps(rows))
+            first = {'tests': {'checkpoint_1-Core': {'passed': ['a', 'b', 'c'], 'failed': [], 'skipped': []}}}
+            second = {'tests': {'checkpoint_1-Regression': {'passed': ['a'], 'failed': ['b', 'c'], 'skipped': []}}}
+            for n, report in ((1, first), (2, second)):
+                (run/'build'/f'checkpoint_{n}').mkdir(parents=True)
+                (run/'build'/f'checkpoint_{n}/evaluation.json').write_text(json.dumps(report))
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                scores.report(run, failures=True)
+        text = out.getvalue()
+        self.assertIn('build checkpoint_2', text)
+        self.assertRegex(text, r'1/3\s+0/0\s+1/3\s+2\n')  # total, new, regression, two newly broken
+        self.assertIn('newly broken (passed before) (2 tests)', text)

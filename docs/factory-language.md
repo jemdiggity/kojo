@@ -79,3 +79,11 @@ the worst-case `max_sessions`, and `flow-trace.json` (stage, verdict and next st
 per session). A stage's first visit in a checkpoint writes to
 `STAGE/checkpoint_N`; later visits to `STAGE/checkpoint_N-2`, `-3`, and so on.
 Every code-changing session is graded after all model calls finish.
+
+## Reading scores
+
+Each `Graded ...` line and `scores.json` entry splits the score into `new` (this
+checkpoint's own core, functionality and error tests) and `regression` (tests from
+earlier checkpoints). `scripts/scb_scores.py RUN_ID ...` prints that table for finished
+runs, plus how many tests passed after the previous session and fail now; add
+`--failures` to name them.
