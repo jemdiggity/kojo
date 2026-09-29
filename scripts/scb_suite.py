@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'src'))
 from kojo.batch import identifier, load_plan
 from kojo.known_skill_sets import KNOWN, resolve
 
+NONE = 'none'
 MODELS = {
     'sonnet55': 'claude-sonnet-5-5',
     'opus55': 'claude-opus-5-5',
@@ -112,8 +113,9 @@ def main(argv=None):
     parser.add_argument('--problems', nargs='+', choices=PROBLEMS, required=True, metavar='PROBLEM',
                         help='Space-separated problems in scheduling order (%s)' % ', '.join(PROBLEMS))
     parser.add_argument('--skill-sets', nargs='+', metavar='SKILL_SET',
-                        help='Separate skill conditions: a well-known name (%s) or a directory; '
-                             'omitted means no skills' % ', '.join(sorted(KNOWN)))
+                        help='Separate skill conditions: %s (no skills, the baseline), a well-known '
+                             'name (%s), or a directory; omitted means a single no-skills run'
+                             % (NONE, ', '.join(sorted(KNOWN))))
     parser.add_argument('--parallel', choices=['models', 'models-skills', 'all'],
                         help='Parallel dimensions; omitted means every run is sequential')
     action = parser.add_mutually_exclusive_group()
@@ -127,7 +129,13 @@ def main(argv=None):
     try:
         from kojo.skill_sets import describe_sets, freeze_sets
         cache = ROOT / 'intermediate/vendor/skill-sets'
-        skill_sets = describe_sets([resolve(s, cache) for s in args.skill_sets or []])
+        specs = args.skill_sets or []
+        if len(set(specs)) != len(specs):
+            raise ValueError('Select each skill set only once')
+        # 'none' is the explicit no-skills baseline condition; it has no directory to freeze.
+        described = iter(describe_sets([resolve(s, cache) for s in specs if s != NONE]))
+        skill_sets = [{'name': NONE, 'path': None, 'sha256': None} if s == NONE else next(described)
+                      for s in specs]
         configs = plans(args.id, args.models, args.problems, skill_sets, args.parallel)
         if args.tmux_session:
             identifier(args.tmux_session)
@@ -137,7 +145,9 @@ def main(argv=None):
                   + ('; named skill sets are cached under intermediate/vendor/skill-sets.' if any(n in KNOWN for n in args.skill_sets or []) else '.'))
             return 0
         if skill_sets:
-            skill_sets = freeze_sets(ROOT / 'intermediate/plans' / args.id / 'skill-sets', skill_sets)
+            frozen = iter(freeze_sets(ROOT / 'intermediate/plans' / args.id / 'skill-sets',
+                                      [c for c in skill_sets if c['path']]))
+            skill_sets = [next(frozen) if c['path'] else c for c in skill_sets]
             configs = plans(args.id, args.models, args.problems, skill_sets, args.parallel)
         paths = save_plans(ROOT / 'intermediate/plans' / args.id, configs)
         for path in paths:

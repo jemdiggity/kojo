@@ -144,7 +144,8 @@ exact upstream commit and cached under `intermediate/vendor/skill-sets/`:
 | `karpathy` | [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) `skills/` |
 | `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) `skills/` |
 
-Names and paths can be mixed (`--skill-sets karpathy superpowers ./mine`). Add
+`none` is the no-skills baseline, so a comparison against it needs no empty
+directory. Names and paths can be mixed (`--skill-sets none karpathy superpowers ./mine`). Add
 more in `src/kojo/known_skill_sets.py`.
 
 ```sh

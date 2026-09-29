@@ -34,6 +34,14 @@ class SuiteLauncherTests(unittest.TestCase):
                 self.assertIn('--no-review', flags)
                 self.assertNotIn('--claude-max-output-tokens', flags)
 
+    def test_none_is_a_no_skills_baseline_condition(self):
+        skills = [{'name': 'none', 'path': None, 'sha256': None},
+                  {'name': 'karpathy-abc', 'path': '/fixture/karpathy', 'sha256': 'abc'}]
+        baseline, skilled = suite.plans('cmp', ['sonnet55'], ['circuit_eval'], skills)
+        self.assertEqual(baseline['runs'][0]['run_id'], 'cmp-circuit-eval-sonnet55-none')
+        self.assertNotIn('--skill-set', baseline['runs'][0]['factory_args'])
+        self.assertIn('--skill-set', skilled['runs'][0]['factory_args'])
+
     def test_existing_plans_cannot_be_changed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
