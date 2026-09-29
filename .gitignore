@@ -1,6 +1,7 @@
 # Local runs, provider payloads, dependency checkouts, and virtual environments
 /intermediate/
 /.venv/
+/.tmp/
 __pycache__/
 *.py[cod]
 .DS_Store
