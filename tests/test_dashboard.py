@@ -242,6 +242,21 @@ class StoreTests(Fixture):
         self.assertEqual(factories, {'legacy': 'build + review x5', 'custom-build': 'build only',
                                      'custom-chain': 'build → review → fix', 'plain': 'build only'})
 
+    def test_stray_directories_and_malformed_rows_are_ignored(self):
+        self.add_run('run-a')
+        for stray in ('checkpoint_tmp', 'checkpoint_1.partial', 'checkpoint_'):
+            write(self.base / 'results/runs/run-a/build' / stray / 'run.json', {'status': 'complete'})
+            write(self.base / 'results/runs/run-a/build' / stray / 'quality.json', [{'variant': 'entrypoint-normalized',
+                  'metrics': {'erosion': 0.1, 'verbosity': 0.1}}])
+        write(self.base / 'results/comparisons/flat/quality.json', {'rows': [
+            {'checkpoint': 1, 'metrics': {'erosion': 0.1, 'verbosity': 0.1}},
+            {'run_id': 'run-a', 'metrics': {'erosion': 0.1, 'verbosity': 0.1}},
+            {'run_id': 'run-a', 'checkpoint': 1, 'metrics': {'erosion': 0.6, 'verbosity': 0.5}}]})
+        (run,) = Store(self.base).graded_runs()
+        self.assertEqual([c['checkpoint'] for c in run.checkpoints], [1])
+        self.assertEqual(run.checkpoints[0]['erosion'], 0.6)
+        self.assertEqual(len(Store(self.base).checkpoint_rows('run-a')), 1)
+
     def test_run_without_a_batch_is_its_own_batch(self):
         self.add_run('run-a')
         self.assertEqual(Store(self.base).graded_runs()[0].batch, 'run-a')

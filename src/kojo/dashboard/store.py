@@ -15,6 +15,7 @@ ROLES = ('build', 'review', 'fix')
 GRADED_ROLES = ('fix', 'build')  # roles that produce graded code; the earlier one loses to `fix`
 LOG_TAIL_BYTES = 64_000
 UNKNOWN = 'unknown'
+CHECKPOINT_DIR = re.compile(r'checkpoint_(\d+)')
 QUALITY_VARIANT = 'entrypoint-normalized'  # the analysis variant that covers extensionless entrypoints
 
 
@@ -104,9 +105,8 @@ class Store:
         rows = []
         root = self.results / 'runs' / run_id
         for role in ROLES:
-            directories = sorted((root / role).glob('checkpoint_*'), key=lambda p: int(p.name.split('_')[1]))
-            for directory in directories:
-                number = int(directory.name.split('_')[1])
+            numbered = [(int(m[1]), d) for d in (root / role).glob('checkpoint_*') if (m := CHECKPOINT_DIR.fullmatch(d.name))]
+            for number, directory in sorted(numbered):
                 run = load_json(directory / 'run.json') or {}
                 row = {'role': role, 'checkpoint': number, 'status': run.get('status'),
                        'model': run.get('model'), 'effort': run.get('reasoning'),
@@ -131,14 +131,14 @@ class Store:
         for path in published:
             for row in (load_json(path) or {}).get('rows', []):
                 metrics = quality_metrics(row)
-                if metrics:
+                if metrics and 'run_id' in row and 'checkpoint' in row:
                     found[(row['run_id'], row.get('stage', 'build'), row['checkpoint'])] = metrics
         for path in sorted(self.results.glob('runs/*/*/checkpoint_*/quality.json')):
             run_id, stage, label = path.parts[-4], path.parts[-3], path.parts[-2]
             rows = load_json(path)
             metrics = next(filter(None, map(quality_metrics, rows if isinstance(rows, list) else [])), None)
-            if metrics:
-                found[(run_id, stage, int(label.split('_')[1]))] = metrics
+            if metrics and (m := CHECKPOINT_DIR.fullmatch(label)):
+                found[(run_id, stage, int(m[1]))] = metrics
         return found
 
     def graded_runs(self):

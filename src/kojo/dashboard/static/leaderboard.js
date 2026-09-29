@@ -97,7 +97,7 @@ function controls(state, data) {
       <label>Metric <select data-nav>${metrics}</select></label>
       <label>Group by <select data-nav>${groups}</select></label>
       <label>Then by <select data-nav>${thens}</select></label>
-      <span class="muted">% of checkpoints, build output graded per checkpoint</span>
+      <span class="muted">% of checkpoints, final stage output graded per checkpoint</span>
     </div>
     <div class="ctl">
       <label>Experiment <select class="wide" data-nav>${experiments}</select></label>
