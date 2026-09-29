@@ -69,6 +69,44 @@ class SuiteLauncherTests(unittest.TestCase):
             suite.plans('cmp', ['sonnet55'], ['circuit_eval'], None, None, ['xhigh'])
         suite.plans('cmp', ['astra6'], ['circuit_eval'], None, None, ['xhigh'])
 
+    def test_factories_replace_models_and_are_parallel_units(self):
+        names = ['luna-review-astra', 'luna-opus-qa']
+        serial = suite.plans('cmp', None, ['circuit_eval', 'database_migration'], factories=names)
+        self.assertEqual([b['max_parallel'] for b in serial], [1, 1])
+        run = serial[0]['runs'][1]
+        self.assertEqual(run['run_id'], 'cmp-circuit-eval-luna-opus-qa')
+        flags = run['factory_args']
+        self.assertEqual(flags[flags.index('--factory') + 1], 'luna-opus-qa')
+        for absent in ('--build-model', '--no-review', '--claude-effort', '--codex-effort'):
+            self.assertNotIn(absent, flags)
+        everything = suite.plans('cmp', None, ['circuit_eval', 'database_migration'], None, 'all', factories=names)
+        self.assertEqual([(b['batch_id'], b['max_parallel'], len(b['runs'])) for b in everything], [('cmp-all', 4, 4)])
+
+    def test_factories_reject_models_efforts_and_unknown_names(self):
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', ['sonnet55'], ['circuit_eval'], factories=['luna-opus-qa'])
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', None, ['circuit_eval'], None, None, ['low'], ['luna-opus-qa'])
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', None, ['circuit_eval'], factories=['nonesuch'])
+        with self.assertRaises(ValueError):
+            suite.plans('cmp', None, ['circuit_eval'], factories=['luna-opus-qa', 'luna-opus-qa'])
+
+    def test_cli_wants_exactly_one_of_models_or_factory(self):
+        for argv in (['--id', 'x', '--problems', 'circuit_eval'],
+                     ['--id', 'x', '--problems', 'circuit_eval', '--models', 'sonnet55', '--factory', 'luna-opus-qa'],
+                     ['--id', 'x', '--problems', 'circuit_eval', '--factory', 'luna-opus-qa', '--efforts', 'low']):
+            with self.subTest(argv=argv), patch('sys.stderr'), self.assertRaises(SystemExit):
+                suite.main(argv)
+        with patch('builtins.print') as out:
+            self.assertEqual(suite.main(['--id', 'x', '--problems', 'circuit_eval', '--factory', 'luna-opus-qa', 'luna-review-astra',
+                                         '--parallel', 'all']), 0)
+        self.assertIn('--factory', out.call_args_list[0].args[0])
+
+    def test_audit_labels_name_the_factory(self):
+        run = suite.plans('cmp', None, ['circuit_eval'], factories=['luna-opus-qa'])[0]['runs'][0]
+        self.assertEqual(suite.label(run['factory_args']), 'factory circuit_eval / luna-opus-qa / none')
+
     def test_existing_plans_cannot_be_changed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

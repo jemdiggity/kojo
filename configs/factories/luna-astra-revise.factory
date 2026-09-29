@@ -1,0 +1,5 @@
+# luna builds -> astra fixes (an unprompted second pass, no review)
+build  = luna6
+revise = astra6
+
+build -> revise

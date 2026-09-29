@@ -1,0 +1,1 @@
+Refactor the supplied code for clarity and maintainability without changing its behavior. Preserve every requirement in the specifications, keep the existing checks passing, and verify the result. Summarize what you changed and the checks you ran.
