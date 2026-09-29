@@ -121,6 +121,24 @@ class SuiteLauncherTests(unittest.TestCase):
             self.assertIn('PASS', text)
             self.assertIn('Harness changed during batch', text)
 
+    def test_audit_reset_replaces_audit_state_until_a_real_run_starts(self):
+        one = suite.plans('exp', ['sonnet55'], ['circuit_eval'])
+        two = suite.plans('exp', ['opus55'], ['circuit_eval'])
+        with tempfile.TemporaryDirectory() as tmp, patch.object(suite, 'ROOT', Path(tmp)):
+            root = Path(tmp)
+            suite.save_plans(root / 'intermediate/plans/exp', one)
+            stale = root / 'intermediate/batches' / (one[0]['batch_id'] + '-audit')
+            stale.mkdir(parents=True)
+            suite.reset_audit('exp', two)  # Nothing started: plan and audit leftovers are replaced.
+            self.assertFalse(stale.exists())
+            self.assertFalse((root / 'intermediate/plans/exp').exists())
+            suite.save_plans(root / 'intermediate/plans/exp', one)
+            (root / 'intermediate/runs' / one[0]['runs'][0]['run_id']).mkdir(parents=True)
+            suite.reset_audit('exp', one)  # Same plan after a real run started: allowed, plan kept.
+            self.assertTrue((root / 'intermediate/plans/exp/schedule.json').exists())
+            with self.assertRaises(ValueError):
+                suite.reset_audit('exp', two)
+
     def test_model_list_selects_only_requested_models(self):
         with patch.object(suite, 'plans', wraps=suite.plans) as build, patch('builtins.print'):
             self.assertEqual(suite.main(['--problems', 'circuit_eval', 'database_migration', '--id', 'preview', '--models', 'sonnet55', 'opus55', 'astra6']), 0)

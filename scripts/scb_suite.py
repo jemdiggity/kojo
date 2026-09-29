@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -108,6 +109,25 @@ def save_plans(directory, configs):
             with path.open('x') as f:
                 f.write(json.dumps(config, indent=2) + '\n')
     return paths
+
+
+def reset_audit(experiment, configs):
+    """An audit may replace its own earlier artifacts, but never state from a started real run."""
+    plans_dir = ROOT / 'intermediate/plans' / experiment
+    saved = plans_dir / 'schedule.json'
+    previous = json.loads(saved.read_text()) if saved.exists() else []
+    ids = {run['run_id'] for config in configs + previous for run in config['runs']}
+    started = [rid for rid in sorted(ids) if (ROOT / 'intermediate/runs' / rid).exists()
+               or (ROOT / 'results/runs' / rid).exists()]
+    shape = lambda cs: [(c['batch_id'], c['max_parallel'], [r['run_id'] for r in c['runs']]) for c in cs]
+    if started and previous and shape(previous) != shape(configs):
+        raise ValueError(f'Run {started[0]} has started under this --id; choose a new --id to change the plan.')
+    for config in configs:
+        shutil.rmtree(ROOT / 'intermediate/batches' / (config['batch_id'] + '-audit'), ignore_errors=True)
+        for run in config['runs']:
+            shutil.rmtree(ROOT / 'intermediate/runs' / f"{config['batch_id']}-{run['run_id']}-audit", ignore_errors=True)
+    if not started:
+        shutil.rmtree(plans_dir, ignore_errors=True)  # Nothing has run, so the plan is still editable.
 
 
 def label(flags):
@@ -224,6 +244,8 @@ def main(argv=None):
             print('Preview only; no plans written or model calls made'
                   + ('; named skill sets are cached under intermediate/vendor/skill-sets.' if any(n in KNOWN for n in args.skill_sets or []) else '.'))
             return 0
+        if args.audit:
+            reset_audit(args.id, configs)
         if skill_sets:
             frozen = iter(freeze_sets(ROOT / 'intermediate/plans' / args.id / 'skill-sets',
                                       [c for c in skill_sets if c['path']]))
