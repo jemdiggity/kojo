@@ -278,5 +278,6 @@ class ScoreSplitTests(unittest.TestCase):
                 scores.report(run, failures=True)
         text = out.getvalue()
         self.assertIn('build checkpoint_2', text)
-        self.assertRegex(text, r'1/3\s+0/0\s+1/3\s+2\n')  # total, new, regression, two newly broken
-        self.assertIn('newly broken (passed before) (2 tests)', text)
+        self.assertRegex(text, r'checkpoint_2\s+1/3\s+-2 / \+0\n')
+        self.assertRegex(text, r'checkpoint_1\s+3/3\s+-0 / \+3\n')
+        self.assertIn('broken (passed before) (2 tests)', text)

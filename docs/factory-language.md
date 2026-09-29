@@ -85,5 +85,6 @@ Every code-changing session is graded after all model calls finish.
 Each `Graded ...` line and `scores.json` entry splits the score into `new` (this
 checkpoint's own core, functionality and error tests) and `regression` (tests from
 earlier checkpoints). `scripts/scb_scores.py RUN_ID ...` prints that table for finished
-runs, plus how many tests passed after the previous session and fail now; add
-`--failures` to name them.
+runs as one compact diff per session, `-N / +M`: N tests passed after the previous session
+and now fail, M tests pass now that did not before (new tests plus repairs). Add `--failures`
+to name the failing tests.
