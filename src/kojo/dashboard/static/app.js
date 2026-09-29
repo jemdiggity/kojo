@@ -2,7 +2,7 @@ import { leaderboardView } from './leaderboard.js';
 import { resultsView } from './results.js';
 import { runView, runsView } from './runs.js';
 import { escapeHtml as h } from './format.js';
-import { render } from './view.js';
+import { installNavigation, render } from './view.js';
 
 const REFRESH_MS = 5000;
 const TABS = { leaderboard: 'Leaderboard', runs: 'Runs', results: 'Results' };
@@ -34,13 +34,6 @@ async function show() {
     try {
       await view.render(route);
       document.querySelector('#stamp').textContent = `updated ${new Date().toLocaleTimeString()}`;
-      document.querySelectorAll('[data-href]').forEach((el) => el.addEventListener('click', () => (location.hash = el.dataset.href)));
-      document.querySelectorAll('[data-back]').forEach((el) =>
-        el.addEventListener('click', (event) => {
-          event.preventDefault();
-          history.length > 1 ? history.back() : (location.hash = el.getAttribute('href'));
-        }),
-      );
     } catch (error) {
       render(`<p class="bad">${h(error.message)}</p>`);
     }
@@ -49,5 +42,6 @@ async function show() {
   if (view.live) timer = setInterval(draw, REFRESH_MS);
 }
 
+installNavigation();
 addEventListener('hashchange', show);
 show();

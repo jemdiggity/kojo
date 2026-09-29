@@ -99,7 +99,9 @@ synthetic CLI error messages are not treated as model identity evidence.
 
 ## Dashboard
 
-`python3.12 scripts/scb_dashboard.py [--port 8765]` serves a read-only local web
+`python3.12 scripts/scb_dashboard.py [--port 8765] [--base CHECKOUT]` (or
+`python3.12 -m kojo.dashboard` with `src` on the path) serves a read-only local web
 page (stdlib only, no inference) with auto-refreshing batch/run progress,
 per-checkpoint test results and cost, the controller log tail, and the published
-comparison tables and figures. It only reads `intermediate/` and `results/`.
+comparison tables and figures. It only reads `intermediate/` and `results/` of `--base` (default: this checkout);
+point `--base` at the main checkout to see runs launched from other worktrees.

@@ -1,8 +1,5 @@
 """Turn one checkpoint's grading report into pass/fail metrics."""
 
-Tally = dict  # {'passed': int, 'total': int}
-
-
 def _split_group(group):
     """Report groups are named '<checkpoint>-<category>', e.g. 'checkpoint_2-Core'."""
     checkpoint, _, category = group.partition('-')
