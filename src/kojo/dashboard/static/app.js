@@ -2,7 +2,7 @@ import { leaderboardView } from './leaderboard.js';
 import { resultsView } from './results.js';
 import { runView, runsView } from './runs.js';
 import { escapeHtml as h } from './format.js';
-import { installNavigation, render } from './view.js';
+import { installCopyButtons, installNavigation, render } from './view.js';
 
 const REFRESH_MS = 5000;
 const TABS = { leaderboard: 'Leaderboard', runs: 'Runs', results: 'Results' };
@@ -43,5 +43,6 @@ async function show() {
 }
 
 installNavigation();
+installCopyButtons();
 addEventListener('hashchange', show);
 show();

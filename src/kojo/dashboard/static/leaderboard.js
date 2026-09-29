@@ -120,7 +120,7 @@ function filterMenu(state, data, name, label) {
 
 const experimentLabel = (e) => {
   const fixedText = Object.entries(e.fixed).map(([name, values]) => `${name}=${values.join('/')}`).join(', ');
-  return `${FILTERS[e.vary]} varies (${e.values.length}) across ${e.batches.length} batches · ${fixedText} · ${e.runs.length} runs`;
+  return `${FILTERS[e.vary]} varies (${e.values.length}) across ${plural(e.batches.length, 'batch')} · ${fixedText} · ${plural(e.runs.length, 'run')}`;
 };
 
 /** The experiment's second axis: the first held setting that still varies inside each batch. */

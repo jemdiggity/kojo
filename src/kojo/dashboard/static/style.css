@@ -71,3 +71,8 @@ details>summary{cursor:pointer;color:var(--mute)}
 .legend{display:flex;gap:4px 14px;flex-wrap:wrap;color:var(--mute);font-size:12px}
 .legend .key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
 code{background:var(--card);padding:1px 5px;border-radius:4px;font-size:12px}
+
+/* copy button beside a title */
+.copy{background:none;border:1px solid var(--line);border-radius:6px;color:var(--mute);cursor:pointer;
+  padding:2px 5px;vertical-align:middle;line-height:0}
+.copy:hover{color:var(--fg);background:var(--card)}

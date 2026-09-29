@@ -40,3 +40,31 @@ export function installNavigation() {
 /** <option>s whose values are hashes; `current` marks the selected one. */
 export const hashOptions = (items) =>
   items.map(({ hash, label, selected }) => `<option value="${hash}"${selected ? ' selected' : ''}>${label}</option>`).join('');
+
+const COPY_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5.5 5.5h7v8h-7zM3.5 10.5v-8h7"/></svg>';
+const CHECK_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 4.5"/></svg>';
+const FEEDBACK_MS = 1500;
+
+/** A button that copies `text` to the clipboard when clicked (see installCopyButtons). */
+export const copyButton = (text, label) =>
+  `<button class="copy" type="button" data-copy="${text}" title="${label}" aria-label="${label}">${COPY_ICON}</button>`;
+
+/** Handle clicks on every copyButton, briefly swapping its icon to confirm. */
+export function installCopyButtons() {
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-copy]');
+    if (!button) return;
+    const original = button.title;
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      button.innerHTML = CHECK_ICON;
+      button.title = 'Copied';
+    } catch {
+      button.title = 'Copy failed';
+    }
+    setTimeout(() => {
+      button.innerHTML = COPY_ICON;
+      button.title = original;
+    }, FEEDBACK_MS);
+  });
+}
