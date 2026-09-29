@@ -20,8 +20,12 @@ MODELS = {
     'opus5': 'claude-opus-5',
     'sol56': 'gpt-5.6-sol',
     'fable51': 'claude-fable-5-1',
+    'opus46': 'claude-opus-4-6',
+    'sonnet46': 'claude-sonnet-4-6',
+    'haiku45': 'claude-haiku-4-5-20251001',
+    'luna6': 'gpt-6-luna',
 }
-DEFAULT_MODELS = tuple(MODELS)[:-1]
+DEFAULT_MODELS = ('sonnet55', 'opus55', 'sol6', 'astra6', 'opus5', 'sol56')
 PROBLEMS = {'code_search': 5, 'circuit_eval': 8, 'database_migration': 5,
             'dynamic_config_service_api': 4}
 
