@@ -121,6 +121,18 @@ class LeaderboardTests(unittest.TestCase):
         self.assertEqual(only['pooled']['batch'], ['b2'])
         self.assertEqual(only['facets']['batch'], [('b1', 2), ('b2', 1)])
 
+    def test_facet_counts_reflect_the_other_filters(self):
+        def run(run_id, problem, effort):
+            return Run(run_id, 'b', {'model': 'm', 'skill': 'none', 'factory': 'f', 'effort': effort, 'problem': problem},
+                       [self.run_of(run_id, 'b', 'm', 'none', True).checkpoints[0]])
+        runs = [run('r1', 'circuit', 'medium'), run('r2', 'search', 'low'), run('r3', 'search', 'low')]
+        none = leaderboard(runs, 'model')['facets']
+        self.assertEqual((none['problem'], none['effort']), ([('circuit', 1), ('search', 2)], [('low', 2), ('medium', 1)]))
+        picked = leaderboard(runs, 'model', filters={'problem': ['circuit']})['facets']
+        self.assertEqual(picked['effort'], [('low', 0), ('medium', 1)])  # low can't combine with circuit
+        self.assertEqual(picked['problem'], [('circuit', 1), ('search', 2)])  # a list ignores its own selection
+        self.assertEqual(leaderboard(runs, 'model', filters={'problem': ['circuit'], 'effort': ['low']})['runs'], 0)
+
     def test_run_filter_combines_any_chosen_runs(self):
         runs = [self.run_of('r1', 'b1', 'ma', 'none', True), self.run_of('r2', 'b2', 'mb', 'sk', False),
                 self.run_of('r3', 'b3', 'mc', 'tk', True)]
