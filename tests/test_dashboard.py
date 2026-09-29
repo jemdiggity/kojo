@@ -148,6 +148,17 @@ class LeaderboardTests(unittest.TestCase):
         self.assertAlmostEqual(line['erosion'][2], 0.5)
         self.assertAlmostEqual(line['erosion'][4], 0.7)
 
+    def test_intermediate_trajectory_follows_the_replaced_stage(self):
+        base = {'strict': False, 'iso': False, 'core': False, 'partial': 0.5, 'cost_usd': 1.0, 'elapsed_seconds': 60}
+        final = [{**base, 'checkpoint': n, 'erosion': 0.2 * n, 'verbosity': 0.1} for n in (1, 2, 3)]
+        build = [{**base, 'checkpoint': n, 'erosion': 0.2 * n + 0.1, 'verbosity': 0.3} for n in (1, 3)]
+        run = Run('r', 'b', {'model': 'm', 'skill': 'none', 'factory': 'f', 'effort': 'low', 'problem': 'p'}, final, build)
+        (line,) = leaderboard([run], 'model')['trajectories']
+        self.assertAlmostEqual(line['erosion'][0], 0.2)
+        self.assertAlmostEqual(line['erosion'][4], 0.6)
+        self.assertAlmostEqual(line['intermediate']['erosion'][0], 0.3)  # build values sit above the final ones
+        self.assertAlmostEqual(line['intermediate']['erosion'][2], 0.5)  # interpolated across the missing checkpoint 2
+
     def test_trajectory_needs_two_measured_checkpoints(self):
         one = Run('r', 'b', {}, [{'erosion': 0.5}, {'erosion': None}, {'erosion': None}])
         self.assertIsNone(trajectory([one], 'erosion'))
@@ -182,16 +193,38 @@ class StoreTests(Fixture):
         self.assertEqual((runs['run-a'].checkpoints[0]['erosion'], runs['run-a'].checkpoints[0]['verbosity']), (0.3, 0.2))
         self.assertEqual(runs['run-b'].checkpoints[0]['erosion'], 0.5)
 
-    def test_quality_is_not_attached_to_fixer_output(self):
-        self.add_run('run-a')
-        fix = self.base / 'results/runs/run-a/fix/checkpoint_1'
+    def add_fix_stage(self, run_id):
+        fix = self.base / 'results/runs' / run_id / 'fix/checkpoint_1'
         write(fix / 'run.json', {'status': 'complete', 'model': 'm', 'reasoning': 'low'})
         write(fix / 'evaluation.json', passing('checkpoint_1-Core'))
+
+    def test_each_stage_gets_its_own_quality_and_the_table_uses_the_final_stage(self):
+        self.add_run('run-a')
+        self.add_fix_stage('run-a')
+        def row(stage, erosion):
+            return {'run_id': 'run-a', 'stage': stage, 'checkpoint': 1, 'variant': 'entrypoint-normalized',
+                    'metrics': {'erosion': erosion, 'verbosity': erosion}}
+        write(self.base / 'results/comparisons/flat/quality.json', {'rows': [row('build', 0.9), row('fix', 0.4)]})
+        (run,) = Store(self.base).graded_runs()
+        self.assertEqual((run.checkpoints[0]['role'], run.checkpoints[0]['erosion']), ('fix', 0.4))
+        self.assertEqual([(c['role'], c['erosion']) for c in run.intermediate], [('build', 0.9)])
+
+    def test_untagged_published_rows_are_build_stage_so_fix_rows_stay_unanalyzed(self):
+        self.add_run('run-a')
+        self.add_fix_stage('run-a')
         write(self.base / 'results/comparisons/flat/quality.json', {'rows': [
             {'run_id': 'run-a', 'checkpoint': 1, 'variant': 'entrypoint-normalized', 'metrics': {'erosion': 0.5, 'verbosity': 0.4}}]})
         (run,) = Store(self.base).graded_runs()
-        self.assertEqual(run.checkpoints[0]['role'], 'fix')
-        self.assertIsNone(run.checkpoints[0]['erosion'])
+        self.assertIsNone(run.checkpoints[0]['erosion'])  # the final stage (fix) has no analysis
+        self.assertEqual(run.intermediate[0]['erosion'], 0.5)
+
+    def test_per_stage_quality_file_beside_a_graded_checkpoint(self):
+        self.add_run('run-a')
+        write(self.base / 'results/runs/run-a/build/checkpoint_1/quality.json', [
+            {'variant': 'upstream', 'metrics': {'erosion': 0.0, 'verbosity': 0.0}},
+            {'variant': 'entrypoint-normalized', 'metrics': {'erosion': 0.7, 'verbosity': 0.6}}])
+        (run,) = Store(self.base).graded_runs()
+        self.assertEqual((run.checkpoints[0]['erosion'], run.checkpoints[0]['verbosity']), (0.7, 0.6))
 
     def test_unanalyzed_runs_have_no_quality(self):
         self.add_run('run-a')

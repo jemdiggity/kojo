@@ -191,13 +191,22 @@ function qualityCharts(data, state) {
       lineChart({
         title: `${title} across progress (lower is better)`,
         xLabels: PROGRESS_LABELS,
-        series: data.trajectories.map((t, i) => ({ label: label(t), color: LINE_COLORS[i % LINE_COLORS.length], values: t[metric] || [] })),
+        series: data.trajectories.flatMap((t, i) => {
+          const color = LINE_COLORS[i % LINE_COLORS.length];
+          const final = { label: label(t), color, values: t[metric] || [] };
+          const earlier = t.intermediate[metric];
+          return earlier ? [final, { label: `${label(t)} (intermediate)`, color, values: earlier, dashed: true }] : [final];
+        }),
       }),
     )
     .join('');
   if (!charts) return NO_QUALITY;
+  const hasIntermediate = data.trajectories.some((t) => Object.values(t.intermediate).some(Boolean));
+  const dotted = hasIntermediate
+    ? ' Dotted lines show the output of an intermediate stage (e.g. build) before a later stage (review/fix) changed the code; the solid line and the table use the final output.'
+    : '';
   return `<h2>Code quality over a run</h2><div class="charts">${charts}</div>
-    <p class="muted">Each run is placed on 0–100% by checkpoint order and interpolated, then averaged per group. Only runs with a static analysis contribute.</p>`;
+    <p class="muted">Each run is placed on 0–100% by checkpoint order and interpolated, then averaged per group. Only runs with a static analysis contribute.${dotted}</p>`;
 }
 
 const NO_QUALITY = `<h2>Code quality over a run</h2><p class="muted">No erosion/verbosity analysis found for these runs. Generate it with

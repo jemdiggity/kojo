@@ -110,5 +110,8 @@ Erosion and verbosity come from the offline static analysis in
 [code-quality.md](code-quality.md), not from the runs themselves. The dashboard reads any
 `quality.json` under `results/comparisons/` (both the per-run and suite formats), joins it to runs by
 run ID and checkpoint, and adds Erosion and Verbosity columns and trajectory charts to the
-Leaderboard; runs without an analysis show a dash. The Results tab charts the published suite's
+Leaderboard; runs without an analysis show a dash. Analyses are per stage: rows tagged with a
+`stage` (or a `<stage>/checkpoint_N/quality.json` beside a graded checkpoint) attach to that stage, the
+table uses each checkpoint's final stage (e.g. fix), and earlier stages that a later stage replaced
+appear as dotted lines in the trajectory charts. The Results tab charts the published suite's
 `quality-suite/chart_aggregates.json`.

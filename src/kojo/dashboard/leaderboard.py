@@ -99,16 +99,20 @@ def _interpolate(points, x):
     return None
 
 
-def trajectory(runs, metric):
+def trajectory(runs, metric, intermediate=False):
     """Mean `metric` at each PROGRESS position across runs, or None if no run has enough data.
 
     Each run is placed on 0..1 by checkpoint order so runs with different checkpoint counts align.
+    `intermediate` follows the earlier stages a later stage replaced (e.g. build before fix).
     """
     per_run = []
     for run in runs:
         count = len(run.checkpoints)
-        points = [(i / (count - 1), c[metric]) for i, c in enumerate(run.checkpoints) if c.get(metric) is not None]
-        if count > 1 and len(points) >= 2:
+        place = {c.get('checkpoint', i): i for i, c in enumerate(run.checkpoints)}
+        rows = run.intermediate if intermediate else run.checkpoints
+        points = sorted((place[c.get('checkpoint', i)] / (count - 1), c[metric])
+                        for i, c in enumerate(rows) if count > 1 and c.get('checkpoint', i) in place and c.get(metric) is not None)
+        if len(points) >= 2:
             per_run.append([_interpolate(points, x) for x in PROGRESS])
     if not per_run:
         return None
@@ -139,9 +143,10 @@ def leaderboard(runs, by, then=None, filters=None, experiment=None):
         groups.setdefault((dimension(run, by), dimension(run, then) if then else None), []).append(run)
     rows = sorted((_row(key, sub, members) for (key, sub), members in groups.items()),
                   key=lambda r: (-(r['strict'] or 0), r['key'], r['sub'] or ''))
-    trajectories = [{'key': key, 'sub': sub, **{m: trajectory(members, m) for m in QUALITY}}
+    trajectories = [{'key': key, 'sub': sub, **{m: trajectory(members, m) for m in QUALITY},
+                     'intermediate': {m: trajectory(members, m, intermediate=True) for m in QUALITY}}
                     for (key, sub), members in sorted(groups.items(), key=lambda g: (g[0][0], g[0][1] or ''))]
     return {'by': by, 'then': then or None, 'rows': rows, 'runs': len(included),
-            'trajectories': [t for t in trajectories if any(t[m] for m in QUALITY)],
+            'trajectories': [t for t in trajectories if any(t[m] or t['intermediate'][m] for m in QUALITY)],
             'facets': _facets(runs), 'experiments': catalog,
             'pooled': {name: sorted({dimension(r, name) for r in included}) for name in FILTERABLE}}
