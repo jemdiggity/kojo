@@ -126,7 +126,7 @@ class Store:
 
     def _run_summary(self, run_id, states, rows):
         batch, status, exit_code = states.get(run_id, (None, None, None))
-        graded = [r for r in rows if 'strict' in r]
+        graded = final_checkpoints(rows)  # one per checkpoint, not one per role that ran
         partial = [r['partial'] for r in graded if r['partial'] is not None]
         return {'id': run_id, 'batch': batch, 'status': self._run_status(run_id, status),
                 'exit_code': exit_code, 'checkpoints_graded': len(graded),
