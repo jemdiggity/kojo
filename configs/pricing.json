@@ -1,0 +1,10 @@
+{
+  "_comment": "USD per million tokens, used for Codex API-equivalent cost. Claude runs report their own cost via the CLI. Edit rates here; no code change needed.",
+  "unit": "usd_per_million_tokens",
+  "models": {
+    "gpt-6-luna":   {"input": 0.10,  "cached_input": 0.01, "output": 0.50, "source": "legacy harness estimate; not verified against a provider price list"},
+    "gpt-6-sol":    {"input": 2.00,  "cached_input": 0.20, "output": 10.0, "source": "legacy harness estimate (20x luna); not verified"},
+    "gpt-5.6-sol":  {"input": 4.00,  "cached_input": 0.40, "output": 20.0, "source": "legacy harness estimate (40x luna); not verified"},
+    "gpt-6-astra":  {"input": 10.0,  "cached_input": 1.00, "output": 50.0, "source": "legacy harness estimate (100x luna); not verified"}
+  }
+}
