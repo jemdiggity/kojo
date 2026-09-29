@@ -28,7 +28,9 @@ def report(run, failures=False):
         passed, broken, gained = test_diff(report, before)
         failed = {(g, t) for g, r in report['tests'].items() for t in r['failed']}
         cell = lambda c: f"{c['passed']}/{c['total']}"
-        print(f"  {score['role'] + ' ' + label:22} {cell(score):>9}  -{len(broken)} / +{len(gained)}")
+        quality = score.get('quality') or {}
+        note = f"  erosion {quality['erosion']:.3f}  verbosity {quality['verbosity']:.3f}" if quality.get('erosion') is not None else ''
+        print(f"  {score['role'] + ' ' + label:22} {cell(score):>9}  -{len(broken)} / +{len(gained)}{note}")
         if failures:
             for title, tests in (('new failures', [f for f in sorted(failed) if f[0].startswith(f"checkpoint_{score['checkpoint']}-")]),
                                  ('regression failures', [f for f in sorted(failed) if not f[0].startswith(f"checkpoint_{score['checkpoint']}-")]),

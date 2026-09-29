@@ -88,3 +88,15 @@ earlier checkpoints). `scripts/scb_scores.py RUN_ID ...` prints that table for f
 runs as one compact diff per session, `-N / +M`: N tests passed after the previous session
 and now fail, M tests pass now that did not before (new tests plus repairs). Add `--failures`
 to name the failing tests.
+
+## Measuring every stage
+
+Every code-changing stage (build, revise, refactor, fix), on every visit, has its output
+tested and analyzed once all model calls have finished: the official grade is in
+`STAGE/checkpoint_N/evaluation.json` and the static quality analysis (erosion and verbosity,
+scb-check) in `STAGE/checkpoint_N/quality.json`. The `Graded` line and `scores.json` carry
+the headline numbers, and `scb_scores.py` shows them per session. Review and qa stages
+change no code, so they have no output to measure. A quality analysis that fails is recorded
+in `scores.json` and never costs the run its grades; `--no-quality` skips it (it needs `uvx`
+and network access). Runs made before this can be analyzed afterwards with
+`scripts/scb_quality.py`.
