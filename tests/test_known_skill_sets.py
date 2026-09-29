@@ -13,7 +13,7 @@ class KnownSkillSetsTest(unittest.TestCase):
         self.assertEqual(known.resolve('./mine', '/cache'), Path('./mine'))
 
     def test_known_sets_are_pinned_to_full_commits(self):
-        for name, (url, revision, subpath) in known.KNOWN.items():
+        for name, (url, revision, subpath, *_) in known.KNOWN.items():
             self.assertRegex(revision, r'^[0-9a-f]{40}$', name)
             self.assertTrue(url.startswith('https://'), name)
 
