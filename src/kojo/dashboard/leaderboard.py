@@ -16,7 +16,11 @@ GROUPABLE = FILTERABLE + ('run',)
 
 def dimension(run, name):
     """A run's value for a setting, or for 'batch' / 'run'."""
-    return {'batch': run.batch, 'run': run.id}.get(name) or run.settings[name]
+    if name == 'batch':
+        return run.batch
+    if name == 'run':
+        return run.id
+    return run.settings[name]
 
 
 def mean_sd(values):

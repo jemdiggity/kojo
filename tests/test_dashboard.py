@@ -153,6 +153,36 @@ class StoreTests(Fixture):
                          ('fix', False, 1.5, 90))
 
 
+class StoreOverviewTests(Fixture):
+    def test_status_falls_back_when_no_batch_reports_one(self):
+        self.add_run('done')
+        write(self.base / 'results/runs/done/results.json', {})
+        self.add_run('exited')
+        write(self.base / 'intermediate/runs/exited/launcher-exit.json', {'exit_code': 0})
+        self.add_run('mystery')
+        status = {r['id']: r['status'] for r in Store(self.base).overview()['runs']}
+        self.assertEqual(status, {'done': 'complete', 'exited': 'finished', 'mystery': 'unknown'})
+
+    def test_run_detail_is_none_for_unknown_runs(self):
+        self.assertIsNone(Store(self.base).run_detail('nope'))
+
+    def test_published_comparison(self):
+        checkpoints = [{'problem': 'p', 'checkpoint': 1, 'strict': 1, 'passed': 4, 'failed': 0, 'skipped': 0},
+                       {'problem': 'p', 'checkpoint': 2, 'strict': 0, 'passed': 1, 'failed': 3, 'skipped': 0}]
+        write(self.base / 'results/comparisons/c1/suite_analysis.json',
+              {'models': [{'model': 'm', 'strict': 1, 'cost': 2.5, 'minutes': 10, 'checkpoints': checkpoints}]})
+        (self.base / 'results/comparisons/c1/charts').mkdir()
+        (self.base / 'results/comparisons/c1/charts/figure-01-a.png').write_bytes(b'png')
+        store = Store(self.base)
+        self.assertEqual(store.comparison_names(), ['c1'])
+        data = store.comparison('c1')
+        (model,) = data['models']
+        self.assertEqual((model['strict'], model['checkpoints'], model['partial_pass']), (1, 2, (1 + 0.25) / 2))
+        self.assertEqual(data['charts'], ['figure-01-a.png'])
+        self.assertIsNone(store.comparison('missing'))
+        self.assertIsNone(store.chart_path('c1', 'figure-99.png'))
+
+
 class ServerTests(Fixture):
     def setUp(self):
         super().setUp()

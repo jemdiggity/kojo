@@ -1,6 +1,6 @@
 import { getJson } from './api.js';
 import { escapeHtml as h, fixed, meanSd, plural } from './format.js';
-import { navigate, on, options, render } from './view.js';
+import { hashOptions, render } from './view.js';
 
 const METRICS = { strict: 'Strict', iso: 'Iso.', core: 'Core', partial: 'Partial' };
 const FILTERS = { batch: 'Batch', problem: 'Problem', model: 'Model', skill: 'Skill set', factory: 'Factory', effort: 'Effort' };
@@ -42,6 +42,12 @@ function apiQuery(state) {
   return query;
 }
 
+/** The hash for `state` with `change` applied; every control links to one of these. */
+const next = (state, change) => stateHash({ ...state, ...change });
+
+/** One run opens its page; several open the run list filtered to them. */
+const runsHash = (ids) => (ids.length === 1 ? `run/${ids[0]}` : `runs?ids=${ids.join(',')}`);
+
 // ---- ordering ---------------------------------------------------------------
 
 /** Clusters by their best bar; within a cluster, second-dimension values alphabetically. */
@@ -65,33 +71,47 @@ const subValues = (rows) => [...new Set(rows.map((r) => r.sub))].filter((s) => s
 // ---- pieces -----------------------------------------------------------------
 
 function controls(state, data) {
+  const choose = (choices, isSelected, hashFor) =>
+    hashOptions(Object.entries(choices).map(([key, label]) => ({ hash: h(hashFor(key)), label, selected: isSelected(key) })));
+  const metrics = choose(METRICS, (k) => k === state.metric, (k) => next(state, { metric: k }));
+  const groups = choose(GROUPS, (k) => k === state.by, (k) => next(state, { by: k, then: state.then === k ? '' : state.then }));
   const thenChoices = { '': '— none —', ...Object.fromEntries(Object.entries(GROUPS).filter(([k]) => k !== state.by)) };
-  const experiments = data.experiments
-    .map((e) => `<option value="${e.id}"${e.id === state.experiment ? ' selected' : ''}>${h(experimentLabel(e))}</option>`)
-    .join('');
-  const filterMenus = Object.entries(FILTERS)
-    .map(([name, label]) => {
-      const chosen = state.filters[name] || [];
-      const boxes = data.facets[name]
-        .map(([value, count]) => `<label><input type="checkbox" data-filter="${name}" value="${h(value)}"${chosen.includes(value) ? ' checked' : ''}> ${h(value)} <span class="muted">${count}</span></label>`)
-        .join('');
-      return `<details class="menu" data-key="filter-${name}"><summary>${label}${chosen.length ? ` (${chosen.length})` : ''}</summary><div class="menu-box">${boxes}</div></details>`;
-    })
-    .join('');
+  const thens = choose(thenChoices, (k) => k === state.then, (k) => next(state, { then: k }));
+  const experiments = hashOptions([
+    { hash: h(next(state, { experiment: '' })), label: '— all runs —', selected: !state.experiment },
+    ...data.experiments.map((e) => ({
+      hash: h(next(state, { experiment: e.id, filters: {}, by: e.vary, then: experimentThen(e) })),
+      label: h(experimentLabel(e)),
+      selected: e.id === state.experiment,
+    })),
+  ]);
+  const filterMenus = Object.entries(FILTERS).map(([name, label]) => filterMenu(state, data, name, label)).join('');
   const active = state.experiment || Object.values(state.filters).some((v) => v.length);
+  const clear = active ? `<a href="#${h(next(state, { filters: {}, experiment: '' }))}">clear filters</a>` : '';
   return `
     <div class="ctl">
-      <label>Metric <select id="metric">${options(METRICS, state.metric)}</select></label>
-      <label>Group by <select id="by">${options(GROUPS, state.by)}</select></label>
-      <label>Then by <select id="then">${options(thenChoices, state.then)}</select></label>
+      <label>Metric <select data-nav>${metrics}</select></label>
+      <label>Group by <select data-nav>${groups}</select></label>
+      <label>Then by <select data-nav>${thens}</select></label>
       <span class="muted">% of checkpoints, build output graded per checkpoint</span>
     </div>
     <div class="ctl">
-      <label>Experiment <select id="experiment"><option value="">— all runs —</option>${experiments}</select></label>
+      <label>Experiment <select data-nav>${experiments}</select></label>
       ${filterMenus}
-      ${active ? '<a id="clear">clear filters</a>' : ''}
+      ${clear}
     </div>
     <p class="muted">${poolingNote(state, data)}</p>`;
+}
+
+/** A dropdown of checkboxes; each box links to the state with that value toggled. */
+function filterMenu(state, data, name, label) {
+  const chosen = state.filters[name] || [];
+  const boxes = data.facets[name].map(([value, count]) => {
+    const toggled = chosen.includes(value) ? chosen.filter((v) => v !== value) : [...chosen, value];
+    const hash = h(next(state, { filters: { ...state.filters, [name]: toggled } }));
+    return `<label><input type="checkbox" data-nav="${hash}"${chosen.includes(value) ? ' checked' : ''}> ${h(value)} <span class="muted">${count}</span></label>`;
+  });
+  return `<details class="menu" data-key="filter-${name}"><summary>${label}${chosen.length ? ` (${chosen.length})` : ''}</summary><div class="menu-box">${boxes.join('')}</div></details>`;
 }
 
 const experimentLabel = (e) => {
@@ -122,7 +142,7 @@ function bars(rows, state) {
   const bar = (row, index, label) => {
     const value = row[state.metric];
     const color = PALETTE[(state.then ? subs.indexOf(row.sub) : index) % PALETTE.length];
-    return `<div class="hit" data-runs="${h(row.run_ids.join(','))}" title="${plural(row.runs, 'run')} — click to view">
+    return `<div class="hit" data-href="${h(runsHash(row.run_ids))}" title="${plural(row.runs, 'run')} — click to view">
       <div class="name" title="${h(label)}">${h(label)}</div>
       <div class="track"><div class="fill" style="width:${((value || 0) / top) * 100}%;background:${color}"></div></div>
       <div class="val">${value == null ? '–' : `${value.toFixed(1)}%`}</div></div>`;
@@ -137,10 +157,11 @@ function bars(rows, state) {
 }
 
 function table(rows, state) {
-  const metricHeader = (name) => `<th class="num metric${name === state.metric ? ' sel' : ''}" data-metric="${name}">${METRICS[name]}</th>`;
+  const metricHeader = (name) =>
+    `<th class="num metric${name === state.metric ? ' sel' : ''}" data-href="${h(next(state, { metric: name }))}">${METRICS[name]}</th>`;
   const metricCell = (row, name) => `<td class="num${name === state.metric ? ' sel' : ''}">${fixed(row[name])}</td>`;
   const body = rows.map((row) => `
-    <tr class="click hit" data-runs="${h(row.run_ids.join(','))}">
+    <tr class="click" data-href="${h(runsHash(row.run_ids))}">
       <td>${h(row.key)}</td>${state.then ? `<td>${h(row.sub)}</td>` : ''}
       <td class="num">${row.runs}</td><td class="num">${row.checkpoints}</td>
       ${Object.keys(METRICS).map((name) => metricCell(row, name)).join('')}
@@ -153,34 +174,9 @@ function table(rows, state) {
     ${body}</table></div><p class="muted">${DEFINITIONS}</p>`;
 }
 
-/** One run opens its page; several open the run list filtered to them. */
-const openRuns = (ids) => navigate(ids.length === 1 ? `run/${ids[0]}` : `runs?ids=${ids.join(',')}`);
-
-function wire(state, data) {
-  const go = (change) => navigate(stateHash({ ...state, ...change }));
-  const value = (id) => document.querySelector(`#${id}`).value;
-  document.querySelector('#metric').onchange = () => go({ metric: value('metric') });
-  document.querySelector('#by').onchange = () => go({ by: value('by'), then: state.then === value('by') ? '' : state.then });
-  document.querySelector('#then').onchange = () => go({ then: value('then') });
-  document.querySelector('#experiment').onchange = () => {
-    const chosen = data.experiments.find((e) => e.id === value('experiment'));
-    go(chosen ? { experiment: chosen.id, filters: {}, by: chosen.vary, then: experimentThen(chosen) } : { experiment: '' });
-  };
-  on('change', 'input[data-filter]', (box) => {
-    const name = box.dataset.filter;
-    const chosen = new Set(state.filters[name] || []);
-    box.checked ? chosen.add(box.value) : chosen.delete(box.value);
-    go({ filters: { ...state.filters, [name]: [...chosen] } });
-  });
-  document.querySelector('#clear')?.addEventListener('click', () => go({ filters: {}, experiment: '' }));
-  on('click', '.hit[data-runs]', (el) => openRuns(el.dataset.runs.split(',')));
-  on('click', 'th.metric', (th) => go({ metric: th.dataset.metric }));
-}
-
 export async function leaderboardView(route) {
   const state = parseState(route);
   const data = await getJson(`/api/leaderboard?${apiQuery(state)}`);
   const rows = sortRows(data.rows, state);
   render(`${controls(state, data)}${rows.length ? bars(rows, state) + table(rows, state) : '<p class="muted">No graded runs found.</p>'}`);
-  wire(state, data);
 }

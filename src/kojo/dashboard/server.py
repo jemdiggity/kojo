@@ -31,7 +31,7 @@ def json_response(value, status=200):
     return Response(json.dumps(value).encode(), status=status)
 
 
-def found(value):
+def json_or_404(value):
     if value is None:
         raise NotFound
     return json_response(value)
@@ -69,9 +69,9 @@ ROUTES = [
     (r'/static/([a-z-]+\.(?:js|css))', lambda store, query, name: static_file(name)),
     (r'/api/overview', lambda store, query: json_response(store.overview())),
     (r'/api/leaderboard', lambda store, query: leaderboard_response(store, query)),
-    (rf'/api/runs/{ID}', lambda store, query, run: found(store.run_detail(run))),
+    (rf'/api/runs/{ID}', lambda store, query, run: json_or_404(store.run_detail(run))),
     (rf'/api/runs/{ID}/log', lambda store, query, run: Response(store.log_tail(run).encode(), 'text/plain; charset=utf-8')),
-    (rf'/api/comparisons/{ID}', lambda store, query, name: found(store.comparison(name))),
+    (rf'/api/comparisons/{ID}', lambda store, query, name: json_or_404(store.comparison(name))),
     (rf'/api/comparisons/{ID}/charts/(figure-[a-z0-9-]+\.png)', lambda store, query, name, chart: chart_response(store, name, chart)),
 ]
 
