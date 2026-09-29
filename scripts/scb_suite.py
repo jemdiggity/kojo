@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Launch selected SCBench problems; default is a no-inference preview."""
 import argparse
 import json
