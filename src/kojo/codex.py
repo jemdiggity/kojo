@@ -14,7 +14,7 @@ class QuotaStop(RuntimeError):
     pass
 
 
-def overrides(ignore_user_config=False):
+def overrides(ignore_user_config=False, native_work=None):
     settings = {
         "model": "gpt-6-luna",
         "model_reasoning_effort": "low",
@@ -24,7 +24,7 @@ def overrides(ignore_user_config=False):
         "memories.use_memories": False,
         "memories.generate_memories": False,
         "approval_policy": "never",
-        "features.skip_host_skill_discovery": True,
+        "features.skip_host_skill_discovery": native_work is None,
     }
     for name in [
         "plugins",
@@ -48,6 +48,9 @@ def overrides(ignore_user_config=False):
         Path.home() / ".agents/skills",
         Path("/etc/codex/skills"),
     ]
+    if native_work:
+        bases += [ancestor / '.agents/skills' for ancestor in Path(native_work).parents]
+        bases += [ancestor / '.codex/skills' for ancestor in Path(native_work).parents]
     # rglob does not descend into symlinked skill directories. Resolve every
     # reachable directory explicitly, with cycle protection, before disabling.
     found = set()
@@ -82,9 +85,9 @@ def overrides(ignore_user_config=False):
 class Metadata:
     """Read-only app-server calls. Never starts a model turn or spends reset credits."""
 
-    def __init__(self):
+    def __init__(self, native_work=None):
         self.proc = subprocess.Popen(
-            ["codex", *overrides(), "app-server", "--stdio"],
+            ["codex", *overrides(native_work=native_work), "app-server", "--stdio"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
@@ -137,12 +140,13 @@ class Metadata:
         )
         return weekly_snapshot(data)
 
-    def audit_skills(self, cwd):
+    def audit_skills(self, cwd, expected=()):
         data = self.request("skills/list", {"cwds": [str(cwd)], "forceReload": True})
         skills = [s for row in data["data"] for s in row["skills"]]
-        if any(s["enabled"] for s in skills):
+        enabled = {str(Path(s["path"]).resolve()) for s in skills if s["enabled"]}
+        if enabled != set(expected):
             raise RuntimeError("Unexpected enabled skill; refusing inference")
-        return {"discovered": len(skills), "enabled": 0}
+        return {"discovered": len(skills), "enabled": len(enabled), "paths": sorted(enabled)}
 
     def close(self):
         self.proc.terminate()

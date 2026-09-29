@@ -53,6 +53,8 @@ def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False
     if isolated_src:
         paths.update({":root": "deny", ":minimal": "read", ":tmpdir": "deny", ":slash_tmp": "deny"})
         paths[str(Path(sys._base_executable).resolve().parents[1])] = "read"
+    for directory in [work / ".agents", work / ".claude"]:
+        if directory.exists(): paths[str(directory)] = "read"
     if runtime:
         paths[str(runtime)] = "read"
     if readonly_skill:
@@ -119,7 +121,9 @@ def audit_shell_writes(sandbox, work):
             raise RuntimeError("Heredoc content was corrupted")
 
 
-def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False, effort="low"):
+def command(run, instructions, runtime=None, skill=None, isolated_src=False, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False, effort="low", native_skill_set=None):
+    from kojo.skill_sets import active_source
+    native_skill_set = active_source(native_skill_set)
     run.mkdir(parents=True, exist_ok=True)
     if model not in ("gpt-6-luna", "gpt-6-astra", "gpt-5.6-sol", "gpt-6-sol"):
         raise ValueError("Unsupported experiment model")
@@ -134,7 +138,9 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     instruction_path = (run if isolated_src else work) / "instructions.md"
     if instructions is not None:
         instruction_path.write_text(instructions)
-    args = overrides(ignore_user_config=True)
+    from kojo.skill_sets import install
+    native = install(work, native_skill_set, 'codex')
+    args = overrides(ignore_user_config=True, native_work=work if native else None)
     if effort not in ("low", "medium", "high", "xhigh", "max"):
         raise ValueError("Unsupported Codex effort")
     args += ["-c", "model=" + json.dumps(model), "-c", "model_reasoning_effort=" + json.dumps(effort)]
@@ -169,8 +175,10 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     ]
 
 
-def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False, effort="low"):
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path, network_enabled, effort)
+def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False, effort="low", native_skill_set=None):
+    from kojo.skill_sets import active_source
+    native_skill_set = active_source(native_skill_set)
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path, network_enabled, effort, native_skill_set)
     received = queue.Queue()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -230,10 +238,23 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
             # Stock instructions explain skills generically; that is not a catalog.
             texts = [c.get("text", "") for m in payload.get("input", [])
                      for c in m.get("content", []) if isinstance(c, dict)]
-            if any(x in serialized for x in ["/.agents/skills/", "/.codex/skills/"]) or any(
+            if native_skill_set is None and (any(x in serialized for x in ["/.agents/skills/", "/.codex/skills/"]) or any(
                 re.search(r"(?m)^### Available skills\s*$", t) for t in texts
-            ):
+            )):
                 raise RuntimeError("Ambient skill catalog present")
+            if native_skill_set:
+                from kojo.skill_sets import install
+                native = install(Path(work_path) if work_path else run/'src', native_skill_set, 'codex')
+                for entry in native['skills']:
+                    expected_path = str(Path(native['installed_root'])/entry['name']/'SKILL.md')
+                    alias = re.search(r"- `(r\d+)` = `" + re.escape(native['installed_root']) + r"`", '\n'.join(texts))
+                    if expected_path not in serialized and not (alias and f"(file: {alias[1]}/{entry['name']}/SKILL.md)" in serialized):
+                        raise RuntimeError('Designated native skill missing from request')
+                meta = Metadata(native_work=Path(work_path) if work_path else run/'src')
+                try:
+                    meta.audit_skills(Path(work_path) if work_path else run/'src',
+                        [str(Path(native['installed_root'])/e['name']/'SKILL.md') for e in native['skills']])
+                finally: meta.close()
             if skill and json.dumps(skill.strip())[1:-1] not in serialized:
                 raise RuntimeError("Designated skill missing from exact model request")
             catalog = payload.get("tools", []) + [
@@ -254,6 +275,12 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                 "-C",
                 str(work),
             ]
+            if native_skill_set is not None:
+                for entry in native['skills']:
+                    path=Path(native['installed_root'])/entry['name']/'SKILL.md'
+                    result=subprocess.run(sandbox+["/bin/cat",str(path)],capture_output=True)
+                    if result.returncode or result.stdout != path.read_bytes():
+                        raise RuntimeError("Native skill is not readable in sandbox")
             probe = work / ".audit-public"
             probe.write_text("public probe")
             public = subprocess.run(
@@ -341,9 +368,8 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                     "shell_write_smoke": isolated_src,
                     "network_enabled": network_enabled,
                     "network_probe": "loopback reachable" if network_enabled else "loopback blocked",
-                    "designated_skill_sha256": hashlib.sha256(
-                        (skill or "").encode()
-                    ).hexdigest(),
+                    "designated_skill_sha256": native["sha256"] if native_skill_set is not None else hashlib.sha256((skill or "").encode()).hexdigest(),
+                    "native_skill_set": native if native_skill_set is not None else None,
                 },
             )
     finally:
@@ -403,12 +429,12 @@ def observe_usage(meta, observations, run, *, required=False):
 
 
 def run_session(
-    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False, work_path=None, network_enabled=False, effort="low"
+    run, instructions, prompt, seconds, runtime=None, skill=None, prior_observations=(), isolated_src=False, capture_transcript=True, model="gpt-6-luna", monitor_only=False, work_path=None, network_enabled=False, effort="low", native_skill_set=None
 ):
     if (run / "run.json").exists():
         raise RuntimeError("Attempt already exists; refusing automatic retry")
-    audit(run, instructions, runtime, skill, isolated_src, prompt, persist=instructions is None, model=model, work_path=work_path, network_enabled=network_enabled, effort=effort)
-    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model, work_path=work_path, network_enabled=network_enabled, effort=effort)
+    audit(run, instructions, runtime, skill, isolated_src, prompt, persist=instructions is None, model=model, work_path=work_path, network_enabled=network_enabled, effort=effort, native_skill_set=native_skill_set)
+    cmd = command(run, instructions, runtime, skill, isolated_src, persist=capture_transcript, model=model, work_path=work_path, network_enabled=network_enabled, effort=effort, native_skill_set=native_skill_set)
     cfg = json.loads((BASE / "configs/quota.json").read_text())
     observations = []
     process = None
@@ -426,11 +452,20 @@ def run_session(
     }
     save(run / "run.json", row)
     try:
-        meta = Metadata()
+        work = Path(work_path) if work_path is not None else run / ('src' if isolated_src else 'work')
+        from kojo.skill_sets import active_source
+        native_skill_set_has_skills = active_source(native_skill_set) is not None
+        meta = Metadata(native_work=work if native_skill_set is not None and native_skill_set_has_skills else None)
         observe_usage(meta, observations, run, required=not monitor_only)
         if not monitor_only:
             enforce(observations[-1], cfg, [*prior_observations, *observations], True)
-        row["skills_audit"] = meta.audit_skills(Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work"))
+        work = Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work")
+        from kojo.skill_sets import install
+        native = install(work, native_skill_set, 'codex')
+        expected = [str(Path(native['installed_root'])/s['name']/'SKILL.md') for s in native['skills']] if native else []
+        row['native_skill_set'] = native
+        if native: row['skill_sha256'] = native['sha256']
+        row["skills_audit"] = meta.audit_skills(work, expected)
         env = {
             k: v
             for k, v in os.environ.items()

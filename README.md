@@ -91,15 +91,15 @@ sh scripts/scb_setup.sh
 Preview and audit without inference, then run:
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --audit
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --run
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --audit
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --run
 ```
 
 Select models with a space-separated list:
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id repro-02 --models sonnet55 opus55 astra6 --run
+.venv/bin/python scripts/scb_suite.py --id repro-02 --models sonnet55 opus55 astra6 --problems circuit_eval database_migration --run
 ```
 
 Supported suite aliases map to exact provider IDs; they are not moving “latest” aliases:
@@ -114,7 +114,7 @@ Supported suite aliases map to exact provider IDs; they are not moving “latest
 | `sol56` | `gpt-5.6-sol` |
 | `fable51` | `claude-fable-5-1` |
 
-`--models` is required; no models are selected implicitly. Duplicate models are rejected. Use the same selection for audit and run.
+`--models` and `--problems` are both required; neither has an implicit selection. Supported problems: `code_search` (5 checkpoints), `circuit_eval` (8), `database_migration` (5), and `dynamic_config_service_api` (4). Without `--parallel`, all runs execute in series, in the order supplied. Duplicate or unknown names are rejected. Use the same selections for audit and run.
 
 Use a fresh ID for each experiment. Use `--models sonnet55` for a single model. The example runs seven models through all three problems: 119 sessions
 at medium effort, with 30 minutes per session and no review. **`--run` consumes
@@ -124,7 +124,45 @@ must have access to the selected models. No Docker or tmux is required.
 Progress appears in the terminal. Results are saved under `results/runs/`; raw
 transcripts and logs under `intermediate/runs/`. Ctrl-C stops the controller.
 
-## Parallel runs
+### Skill sets and parallel execution
+
+Each directory passed to `--skill-sets` is a separate condition. Kojo runs every
+problem × model × skill-set combination. Omit it for the no-skills baseline.
+Use a directory containing `SKILL.md`, or a directory of named skill folders
+(`testing/SKILL.md`, `review/SKILL.md`, etc.). Supporting scripts and resources
+are included. An empty directory adds a no-skills condition to the matrix.
+
+```sh
+.venv/bin/python scripts/scb_suite.py --id skills-01 \
+  --models sonnet55 opus55 astra6 \
+  --problems circuit_eval database_migration dynamic_config_service_api \
+  --skill-sets ./skill-sets/baseline ./skill-sets/testing ./skill-sets/review \
+  --parallel all
+```
+
+This previews 27 independent runs. Use the same command with `--audit` for
+no-inference checks, then with `--run` to execute it. Each run still processes
+its checkpoints sequentially, with a fresh conversation at each checkpoint.
+
+| Option | Concurrent runs | Sequential barriers |
+|---|---|---|
+| Omitted | One run | Problems, skill sets, and models |
+| `--parallel models` | Models | Problems and skill sets |
+| `--parallel models-skills` | Models × skill sets | Problems |
+| `--parallel all` | Problems × models × skill sets | Only each run’s checkpoints |
+
+Selections retain the order supplied. Skill sets are copied and hashed when the
+plan is saved; use a new experiment ID when changing skills or scheduling.
+Each problem × model × skill-set run gets its own physical copy of the selected
+skills and resources, even when several runs select the same set. No live skill
+directory is shared between runs. Each run has its own workspace and transcripts. Codex discovers the selected
+project skills; Claude discovers them through an explicit local skill plugin.
+Ambient skills and memory remain disabled, and stock system prompts remain in
+use. Skills are available for native invocation, not inserted into every task
+prompt; their use is observable in the captured transcripts. These new options
+do not change the published baseline results above.
+
+## Advanced batch plans
 
 Independent SCB factories can run concurrently while each checkpoint chain stays
 sequential. Inspect an example without inference:

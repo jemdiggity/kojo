@@ -1,6 +1,6 @@
 # Running SCBench with Newer Models
 
-September 28, 2026
+September 29, 2026
 
 We ran seven coding models through `circuit_eval`, `database_migration`, and `dynamic_config_service_api`: 17 checkpoints that reveal new requirements one at a time. Each model inherited its own code but started a fresh conversation at every checkpoint. All used medium effort, with no reviewer or fixer. We measured correctness, token costs, and how code quality changed as the programs grew.
 
@@ -218,15 +218,15 @@ sh scripts/scb_setup.sh
 Preview, check the native harness without inference, then launch the experiment:
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --audit
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --run
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --audit
+.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --run
 ```
 
 Select models with a space-separated list:
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id repro-02 --models sonnet55 opus55 astra6 --run
+.venv/bin/python scripts/scb_suite.py --id repro-02 --models sonnet55 opus55 astra6 --problems circuit_eval database_migration --run
 ```
 
 Supported suite aliases map to exact provider IDs; they are not moving “latest” aliases:
@@ -241,10 +241,47 @@ Supported suite aliases map to exact provider IDs; they are not moving “latest
 | `sol56` | `gpt-5.6-sol` |
 | `fable51` | `claude-fable-5-1` |
 
-`--models` is required; no models are selected implicitly. Duplicate models are rejected. Use the same selection for audit and run.
+`--models` and `--problems` are both required; neither has an implicit selection. Supported problems: `code_search` (5 checkpoints), `circuit_eval` (8), `database_migration` (5), and `dynamic_config_service_api` (4). Without `--parallel`, all runs execute in series, in the order supplied. Duplicate or unknown names are rejected. Use the same selections for audit and run.
 
 
-Use a new ID for each experiment. Use `--models sonnet55` for one model. The example selects seven models, medium effort, no review, default output limits and 30-minute sessions: 119 sessions across the three problems. Models run in parallel within each problem; problems and each model’s checkpoints run sequentially. `--run` consumes provider allowance with usage reporting but no spending cap. Required model access remains account-dependent.
+### Skill sets and parallel execution
+
+Each directory passed to `--skill-sets` is a separate condition. Kojo runs every
+problem × model × skill-set combination. Omit it for the no-skills baseline.
+Use a directory containing `SKILL.md`, or a directory of named skill folders
+(`testing/SKILL.md`, `review/SKILL.md`, etc.). Supporting scripts and resources
+are included. An empty directory adds a no-skills condition to the matrix.
+
+```sh
+.venv/bin/python scripts/scb_suite.py --id skills-01 \
+  --models sonnet55 opus55 astra6 \
+  --problems circuit_eval database_migration dynamic_config_service_api \
+  --skill-sets ./skill-sets/baseline ./skill-sets/testing ./skill-sets/review \
+  --parallel all
+```
+
+This previews 27 independent runs. Use the same command with `--audit` for
+no-inference checks, then with `--run` to execute it. Each run still processes
+its checkpoints sequentially, with a fresh conversation at each checkpoint.
+
+| Option | Concurrent runs | Sequential barriers |
+|---|---|---|
+| Omitted | One run | Problems, skill sets, and models |
+| `--parallel models` | Models | Problems and skill sets |
+| `--parallel models-skills` | Models × skill sets | Problems |
+| `--parallel all` | Problems × models × skill sets | Only each run’s checkpoints |
+
+Selections retain the order supplied. Skill sets are copied and hashed when the
+plan is saved; use a new experiment ID when changing skills or scheduling.
+Each problem × model × skill-set run gets its own physical copy of the selected skills and resources, even when several runs select the same set. No live skill directory is shared between runs. Each run has its own workspace and transcripts. Codex discovers the selected
+project skills; Claude discovers them through an explicit local skill plugin.
+Ambient skills and memory remain disabled, and stock system prompts remain in
+use. Skills are available for native invocation, not inserted into every task
+prompt; their use is observable in the captured transcripts. These new options
+do not change the published baseline results above.
+
+
+Use a new ID for each experiment. Use `--models sonnet55` for one model. The example selects seven models, medium effort, no review, default output limits and 30-minute sessions: 119 sessions across the three problems. The launcher defaults to serial execution. Add `--parallel models` to run models concurrently within each problem; checkpoints stay sequential. `--run` consumes provider allowance with usage reporting but no spending cap. Required model access remains account-dependent.
 
 Progress prints in the terminal; Ctrl-C stops the controller. Grades and submissions go to `results/runs/<run-id>/`; transcripts and logs go to `intermediate/runs/<run-id>/`. Both stay local. New stochastic runs need not match our scores or historical interruptions. Our raw run evidence is not included in this repository.
 

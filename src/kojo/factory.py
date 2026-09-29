@@ -1,5 +1,7 @@
 """Bounded checkpoint factories with one independent review/follow-up per checkpoint."""
 import argparse
+from pathlib import Path
+
 import fcntl
 import math
 import shutil
@@ -76,7 +78,16 @@ def parse_args(argv=None):
     parser.add_argument('--resume-run', help='Explicit baseline restart from a completed checkpoint in this run')
     parser.add_argument('--resume-checkpoint', type=int)
     parser.add_argument('--monitor-only', action='store_true', help='Explicit user-authorized waiver of the weekly floor for this bounded run')
+    parser.add_argument('--skill-set', type=Path)
+    parser.add_argument('--skill-set-sha256')
     args = parser.parse_args(argv)
+    from kojo.skill_sets import describe
+    try:
+        args.skill_manifest = describe(args.skill_set) if args.skill_set else None
+    except ValueError as error:
+        parser.error(str(error))
+    if args.skill_set_sha256 and (not args.skill_manifest or args.skill_manifest['sha256'] != args.skill_set_sha256):
+        parser.error('Skill-set contents differ from frozen plan')
     count=len(metadata(args.problem)['checkpoints'])
     if args.resume_checkpoint is not None and not 1 <= args.resume_checkpoint < count:
         parser.error('Resume checkpoint must precede the final checkpoint')
@@ -134,6 +145,8 @@ def main(argv=None):
     if args.resume_run:
         old_output = BASE/'results/runs'/args.resume_run
         old_manifest = read(old_output/'manifest.json')
+        if old_manifest.get('skills') != args.skill_manifest:
+            raise RuntimeError('Resume skill set differs')
         if old_manifest['problem'] != args.problem:
             raise RuntimeError('Resume problem mismatch')
         if old_manifest.get('network_enabled') != (not args.no_network) or old_manifest.get('claude_max_output_tokens_override') != args.claude_max_output_tokens or old_manifest.get('review_loops') != 0:
@@ -154,7 +167,7 @@ def main(argv=None):
         for role in (('build',) if args.no_review else ('build', 'review', 'fix')):
             probe = root / 'offline-audit' / role
             adapter(models[role])[0](probe, None, backend.runtime, None, True,
-                  stage_prompt(experiment, role, 1 if role == 'build' else checkpoint_count, 'Offline review placeholder.', problem=args.problem), persist=True, model=models[role], network_enabled=not args.no_network, **adapter_options[role])
+                  stage_prompt(experiment, role, 1 if role == 'build' else checkpoint_count, 'Offline review placeholder.', problem=args.problem), persist=True, model=models[role], network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
         print('Selected role requests and native isolation verified without inference.', flush=True)
         return
     data.mkdir(parents=True, exist_ok=True)
@@ -166,7 +179,7 @@ def main(argv=None):
         save(output / 'manifest.json', {
             'run_id':args.run_id, 'problem':args.problem, 'problem_metadata':manifest['problems'][args.problem], 'condition':'checkpoint-review-factory' if args.review_scope == 'checkpoint' else 'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'harness_sha256':harness_digest(), 'role_instruction_sha256':factory_instruction_hashes(), 'quota':read(BASE / 'configs/quota.json'),
-            'max_sessions':(0 if args.source_run else checkpoint_count)+(0 if args.no_review else (2*checkpoint_count if args.review_scope == 'checkpoint' else 2)), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else (checkpoint_count if args.review_scope == 'checkpoint' else 1), 'review_scope':args.review_scope, 'review_loops_per_checkpoint':0 if args.no_review else (1 if args.review_scope == 'checkpoint' else None), 'skills':None,
+            'max_sessions':(0 if args.source_run else checkpoint_count)+(0 if args.no_review else (2*checkpoint_count if args.review_scope == 'checkpoint' else 2)), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else (checkpoint_count if args.review_scope == 'checkpoint' else 1), 'review_scope':args.review_scope, 'review_loops_per_checkpoint':0 if args.no_review else (1 if args.review_scope == 'checkpoint' else None), 'skills':args.skill_manifest,
             'prompt_protocol':'stock-cli-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock provider CLI; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':('per role; see effort_by_role' if any(adapter_options.values()) else 'low'),'source_run':args.source_run,'quota_monitor_only':args.monitor_only,'network_enabled':not args.no_network,'dependency_policy':'requirements.txt rebuilt in a fresh grading venv; install report and freeze recorded' if not args.no_network else 'historical pinned runtime only','external_access_policy':'report-only native transcript audit after every session; validity judged by the user',
             'sequence':('reused frozen builder' if args.source_run else f'{checkpoint_count} incremental build checkpoints') + ('' if args.no_review else (', each followed by one review and one fix; fixed code carries forward' if args.review_scope == 'checkpoint' else ', one final review, one follow-up')),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
@@ -179,6 +192,8 @@ def main(argv=None):
             'timeout_policy':'Stop the chain; incomplete source never carries forward',
             'scope':'Exploratory same-task workflow test, not held-out learning or a compute-matched comparison.',
         })
+        if args.skill_set:
+            shutil.copytree(args.skill_set, output/'skill-set')
         ledger=[]; frozen=[]; previous=None; failure=None
         first_checkpoint=1
         if args.resume_run:
@@ -213,6 +228,9 @@ def main(argv=None):
             first_checkpoint=args.resume_checkpoint+1
 
         def session(role, n, source, feedback=None):
+            from kojo.skill_sets import describe
+            if args.skill_set and describe(args.skill_set)['sha256'] != args.skill_manifest['sha256']:
+                raise RuntimeError('Skill set changed during experiment')
             if protocol_digest() != backend.protocol:
                 raise RuntimeError('Protocol changed during run')
             run = data / f'training-{role}/{args.problem}/checkpoint_{n}'
@@ -239,11 +257,13 @@ def main(argv=None):
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
             print(f'Starting {role} checkpoint {n}', flush=True)
             adapter(models[role])[1](run, None, prompt, args.seconds_per_session, backend.runtime,
-                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work, network_enabled=not args.no_network, **adapter_options[role])
+                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work, network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
             for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt','stock-instructions.md']:
                 if filename == 'answer.txt' and not (run/filename).exists():
                     continue  # A timed-out session may have no final answer; preserve its code/receipts.
                 shutil.copy2(run/filename, dest/filename)
+            from kojo.skill_sets import install
+            install(work, args.skill_set, 'claude' if models[role] in claude_execution.MODELS else 'codex')
             state=read(run/'run.json')
             if state['status']!='complete':
                 print(f"Stopped {role} checkpoint {n}: {state['status']}; usage={state.get('usage')}; API-equivalent USD={state.get('api_price_equivalent_usd')}",flush=True)

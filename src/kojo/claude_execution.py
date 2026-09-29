@@ -29,16 +29,17 @@ def executable():
     return str(pinned) if pinned.is_file() else "claude"
 
 
-def settings(work, network_enabled=True):
+def settings(work, network_enabled=True, native=False):
     return {
         "disableAllHooks": True,
         "disableBundledSkills": True,
+        "skillOverrides": {"doctor": "off"},
         "autoMemoryEnabled": False,
         "permissions": {
             "defaultMode": "dontAsk",
             "blockReadsOutsideWorkingDirectories": True,
-            "allow": ["Bash", "Read", "Edit", "Write", "Glob", "Grep"],
-            "deny": ["Agent", "Task", "Skill"],
+            "allow": ["Bash", "Read", "Edit", "Write", "Glob", "Grep"] + (["Skill"] if native else []),
+            "deny": ["Agent", "Task"] + ([] if native else ["Skill"]),
         },
         "sandbox": {
             "enabled": True,
@@ -50,6 +51,7 @@ def settings(work, network_enabled=True):
                 "denyRead": [str(Path.home())],
                 "allowRead": [str(work)],
                 "allowWrite": [str(work)],
+                "denyWrite": [str(work/".claude")] if native else [],
             },
             "network": {"allowedDomains": ["*"] if network_enabled else [], "allowLocalBinding": network_enabled},
         },
@@ -84,7 +86,9 @@ def environment(effort, *, audit_url=None, config_dir=None, max_output_tokens=No
     return env
 
 
-def command(run, work, model, effort, session_id, network_enabled=True, max_budget_usd=None):
+def command(run, work, model, effort, session_id, network_enabled=True, max_budget_usd=None, native_skill_set=None):
+    from kojo.skill_sets import active_source
+    native_skill_set = active_source(native_skill_set)
     if model not in MODELS or effort not in EFFORTS:
         raise ValueError("Unsupported Claude model/effort")
     run.mkdir(parents=True,exist_ok=True)
@@ -93,7 +97,11 @@ def command(run, work, model, effort, session_id, network_enabled=True, max_budg
     # An empty local repository prevents controller history entering the prompt.
     if not (work/".git").exists():
         subprocess.run(["git","init","--quiet","--initial-branch=main",str(work)],check=True)
-    save(run/"claude-settings.json", settings(work,network_enabled))
+    from kojo.skill_sets import install
+    native=install(work,native_skill_set,'claude')
+    if native:
+        save(work/".claude/.claude-plugin/plugin.json", {"name":"kojo-selected", "version":"1.0.0"})
+    save(run/"claude-settings.json", settings(work,network_enabled,bool(native)))
     if max_budget_usd is not None and (not math.isfinite(max_budget_usd) or max_budget_usd<=0):
         raise ValueError("Claude budget must be finite and positive")
     args = [executable(), "--print", "--verbose", "--output-format", "stream-json",
@@ -103,6 +111,11 @@ def command(run, work, model, effort, session_id, network_enabled=True, max_budg
             "--no-chrome", "--tools", "Bash,Read,Edit,Write,Glob,Grep", "--permission-mode", "dontAsk",
             "--model", model, "--effort", effort,
             "--session-id", session_id, "--system-prompt-snapshot", "on"]
+    if native:
+        args.remove("--safe-mode")
+        args.remove("--disable-slash-commands")
+        args[args.index("--tools")+1] += ",Skill"
+        args += ["--plugin-dir",str(work/".claude")]
     if max_budget_usd is not None:args += ["--max-budget-usd", str(max_budget_usd)]
     return args
 
@@ -114,7 +127,7 @@ def check_version():
     return actual
 
 
-def verify_request(payload, prompt, model, effort):
+def verify_request(payload, prompt, model, effort, native=False):
     if payload.get("model") != model:
         raise RuntimeError("Claude request model mismatch")
     system=payload.get("system",[])
@@ -128,19 +141,21 @@ def verify_request(payload, prompt, model, effort):
     if actual_effort != effort:
         raise RuntimeError(f"Claude wire effort mismatch: {actual_effort!r}")
     tools=[t["name"] for t in payload.get("tools",[])]
-    if set(tools) != {"Bash","Read","Write","Edit","Glob","Grep"}:
+    if set(tools) != {"Bash","Read","Write","Edit","Glob","Grep"} | ({"Skill"} if native else set()):
         raise RuntimeError("Unexpected skill or MCP tools")
     return {"model":model,"reasoning":actual_effort,"thinking":payload.get("thinking"),
             "max_tokens":payload.get("max_tokens"),"tools":tools,
             "base_instructions_mode":"stock; no replacement or append flags",
             "base_instructions_sha256":hashlib.sha256(text.encode()).hexdigest(),
-            "exact_user_prompt_in_request":True,"skills_disabled":True,
+            "exact_user_prompt_in_request":True,"skills_disabled":not native,
             "evidence":"Captured local dummy-endpoint request; no inference."},text
 
 
 def audit(run, instructions=None, runtime=None, skill=None, isolated_src=True,
           prompt=None, persist=True, model=MODELS[0], work_path=None,
-          network_enabled=True, effort="high", max_budget_usd=None, max_output_tokens=None):
+          network_enabled=True, effort="high", max_budget_usd=None, max_output_tokens=None, native_skill_set=None):
+    from kojo.skill_sets import active_source
+    native_skill_set = active_source(native_skill_set)
     if instructions is not None or skill is not None:
         raise ValueError("Claude baseline preserves stock instructions; supply role text in the user prompt")
     check_version()
@@ -163,6 +178,12 @@ else:
     raise AssertionError('outside file readable')
 print('native-write-smoke-ok')
 """
+    if native_skill_set is not None:
+        from kojo.skill_sets import install
+        native=install(work,native_skill_set,'claude')
+        for entry in native['skills']:
+            path=Path(native['installed_root'])/entry['name']/'SKILL.md'
+            script += f"assert Path({str(path)!r}).read_text()\n"
     if network_enabled:
         script += "import socket\ns=socket.socket(); s.bind(('127.0.0.1',0)); s.listen(); s.close()\nprint('local-bind-ok')\n"
     work.mkdir(parents=True,exist_ok=True)
@@ -212,10 +233,11 @@ print('native-write-smoke-ok')
             self.send_response(404);self.end_headers()
     server=http.server.ThreadingHTTPServer(("127.0.0.1",0),Handler)
     threading.Thread(target=server.serve_forever,daemon=True).start()
-    cmd=command(run,work,model,effort,str(uuid.uuid4()),network_enabled,max_budget_usd)
+    cmd=command(run,work,model,effort,str(uuid.uuid4()),network_enabled,max_budget_usd,native_skill_set)
     cmd += ["--debug-file",str(run/"audit-debug.log")]
     env=environment(effort,audit_url=f"http://127.0.0.1:{server.server_port}",
                     config_dir=run/"audit-config",max_output_tokens=max_output_tokens,model=model)
+    if native_skill_set is not None:env["CLAUDE_CODE_DISABLE_CLAUDE_MDS"]="1"
     (run/"audit-config").mkdir(exist_ok=True)
     canary="KOJO_DISABLED_CUSTOMIZATION_CANARY"
     (run/"audit-config/CLAUDE.md").write_text(canary)
@@ -236,7 +258,7 @@ print('native-write-smoke-ok')
         candidates=[p for p in payloads if p.get("model")==model]
         if not candidates:raise RuntimeError("No Claude model request captured; inspect audit logs")
         if canary in json.dumps(candidates):raise RuntimeError("Installed customization leaked into request")
-        receipt,stock=verify_request(candidates[0],prompt,model,effort)
+        receipt,stock=verify_request(candidates[0],prompt,model,effort,native_skill_set is not None)
         if max_output_tokens is not None and receipt["max_tokens"]!=max_output_tokens:
             raise RuntimeError(f"Requested output allowance {max_output_tokens}, actual {receipt['max_tokens']}")
         tool_results=[c for m in candidates[-1].get("messages",[]) for c in m.get("content",[]) if isinstance(c,dict) and c.get("type")=="tool_result"]
@@ -251,8 +273,21 @@ print('native-write-smoke-ok')
         receipt.update(native_shell_writes=True,private_bash_read_blocked=True,private_file_tool_read_blocked=True)
         events=[json.loads(line) for line in (run/"audit-events.jsonl").read_text().split("\n") if line.strip()]
         init=next(r for r in events if r.get("subtype")=="init")
-        if init.get("skills") or init.get("mcp_servers") or init.get("slash_commands"):
-            raise RuntimeError("Unexpected customization in Claude initialization")
+        expected=[]
+        if native_skill_set is not None:
+            from kojo.skill_sets import describe
+            expected=["kojo-selected:"+s["name"] for s in describe(native_skill_set)["skills"]]
+        if set(init.get("skills",[])) != set(expected) or init.get("mcp_servers"):
+            raise RuntimeError(f"Unexpected native skills: {init.get('skills')}; expected {expected}")
+        if not expected and native_skill_set is None and init.get("slash_commands"):
+            raise RuntimeError("Unexpected slash commands")
+        if native_skill_set is not None:
+            unexpected=[p for p in init.get("plugins",[]) if p.get("path") != "builtin" and
+                        (p.get("name") != "kojo-selected" or p.get("path") != str(work/".claude"))]
+            if unexpected:raise RuntimeError("Unexpected ambient plugin")
+            if any(name not in json.dumps(candidates[0]) for name in expected):
+                raise RuntimeError("Native skill catalog missing from model request")
+        receipt["native_skills"]=expected
         receipt["cli_version"]=VERSION
         receipt["customization_canary_absent"]=True
         receipt["network_smoke"]= "PyPI HTTPS metadata reachable" if network_enabled else "not requested"
@@ -311,16 +346,17 @@ def usage_from_result(result):
 def run_session(run, instructions, prompt, seconds, runtime=None, skill=None,
                 prior_observations=(), isolated_src=True, capture_transcript=True,
                 model=MODELS[0], monitor_only=False, work_path=None,
-                network_enabled=True, effort="high", max_budget_usd=None, max_output_tokens=None):
+                network_enabled=True, effort="high", max_budget_usd=None, max_output_tokens=None, native_skill_set=None):
     run=Path(run).resolve()
     if (run/"run.json").exists():raise RuntimeError("Attempt already exists; no implicit retry")
     if not isolated_src or not capture_transcript:raise ValueError("Claude requires isolation and transcript capture")
     work=Path(work_path).resolve() if work_path else run/"src"
     audit(run,instructions,runtime,skill,True,prompt,model=model,work_path=work,
-          network_enabled=network_enabled,effort=effort,max_budget_usd=max_budget_usd,max_output_tokens=max_output_tokens)
+          network_enabled=network_enabled,effort=effort,max_budget_usd=max_budget_usd,max_output_tokens=max_output_tokens,native_skill_set=native_skill_set)
     session_id=str(uuid.uuid4())
-    cmd=command(run,work,model,effort,session_id,network_enabled,max_budget_usd)
+    cmd=command(run,work,model,effort,session_id,network_enabled,max_budget_usd,native_skill_set)
     env=environment(effort,max_output_tokens=max_output_tokens,model=model)
+    if native_skill_set is not None:env["CLAUDE_CODE_DISABLE_CLAUDE_MDS"]="1"
     started=time.monotonic();process=None
     row={"status":"started","provider":"claude","cli_version":VERSION,"model":model,
          "reasoning":effort,"fresh_conversation":True,"session_id":session_id,
@@ -328,6 +364,10 @@ def run_session(run, instructions, prompt, seconds, runtime=None, skill=None,
          "max_budget_usd":max_budget_usd,"max_output_tokens_override":max_output_tokens,
          "quota_policy":"Claude subscription usage is separate; Codex quota is not applicable",
          "skill_sha256":hashlib.sha256(b"").hexdigest()}
+    if native_skill_set is not None:
+        from kojo.skill_sets import describe
+        row["native_skill_set"]=describe(native_skill_set)
+        row["skill_sha256"]=row["native_skill_set"]["sha256"]
     save(run/"run.json",row);save(run/"quota.json",[])
     try:
         with (run/"events.jsonl").open("w") as out,(run/"stderr.log").open("w") as err:

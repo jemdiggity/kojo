@@ -35,6 +35,8 @@ EXCLUDED = {
     "instructions.md",
     "specs",
     ".git",
+    ".agents",
+    ".claude",
     ".venv",
     "__pycache__",
     ".pytest_cache",
