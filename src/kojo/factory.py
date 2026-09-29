@@ -11,7 +11,7 @@ import time
 from kojo.catalog import BASE, DATA_ROOT, protocol_digest, harness_digest, factory_instruction_hashes, metadata
 from kojo.execution import audit, run_session, save, session_paths
 from kojo.external_access import audit_external_sources
-from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read, split_counts, test_diff
+from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read, split_counts, pass_diff
 from kojo.run_chain import ChainBackend, compose_prompt
 from kojo import claude_execution, factory_spec
 from kojo.quality import analyze_snapshot, headline
@@ -407,7 +407,7 @@ def main(argv=None):
             shutil.copy2(row['run']/'grading/evaluation.json',output/row['role']/label/'evaluation.json')
             report=read(row['run']/'grading/evaluation.json')
             score.update(split_counts(report,row['checkpoint']))
-            passing,broken,gained=test_diff(report,passing)  # Against the previous graded session of this run.
+            passing,broken,gained=pass_diff(report,passing)  # Against the previous graded session of this run.
             score.update({'broken':len(broken),'gained':len(gained)})
             if not args.no_quality:
                 # Report-only: a failed analysis is recorded, never allowed to lose the run's grades.
