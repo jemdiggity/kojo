@@ -21,6 +21,8 @@ VERSION = "2.1.283"
 MODELS = ("claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1", "claude-haiku-4-5-20251001")
 EFFORTS = ("low", "medium", "high")
 THINKING_TOKENS = {"low": 4000, "medium": 10000, "high": 31999}
+# Haiku 4.5 has no effort parameter; the requested effort is a fixed thinking-token budget instead.
+BUDGET_EFFORT_MODELS = ("claude-haiku-4-5-20251001",)
 
 
 def executable():
@@ -137,9 +139,16 @@ def verify_request(payload, prompt, model, effort, native=False):
                            any(c.get("text")==prompt for c in m.get("content",[]) if isinstance(c,dict))
                            for m in messages if m.get("role")=="user"):
         raise RuntimeError("Missing stock system prompt or task in Claude request")
-    actual_effort=payload.get("output_config",{}).get("effort")
-    if actual_effort != effort:
-        raise RuntimeError(f"Claude wire effort mismatch: {actual_effort!r}")
+    if model in BUDGET_EFFORT_MODELS:
+        thinking=payload.get("thinking") or {}
+        if payload.get("output_config",{}).get("effort") is not None or \
+                thinking.get("type")!="enabled" or thinking.get("budget_tokens")!=THINKING_TOKENS[effort]:
+            raise RuntimeError(f"Claude wire thinking budget mismatch: {thinking!r}")
+        actual_effort=effort
+    else:
+        actual_effort=payload.get("output_config",{}).get("effort")
+        if actual_effort != effort:
+            raise RuntimeError(f"Claude wire effort mismatch: {actual_effort!r}")
     tools=[t["name"] for t in payload.get("tools",[])]
     if set(tools) != {"Bash","Read","Write","Edit","Glob","Grep"} | ({"Skill"} if native else set()):
         raise RuntimeError("Unexpected skill or MCP tools")
@@ -324,7 +333,9 @@ def verify_saved_transcript(run, session_id, prompt, model, effort):
     stock="\n".join(snapshots[0]["systemPrompt"])
     (run/"stock-instructions.md").write_text(stock)
     assistants=[r for r in rows if r.get("type")=="assistant" and r.get("message",{}).get("model") != "<synthetic>"]
-    if any(r.get("message",{}).get("model")!=model or r.get("effort")!=effort for r in assistants):
+    # The wire request (verify_request) proves budget-only models' thinking; the transcript has no effort field for them.
+    expected_effort=None if model in BUDGET_EFFORT_MODELS else effort
+    if any(r.get("message",{}).get("model")!=model or r.get("effort")!=expected_effort for r in assistants):
         raise RuntimeError("Native transcript model/effort differs from configuration")
     receipt={"session_id":session_id,"provider":"claude","model":model,"reasoning":effort,
              "exact_user_prompt":True,"stock_prompt_snapshot":True,
