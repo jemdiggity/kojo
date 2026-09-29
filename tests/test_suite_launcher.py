@@ -99,8 +99,8 @@ class SuiteLauncherTests(unittest.TestCase):
             with patch.object(suite.subprocess, 'call', return_value=1), patch('builtins.print') as out:
                 self.assertEqual(suite.audit([Path('p')], [config], False), 1)
             text = '\n'.join(str(c.args[0]) for c in out.call_args_list)
-            self.assertIn('PASS circuit_eval / claude-sonnet-5-5 / low / none', text)
-            self.assertIn('FAIL circuit_eval / gpt-6-astra / low / none', text)
+            self.assertIn('\u2713 claude circuit_eval / claude-sonnet-5-5 / low / none', text)
+            self.assertIn('\u2717 codex  circuit_eval / gpt-6-astra / low / none', text)
             self.assertIn('boom', text)
             self.assertIn('Audit: 1/2 passed', text)
 
@@ -118,7 +118,7 @@ class SuiteLauncherTests(unittest.TestCase):
             with patch.object(suite.subprocess, 'call', side_effect=call), patch('builtins.print') as out:
                 self.assertEqual(suite.audit([Path('p')], [config], False), 1)
             text = '\n'.join(str(c.args[0]) for c in out.call_args_list)
-            self.assertIn('PASS', text)
+            self.assertIn('\u2713', text)
             self.assertIn('Harness changed during batch', text)
 
     def test_audit_reset_replaces_audit_state_until_a_real_run_starts(self):

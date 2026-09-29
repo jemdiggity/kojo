@@ -130,12 +130,21 @@ def reset_audit(experiment, configs):
         shutil.rmtree(plans_dir, ignore_errors=True)  # Nothing has run, so the plan is still editable.
 
 
+def mark(ok):
+    """Green check or red x; colour only on a terminal."""
+    symbol = '\u2713' if ok else '\u2717'
+    if not sys.stdout.isatty() or os.environ.get('NO_COLOR'):
+        return symbol
+    return f"\033[{'32' if ok else '31'}m{symbol}\033[0m"
+
+
 def label(flags):
-    """Short human name for one run: problem, model, effort, skill set."""
+    """Short human name for one run: CLI, problem, model, effort, skill set."""
     value = lambda name: flags[flags.index(name) + 1]
     effort = value('--claude-effort') if '--claude-effort' in flags else value('--codex-effort')
     skills = Path(value('--skill-set')).name if '--skill-set' in flags else 'none'
-    return f"{value('--problem')} / {value('--build-model')} / {effort} / {skills}"
+    cli = 'claude' if '--claude-effort' in flags else 'codex'
+    return f"{cli:6} {value('--problem')} / {value('--build-model')} / {effort} / {skills}"
 
 
 def audit(paths, configs, verbose):
@@ -163,7 +172,7 @@ def audit(paths, configs, verbose):
             total += 1
             passed += ok
             batch_passed += ok
-            print(f"{'PASS' if ok else 'FAIL'} {label(run['factory_args'])}")
+            print(f"{mark(ok)} {label(run['factory_args'])}")
             if not ok:
                 log = ROOT / 'intermediate/runs' / rid / 'controller.log'
                 tail = log.read_text().strip().splitlines()[-5:] if log.exists() else ['(no controller log)']
