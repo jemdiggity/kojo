@@ -110,7 +110,7 @@ def split_counts(report, checkpoint):
     return {name: {"passed": p, "total": t} for name, (p, t) in counts.items()}
 
 
-def test_diff(report, before):
+def pass_diff(report, before):
     """(passing, broken, gained) against `before`, the tests passing after the previous session.
     A test is Core/Functionality/Error in its own checkpoint and Regression later, so tests are
     matched by checkpoint and name."""

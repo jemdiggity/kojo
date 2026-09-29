@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.catalog import DATA_ROOT
-from kojo.gauntlet import test_diff
+from kojo.gauntlet import pass_diff
 
 
 def base(name):
@@ -25,7 +25,7 @@ def report(run, failures=False):
     for score in scores:
         label = score.get('label', f"checkpoint_{score['checkpoint']}")
         report = json.loads((path / score['role'] / label / 'evaluation.json').read_text())
-        passed, broken, gained = test_diff(report, before)
+        passed, broken, gained = pass_diff(report, before)
         failed = {(g, t) for g, r in report['tests'].items() for t in r['failed']}
         cell = lambda c: f"{c['passed']}/{c['total']}"
         quality = score.get('quality') or {}
