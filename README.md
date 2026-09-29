@@ -91,15 +91,15 @@ sh scripts/scb_setup.sh
 Preview and audit without inference, then run:
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --audit
-.venv/bin/python scripts/scb_suite.py --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --run
+scripts/scb_suite.sh --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api
+scripts/scb_suite.sh --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --audit
+scripts/scb_suite.sh --id repro-01 --models sonnet55 opus55 sol6 astra6 fable51 opus5 sol56 --problems circuit_eval database_migration dynamic_config_service_api --run
 ```
 
 Select models with a space-separated list:
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id repro-02 --models sonnet55 opus55 astra6 --problems circuit_eval database_migration --run
+scripts/scb_suite.sh --id repro-02 --models sonnet55 opus55 astra6 --problems circuit_eval database_migration --run
 ```
 
 Supported suite aliases map to exact provider IDs; they are not moving “latest” aliases:
@@ -158,7 +158,7 @@ directory. Names and paths can be mixed (`--skill-sets none karpathy superpowers
 more in `src/kojo/known_skill_sets.py`.
 
 ```sh
-.venv/bin/python scripts/scb_suite.py --id skills-01 \
+scripts/scb_suite.sh --id skills-01 \
   --models sonnet55 opus55 astra6 \
   --problems circuit_eval database_migration dynamic_config_service_api \
   --skill-sets ./skill-sets/baseline ./skill-sets/testing ./skill-sets/review \

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Launch selected SCBench problems; default is a no-inference preview."""
 import argparse
 import json
@@ -6,12 +5,9 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-# Runs must use the pinned project interpreter, however this script is invoked.
-VENV_PYTHON = ROOT / '.venv/bin/python'
-if VENV_PYTHON.exists() and Path(sys.prefix).resolve() != (ROOT / '.venv').resolve():
-    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), *sys.argv])
 sys.path.insert(0, str(ROOT / 'src'))
 from kojo.batch import identifier, load_plan
 from kojo.known_skill_sets import KNOWN, resolve
@@ -114,6 +110,54 @@ def save_plans(directory, configs):
     return paths
 
 
+def label(flags):
+    """Short human name for one run: problem, model, effort, skill set."""
+    value = lambda name: flags[flags.index(name) + 1]
+    effort = value('--claude-effort') if '--claude-effort' in flags else value('--codex-effort')
+    skills = Path(value('--skill-set')).name if '--skill-set' in flags else 'none'
+    return f"{value('--problem')} / {value('--build-model')} / {effort} / {skills}"
+
+
+def audit(paths, configs, verbose):
+    """Run the no-inference audit; print one PASS/FAIL line per run and a summary."""
+    total = passed = 0
+    for path, config in zip(paths, configs):
+        command = [sys.executable, str(ROOT / 'scripts/scb_batch.py'), str(path), '--audit',
+                   '--jobs', str(config['max_parallel'])]
+        with tempfile.TemporaryFile('w+') as captured:
+            out = None if verbose else captured
+            code = subprocess.call(command, cwd=ROOT, stdout=out, stderr=subprocess.STDOUT if out else None)
+            captured.seek(0)
+            output = captured.read()
+        batch_passed = 0
+        status_path = ROOT / 'intermediate/batches' / (config['batch_id'] + '-audit') / 'status.json'
+        if not status_path.exists():
+            # The launcher failed before starting any run; its own message is the diagnosis.
+            print(f"FAIL {config['batch_id']}: launcher error (exit {code})\n{output.strip()[-1500:]}")
+            total += len(config['runs'])
+            return finish(passed, total, code or 1)
+        runs = json.loads(status_path.read_text())['runs']
+        for run in config['runs']:
+            rid = f"{config['batch_id']}-{run['run_id']}-audit"
+            ok = runs.get(rid, {}).get('status') == 'complete'
+            total += 1
+            passed += ok
+            batch_passed += ok
+            print(f"{'PASS' if ok else 'FAIL'} {label(run['factory_args'])}")
+            if not ok:
+                log = ROOT / 'intermediate/runs' / rid / 'controller.log'
+                tail = log.read_text().strip().splitlines()[-5:] if log.exists() else ['(no controller log)']
+                print('     ' + '\n     '.join(tail) + f'\n     log: {log}')
+        if batch_passed < len(config['runs']) or code:
+            return finish(passed, total, code or 1)  # Stop before the next batch, as a failed audit should.
+    return finish(passed, total, 0)
+
+
+def finish(passed, total, code):
+    print(f'Audit: {passed}/{total} passed; no inference was run.' + ('' if code == 0 else ' FAILED.'))
+    return code
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     if not argv:
@@ -127,6 +171,7 @@ def main(argv=None):
               '  [--efforts EFFORT [EFFORT ...]]\n'
               '  [--parallel {' + ','.join(PARALLEL) + '}]\n'
               '  [--audit | --run]\n'
+              '  [--verbose]\n'
               '  [--tmux-session NAME]',
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='Supported model aliases (exact provider IDs):\n' +
@@ -148,6 +193,7 @@ def main(argv=None):
                         help='Parallel dimensions; omitted means every run is sequential')
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--audit', action='store_true', help='Native CLI checks without inference')
+    parser.add_argument('--verbose', action='store_true', help='Show full launcher output for --audit')
     action.add_argument('--run', action='store_true', help='Execute models; consumes provider allowance')
     parser.add_argument('--tmux-session', help='Optional tmux log-viewer session; launcher stays foreground')
     args = parser.parse_args(argv)
@@ -183,12 +229,7 @@ def main(argv=None):
     except (ValueError, KeyError) as error:
         parser.error(str(error))
     if args.audit:
-        for path in paths:
-            code = subprocess.call([sys.executable, str(ROOT / 'scripts/scb_batch.py'),
-                                    str(path), '--audit', '--jobs', str(configs[paths.index(path)]['max_parallel'])], cwd=ROOT)
-            if code:
-                return code
-        return 0
+        return audit(paths, configs, args.verbose)
     print(f'Launching {len(args.models) * max(1, len(skill_sets)) * len(args.efforts or [0]) * sum(PROBLEMS[p] for p in args.problems)} sessions: {", ".join(args.efforts or ["medium"])} effort, 30 minutes each, '
           'no review, default output limits. Usage is monitored, not capped.', flush=True)
     cmd = [sys.executable, str(ROOT / 'scripts/scb_dex_sonnet_series.py'),
