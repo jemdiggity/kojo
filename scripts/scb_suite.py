@@ -30,7 +30,11 @@ PROBLEMS = {'code_search': 5, 'circuit_eval': 8, 'database_migration': 5,
             'dynamic_config_service_api': 4}
 
 
-def plans(prefix, models, problems, skill_sets=None, parallel=None):
+EFFORTS = {'claude': ('low', 'medium', 'high'), 'codex': ('low', 'medium', 'high', 'xhigh', 'max')}
+PARALLEL = ('models', 'models-skills', 'models-skills-efforts', 'all')
+
+
+def plans(prefix, models, problems, skill_sets=None, parallel=None, efforts=None):
     identifier(prefix)
     if not models or len(set(models)) != len(models):
         raise ValueError('Select each model only once; at least one is required')
@@ -38,35 +42,51 @@ def plans(prefix, models, problems, skill_sets=None, parallel=None):
         raise ValueError('Select each problem only once; at least one is required')
     if any(problem not in PROBLEMS for problem in problems):
         raise ValueError('Unsupported problem')
-    if parallel not in (None, 'models', 'models-skills', 'all'):
+    if efforts is not None and (not efforts or len(set(efforts)) != len(efforts)):
+        raise ValueError('Select each effort only once')
+    if parallel not in (None, *PARALLEL):
         raise ValueError('Unsupported parallel mode')
     # Each directory is a separate experimental condition, not merged with others.
     conditions = skill_sets or [{'name': 'baseline', 'path': None}]
-    batches = []
+    levels = efforts or ['medium']
+    for tag in models:
+        vendor = 'claude' if MODELS[tag].startswith('claude-') else 'codex'
+        for effort in levels:
+            if effort not in EFFORTS[vendor]:
+                raise ValueError(f'{tag} supports efforts: {", ".join(EFFORTS[vendor])}')
+    # Each entry is (problem, effort, batch) so modes can regroup along any dimension.
+    entries = []
     for problem in problems:
-        for condition in conditions:
-            runs = []
-            for tag in models:
-                model = MODELS[tag]
-                effort = '--claude-effort' if model.startswith('claude-') else '--codex-effort'
-                suffix = '-' + condition['name'] if skill_sets else ''
-                flags = ['--problem', problem, '--build-model', model,
-                         effort, 'medium', '--seconds-per-session', '1800',
-                         '--no-review', '--monitor-only']
-                if condition['path']:
-                    flags += ['--skill-set', str(condition['path']),
-                              '--skill-set-sha256', condition['sha256']]
-                runs.append({'run_id': f'{prefix}-{problem.replace("_", "-")}-{tag}{suffix}',
-                             'factory_args': flags})
-            batches.append({'batch_id': f'{prefix}-{problem.replace("_", "-")}' +
-                            ('-' + condition['name'] if skill_sets else ''),
-                            'max_parallel': len(models) if parallel else 1, 'runs': runs})
-    if parallel == 'models-skills':
-        batches = [{'batch_id': f'{prefix}-{problem.replace("_", "-")}',
-                    'runs': [run for b in batches for run in b['runs']
-                             if run['factory_args'][1] == problem],
-                    'max_parallel': len(models) * len(conditions)} for problem in problems]
-    elif parallel == 'all':
+        for effort in levels:
+            for condition in conditions:
+                runs = []
+                for tag in models:
+                    model = MODELS[tag]
+                    flag = '--claude-effort' if model.startswith('claude-') else '--codex-effort'
+                    suffix = ('-' + effort if efforts else '') + ('-' + condition['name'] if skill_sets else '')
+                    flags = ['--problem', problem, '--build-model', model,
+                             flag, effort, '--seconds-per-session', '1800',
+                             '--no-review', '--monitor-only']
+                    if condition['path']:
+                        flags += ['--skill-set', str(condition['path']),
+                                  '--skill-set-sha256', condition['sha256']]
+                    runs.append({'run_id': f'{prefix}-{problem.replace("_", "-")}-{tag}{suffix}',
+                                 'factory_args': flags})
+                batch = f'{prefix}-{problem.replace("_", "-")}' + ('-' + effort if efforts else '') + \
+                    ('-' + condition['name'] if skill_sets else '')
+                entries.append((problem, effort, {'batch_id': batch,
+                                                  'max_parallel': len(models) if parallel else 1, 'runs': runs}))
+    if parallel in ('models-skills', 'models-skills-efforts'):
+        by_effort = parallel == 'models-skills'
+        groups = [(p, e) for p in problems for e in (levels if by_effort else [None])]
+        batches = []
+        for problem, effort in groups:
+            runs = [r for p, e, b in entries if p == problem and effort in (None, e) for r in b['runs']]
+            batch_id = f'{prefix}-{problem.replace("_", "-")}' + ('-' + effort if efforts and effort else '')
+            batches.append({'batch_id': batch_id, 'runs': runs, 'max_parallel': len(runs)})
+        return batches
+    batches = [b for _, _, b in entries]
+    if parallel == 'all':
         runs = [run for batch in batches for run in batch['runs']]
         batches = [{'batch_id': prefix + '-all', 'runs': runs, 'max_parallel': len(runs)}]
     return batches
@@ -100,7 +120,8 @@ def main(argv=None):
               '  --models MODEL [MODEL ...]\n'
               '  --problems PROBLEM [PROBLEM ...]\n'
               '  [--skill-sets SKILL_SET [SKILL_SET ...]]\n'
-              '  [--parallel {models,models-skills,all}]\n'
+              '  [--efforts EFFORT [EFFORT ...]]\n'
+              '  [--parallel {' + ','.join(PARALLEL) + '}]\n'
               '  [--audit | --run]\n'
               '  [--tmux-session NAME]',
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -116,7 +137,10 @@ def main(argv=None):
                         help='Separate skill conditions: %s (no skills, the baseline), a well-known '
                              'name (%s), or a directory; omitted means a single no-skills run'
                              % (NONE, ', '.join(sorted(KNOWN))))
-    parser.add_argument('--parallel', choices=['models', 'models-skills', 'all'],
+    parser.add_argument('--efforts', nargs='+', metavar='EFFORT',
+                        help='Reasoning-effort conditions (Claude: %s; Codex: %s); omitted means medium'
+                             % (', '.join(EFFORTS['claude']), ', '.join(EFFORTS['codex'])))
+    parser.add_argument('--parallel', choices=PARALLEL,
                         help='Parallel dimensions; omitted means every run is sequential')
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--audit', action='store_true', help='Native CLI checks without inference')
@@ -136,7 +160,7 @@ def main(argv=None):
         described = iter(describe_sets([resolve(s, cache) for s in specs if s != NONE]))
         skill_sets = [{'name': NONE, 'path': None, 'sha256': None} if s == NONE else next(described)
                       for s in specs]
-        configs = plans(args.id, args.models, args.problems, skill_sets, args.parallel)
+        configs = plans(args.id, args.models, args.problems, skill_sets, args.parallel, args.efforts)
         if args.tmux_session:
             identifier(args.tmux_session)
         if not (args.run or args.audit):
@@ -148,7 +172,7 @@ def main(argv=None):
             frozen = iter(freeze_sets(ROOT / 'intermediate/plans' / args.id / 'skill-sets',
                                       [c for c in skill_sets if c['path']]))
             skill_sets = [next(frozen) if c['path'] else c for c in skill_sets]
-            configs = plans(args.id, args.models, args.problems, skill_sets, args.parallel)
+            configs = plans(args.id, args.models, args.problems, skill_sets, args.parallel, args.efforts)
         paths = save_plans(ROOT / 'intermediate/plans' / args.id, configs)
         for path in paths:
             load_plan(path)
@@ -161,7 +185,7 @@ def main(argv=None):
             if code:
                 return code
         return 0
-    print(f'Launching {len(args.models) * max(1, len(skill_sets)) * sum(PROBLEMS[p] for p in args.problems)} sessions: medium effort, 30 minutes each, '
+    print(f'Launching {len(args.models) * max(1, len(skill_sets)) * len(args.efforts or [0]) * sum(PROBLEMS[p] for p in args.problems)} sessions: {", ".join(args.efforts or ["medium"])} effort, 30 minutes each, '
           'no review, default output limits. Usage is monitored, not capped.', flush=True)
     cmd = [sys.executable, str(ROOT / 'scripts/scb_dex_sonnet_series.py'),
            '--run', '--series-id', args.id, '--tmux-session', args.tmux_session or '']

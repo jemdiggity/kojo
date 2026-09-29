@@ -128,6 +128,15 @@ must have access to the selected models. No Docker or tmux is required.
 Progress appears in the terminal. Results are saved under `results/runs/`; raw
 transcripts and logs under `intermediate/runs/`. Ctrl-C stops the controller.
 
+### Efforts
+
+`--efforts` adds reasoning effort as another dimension: every problem × model ×
+skill set runs at each effort listed (`--efforts low medium high`). Claude models
+accept `low`, `medium`, and `high`; Codex models also accept `xhigh` and `max`, and
+a combination a provider does not support is rejected. Omit it for the published
+setting, a single `medium` run whose run IDs carry no effort suffix. Otherwise each
+run ID and batch ID includes the effort.
+
 ### Skill sets and parallel execution
 
 Each directory passed to `--skill-sets` is a separate condition. Kojo runs every
@@ -162,10 +171,11 @@ its checkpoints sequentially, with a fresh conversation at each checkpoint.
 
 | Option | Concurrent runs | Sequential barriers |
 |---|---|---|
-| Omitted | One run | Problems, skill sets, and models |
-| `--parallel models` | Models | Problems and skill sets |
-| `--parallel models-skills` | Models × skill sets | Problems |
-| `--parallel all` | Problems × models × skill sets | Only each run’s checkpoints |
+| Omitted | One run | Problems, efforts, skill sets, and models |
+| `--parallel models` | Models | Problems, efforts, and skill sets |
+| `--parallel models-skills` | Models × skill sets | Problems and efforts |
+| `--parallel models-skills-efforts` | Models × skill sets × efforts | Problems |
+| `--parallel all` | Problems × models × skill sets × efforts | Only each run’s checkpoints |
 
 Selections retain the order supplied. Skill sets are copied and hashed when the
 plan is saved; use a new experiment ID when changing skills or scheduling.
