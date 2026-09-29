@@ -82,7 +82,7 @@ Every code-changing session is graded after all model calls finish.
 
 ## Reading scores
 
-Each `Graded ...` line and `scores.json` entry splits the score into `new` (this
+Each `Graded ...` line ends with the same compact diff (`-N / +M`, against the previous graded session of the run). Each `scores.json` entry records it as `broken` and `gained`, and splits the score into `new` (this
 checkpoint's own core, functionality and error tests) and `regression` (tests from
 earlier checkpoints). `scripts/scb_scores.py RUN_ID ...` prints that table for finished
 runs as one compact diff per session, `-N / +M`: N tests passed after the previous session
