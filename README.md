@@ -132,6 +132,17 @@ Use a directory containing `SKILL.md`, or a directory of named skill folders
 (`testing/SKILL.md`, `review/SKILL.md`, etc.). Supporting scripts and resources
 are included. An empty directory adds a no-skills condition to the matrix.
 
+Instead of a path, `--skill-sets` accepts well-known names, each pinned to an
+exact upstream commit and cached under `intermediate/vendor/skill-sets/`:
+
+| Name | Source |
+|---|---|
+| `karpathy` | [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) `skills/` |
+| `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) `skills/` |
+
+Names and paths can be mixed (`--skill-sets karpathy superpowers ./mine`). Add
+more in `src/kojo/known_skill_sets.py`.
+
 ```sh
 .venv/bin/python scripts/scb_suite.py --id skills-01 \
   --models sonnet55 opus55 astra6 \
