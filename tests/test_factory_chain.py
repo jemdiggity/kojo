@@ -47,7 +47,7 @@ class FactoryChainTests(unittest.TestCase):
                 return [{'passed':1,'total':1,'checkpoint':row['checkpoint']}]
             experiment=SimpleNamespace(score=score)
             with contextlib.ExitStack() as stack:
-                for name,value in [('BASE',base),('protocol_digest',lambda:'fixed'),('preflight',lambda **kw:({}, {'problems':{}})),('ChainBackend',lambda *a:backend),('Experiment',lambda *a:experiment),('audit_external_sources',lambda *a:{'review_suggested':flagged,'status':'suspected_benchmark_access' if flagged else 'no_benchmark_access_observed'}),('stage_prompt',lambda *a,**kw:f'prompt'),('run_session',inference)]:
+                for name,value in [('BASE',base),('DATA_ROOT',base),('protocol_digest',lambda:'fixed'),('preflight',lambda **kw:({}, {'problems':{}})),('ChainBackend',lambda *a:backend),('Experiment',lambda *a:experiment),('audit_external_sources',lambda *a:{'review_suggested':flagged,'status':'suspected_benchmark_access' if flagged else 'no_benchmark_access_observed'}),('stage_prompt',lambda *a,**kw:f'prompt'),('run_session',inference)]:
                     stack.enter_context(patch.object(factory,name,value))
                 if claude:
                     stack.enter_context(patch.object(factory.claude_execution,'run_session',inference))

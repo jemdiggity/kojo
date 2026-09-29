@@ -10,9 +10,16 @@ done
 python3 - <<'PY'
 import fcntl
 from pathlib import Path
+import os, subprocess
+# Runs live in the shared data root, not necessarily this worktree.
+data = Path(os.environ.get('KOJO_DATA_DIR') or '.').expanduser().resolve()
+common = subprocess.run(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+                        capture_output=True, text=True).stdout.strip()
+if not os.environ.get('KOJO_DATA_DIR') and common.endswith('/.git'):
+    data = Path(common).parent
 for pattern in ('intermediate/runs/*/launcher.lock', 'intermediate/runs/*/gauntlet/execution.lock'):
-    for path in Path('.').glob(pattern):
-        with path.open('a') as lock:
+    for path in data.glob(pattern):
+        with path.open('r') as lock:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:

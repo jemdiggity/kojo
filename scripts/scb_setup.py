@@ -28,14 +28,27 @@ def cache_key(root):
     return digest.hexdigest()[:24]
 
 
+def data_root(root):
+    override = os.environ.get('KOJO_DATA_DIR')
+    if override:
+        return Path(override).expanduser().resolve()
+    result = subprocess.run(['git', '-C', str(root), 'rev-parse',
+                             '--path-format=absolute', '--git-common-dir'],
+                            capture_output=True, text=True)
+    common = result.stdout.strip()
+    if result.returncode == 0 and common.endswith('/.git'):
+        return Path(common).parent
+    return root
+
+
 @contextlib.contextmanager
 def run_locks(root):
     # Hold existing run locks through setup, including while waiting for cache fill.
     with contextlib.ExitStack() as stack:
         for pattern in ('intermediate/runs/*/launcher.lock',
                         'intermediate/runs/*/gauntlet/execution.lock'):
-            for path in root.glob(pattern):
-                lock = stack.enter_context(path.open('a'))
+            for path in data_root(root).glob(pattern):
+                lock = stack.enter_context(path.open('r'))
                 try:
                     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except BlockingIOError:

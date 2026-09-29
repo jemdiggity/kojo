@@ -400,15 +400,22 @@ def usage_from_events(path):
     return turns[-1]["usage"] if turns else None
 
 
+def pricing(model):
+    """Per-million-token rates for a model from configs/pricing.json."""
+    table = json.loads((BASE / "configs/pricing.json").read_text())["models"]
+    if model not in table:
+        raise ValueError(f"No pricing for {model}; add it to configs/pricing.json")
+    return table[model]
+
+
 def cost(usage, model="gpt-6-luna"):
-    multiplier = {"gpt-6-luna": 1, "gpt-6-astra": 100, "gpt-5.6-sol": 40, "gpt-6-sol": 20}[model]
+    rates = pricing(model)
     if usage is None:
         return None
-    return multiplier * (
-        (usage["input_tokens"] - usage.get("cached_input_tokens", 0)) * 0.10
-        + usage.get("cached_input_tokens", 0) * 0.01
-        + usage["output_tokens"] * 0.50
-    ) / 1e6
+    cached = usage.get("cached_input_tokens", 0)
+    return ((usage["input_tokens"] - cached) * rates["input"]
+            + cached * rates["cached_input"]
+            + usage["output_tokens"] * rates["output"]) / 1e6
 
 
 def observe_usage(meta, observations, run, *, required=False):

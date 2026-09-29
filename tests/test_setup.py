@@ -50,7 +50,7 @@ printf '#!/bin/sh\necho "codex-cli 0.158.0"\n' > intermediate/provider-cli/node_
 printf '#!/bin/sh\necho "2.1.283 (Claude Code)"\n' > intermediate/provider-cli/node_modules/.bin/claude
 chmod +x intermediate/provider-cli/node_modules/.bin/*
 ''')
-        self.env = dict(os.environ, PATH=f'{self.bin}{os.pathsep}{os.environ["PATH"]}')
+        self.env = dict(os.environ, KOJO_DATA_DIR=str(self.work), PATH=f'{self.bin}{os.pathsep}{os.environ["PATH"]}')
 
     def executable(self, path, text):
         path.write_text(text)

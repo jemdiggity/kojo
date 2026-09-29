@@ -7,7 +7,7 @@ import math
 import shutil
 import time
 
-from kojo.catalog import BASE, protocol_digest, harness_digest, factory_instruction_hashes, metadata
+from kojo.catalog import BASE, DATA_ROOT, protocol_digest, harness_digest, factory_instruction_hashes, metadata
 from kojo.execution import audit, run_session, save, session_paths
 from kojo.external_access import audit_external_sources
 from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read
@@ -143,7 +143,7 @@ def main(argv=None):
     manifest['problems'][args.problem]=metadata(args.problem)
     checkpoint_count=len(manifest['problems'][args.problem]['checkpoints'])
     if args.resume_run:
-        old_output = BASE/'results/runs'/args.resume_run
+        old_output = DATA_ROOT/'results/runs'/args.resume_run
         old_manifest = read(old_output/'manifest.json')
         if old_manifest.get('skills') != args.skill_manifest:
             raise RuntimeError('Resume skill set differs')
@@ -157,9 +157,9 @@ def main(argv=None):
         if not 0 < args.resume_checkpoint <= detected or args.resume_checkpoint >= checkpoint_count:
             raise RuntimeError('No unfinished trajectory with a verified completed restart checkpoint')
         print(f'Resuming {args.resume_run} after checkpoint {args.resume_checkpoint}', flush=True)
-    root = BASE / 'intermediate/runs' / args.run_id
+    root = DATA_ROOT/'intermediate/runs' / args.run_id
     data = root / 'gauntlet'
-    output = BASE / 'results/runs' / args.run_id
+    output = DATA_ROOT/'results/runs' / args.run_id
     backend = ChainBackend(cfg, manifest, data, output)
     backend.install_dependencies=not args.no_network
     experiment = Experiment(backend)
@@ -197,10 +197,10 @@ def main(argv=None):
         ledger=[]; frozen=[]; previous=None; failure=None
         first_checkpoint=1
         if args.resume_run:
-            old_output=BASE/'results/runs'/args.resume_run
+            old_output=DATA_ROOT/'results/runs'/args.resume_run
             if read(old_output/'manifest.json')['problem'] != args.problem:
                 raise RuntimeError('Resume problem mismatch')
-            old_data=BASE/'intermediate/runs'/args.resume_run/'gauntlet'
+            old_data=DATA_ROOT/'intermediate/runs'/args.resume_run/'gauntlet'
             for n in range(1,args.resume_checkpoint+1):
                 old=old_output/'build'/f'checkpoint_{n}'
                 row=read(old/'run.json')
@@ -295,7 +295,7 @@ def main(argv=None):
 
         try:
             if args.source_run:
-                original=BASE/'results/runs'/args.source_run/f'build/checkpoint_{checkpoint_count}'
+                original=DATA_ROOT/'results/runs'/args.source_run/f'build/checkpoint_{checkpoint_count}'
                 if hashes(original/'submission') != read(original/'snapshot.json'):
                     raise RuntimeError('Reused builder snapshot mismatch')
                 previous=original/'submission'
