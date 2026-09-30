@@ -1,0 +1,337 @@
+{
+  "batch_id": "pf-06-prompt-skill-grid",
+  "max_parallel": 6,
+  "description": "Luna low, circuit_eval. 3 base-prompt conditions (stock; stock with sol 6.1 testing lines; sol 6.1 full base prompt) x 2 skill conditions (none; r3e-light-suite) x 3 seeds. Base-prompt overrides are a deliberate departure from stock protocol.",
+  "runs": [
+    {
+      "run_id": "pf-06-stock-noskill-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "pf-06-stock-r3e-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-soltest-noskill-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6-luna-stock-with-sol-testing-lines.md"
+      ]
+    },
+    {
+      "run_id": "pf-06-soltest-r3e-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6-luna-stock-with-sol-testing-lines.md",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-solfull-noskill-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "pf-06-solfull-r3e-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-stock-noskill-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "pf-06-stock-r3e-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-soltest-noskill-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6-luna-stock-with-sol-testing-lines.md"
+      ]
+    },
+    {
+      "run_id": "pf-06-soltest-r3e-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6-luna-stock-with-sol-testing-lines.md",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-solfull-noskill-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "pf-06-solfull-r3e-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-stock-noskill-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only"
+      ]
+    },
+    {
+      "run_id": "pf-06-stock-r3e-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-soltest-noskill-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6-luna-stock-with-sol-testing-lines.md"
+      ]
+    },
+    {
+      "run_id": "pf-06-soltest-r3e-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6-luna-stock-with-sol-testing-lines.md",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    },
+    {
+      "run_id": "pf-06-solfull-noskill-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "pf-06-solfull-r3e-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--build-model",
+        "gpt-6-luna",
+        "--codex-effort",
+        "low",
+        "--seconds-per-session",
+        "1800",
+        "--no-review",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md",
+        "--skill-set",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/skill-sets/r3e-light-suite",
+        "--skill-set-sha256",
+        "69e5d506d676443792615f498ed682da0eb1109d4c3b9a1ba55979d4e46a13f0"
+      ]
+    }
+  ]
+}
