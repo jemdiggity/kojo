@@ -14,3 +14,6 @@ for d in "$DATA"/results/runs/$R/$STAGE/checkpoint_*; do
     $(for k in $(seq 1 $n); do echo "$T/test_checkpoint_$k.py"; done) "--entrypoint=$ENT $S" --checkpoint=checkpoint_$n -rf 2>&1 | cut -c1-300 > "$OUT/checkpoint_$n.txt"
   echo "checkpoint_$n: $(tail -1 "$OUT/checkpoint_$n.txt")"
 done
+
+# The tests generate seed files inside the vendored checkout; the harness refuses a dirty repo.
+git -C "$W/intermediate/vendor/scb-problems" clean -fdq -- "$P/tests" 2>/dev/null
