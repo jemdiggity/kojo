@@ -621,6 +621,21 @@ def run_script_case(ctx, code_dir, suite_dir, case):
     return execute_script(ctx, Path(suite_dir) / case['script'], case['args'], env, ctx.timeout * 3)
 
 
+SCRIPT_BUGS = r'(?:[\w.]+\.)?(NameError|UnboundLocalError|SyntaxError|IndentationError|TabError|ImportError|ModuleNotFoundError)\b'
+
+
+def script_crashed(run):
+    """A suite script that died on an error only a broken script can produce: the script is wrong, not the program.
+
+    Testers signal failure by raising or exiting non-zero, so an arbitrary exception may be an intended
+    failure, and a crash parsing the program's output may be the program's fault; only undefined names,
+    bad imports and syntax errors are attributed to the script."""
+    if run.error or run.timed_out or run.exit in (None, 0):
+        return False
+    last = next((line for line in reversed(run.stderr.strip().splitlines()) if line.strip()), '')
+    return bool(re.match(SCRIPT_BUGS, last.strip()))
+
+
 def run_suite(ctx, code_dir, cases):
     """{name: (case, run, problems)} for every valid case run against `code_dir`."""
     outcomes = {}
@@ -651,7 +666,12 @@ def check_suite(ctx):
         return result('suite', 0, 0, [note], {'invalid': invalid, 'errors': errors, 'suite_cases': 0})
     now = run_suite(ctx, ctx.code_dir, cases)
     before = run_suite(ctx, ctx.prior_code, cases) if ctx.prior_code and Path(ctx.prior_code).is_dir() else None
-    failing = [name for name, (_, _, problems) in now.items() if problems]
+    crashed = {name for name, (case, run, problems) in now.items() if problems and 'script' in case and script_crashed(run)}
+    for name in sorted(crashed):
+        last = next(line for line in reversed(now[name][1].stderr.strip().splitlines()) if line.strip())
+        invalid.append({'name': name, 'error': f'{name}: script crashed ({last.strip()[:160]}); fix the script, this says nothing about the program'})
+    cases = [case for case in cases if case['name'] not in crashed]
+    failing = [name for name, (_, _, problems) in now.items() if problems and name not in crashed]
     regressions = [name for name in failing if before and not before[name][2]]
     others = [name for name in failing if name not in regressions]
     sections = []
@@ -669,6 +689,41 @@ def check_suite(ctx):
     passed = len(cases) - len(failing)
     return result('suite', passed, len(cases), sections,
                   {'regressions': regressions, 'failures': others, 'invalid': invalid, 'prior_ran': before is not None, 'suite_cases': len(cases)})
+
+
+def check_safe(ctx):
+    """Smoke and the accumulated suite as one gate. As a `guard` it also vetoes any suite case that newly fails."""
+    smoke = check_smoke(ctx)
+    if smoke.verdict != 'pass':
+        return CheckResult('fail', smoke.passed, smoke.total, 0.0, smoke.log,
+                           {'smoke_ok': False, 'failing': [], 'invalid': [], 'suite_cases': 0, 'smoke': smoke.details})
+    suite = check_suite(ctx)
+    d = suite.details
+    failing = sorted(d.get('regressions', []) + d.get('failures', []))
+    return CheckResult(suite.verdict, suite.passed, suite.total, suite.score, suite.log,
+                       {**d, 'smoke_ok': True, 'failing': failing})
+
+
+def failure_signature(found):
+    """What is failing, comparable across visits of one check stage (used by `[progress]` arrows)."""
+    d = found.details or {}
+    if 'failing' in d:
+        return ('cases', tuple(d['failing']), bool(d.get('smoke_ok', True)))
+    if 'regressions' in d or 'failures' in d:
+        return ('cases', tuple(sorted(d.get('regressions', []) + d.get('failures', []))), True)
+    return ('score', found.passed, found.total)
+
+
+def guard_rolls_back(checker, before, after):
+    """Whether a guarded stage's result is discarded: `safe` vetoes a broken program or a newly failing
+    suite case (even when other cases were repaired); the other checkers veto a lower score."""
+    if before is None:
+        return False
+    if checker == 'safe':
+        if not after.details.get('smoke_ok', True):
+            return True
+        return bool(set(after.details.get('failing', [])) - set(before.details.get('failing', [])))
+    return after.score < before.score
 
 
 # --- reviewer repro cases ----------------------------------------------------------------------------
@@ -745,7 +800,7 @@ def check_diff(ctx):
     return result('diff', agreed, total, sections, {'scripts': total, 'disagreements': len(disagreements), 'invalid': invalid})
 
 
-CHECKS = {'smoke': check_smoke, 'examples': check_examples, 'suite': check_suite, 'repro': check_repro, 'diff': check_diff}
+CHECKS = {'smoke': check_smoke, 'examples': check_examples, 'suite': check_suite, 'safe': check_safe, 'repro': check_repro, 'diff': check_diff}
 CHECKERS = tuple(CHECKS)
 
 

@@ -89,6 +89,7 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
     reset, side = False, {}
     visits = collections.Counter()
     taken = [0] * len(flow.edges)
+    failing_before = {}  # check stage -> what failed on its previous visit this checkpoint
 
     def measure(spec, target, visit, text, role, phase, variant=None):
         if check is None:
@@ -101,11 +102,16 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
     while True:
         visits[stage] += 1
         visit, spec = visits[stage], flow.stages[stage]
-        verdict, extra = None, {}
+        verdict, extra, stalled = None, {}, False
         if spec.kind == factory_spec.CHECK:
             found = measure(spec, code, visit, feedback, stage, 'gate')
             verdict, feedback, origin = found.verdict, found.log, 'check'
             extra = {'kind': 'check', 'checker': spec.checker, 'score': found.score, 'passed': found.passed, 'total': found.total}
+            signature = checks.failure_signature(found)
+            stalled = found.verdict == 'fail' and failing_before.get(stage) == signature  # Nothing changed since the last visit.
+            failing_before[stage] = signature
+            if stalled:
+                extra['stalled'] = True
         elif spec.kind == 'tester':
             session(stage, checkpoint, None, None, visit)  # A tester never sees code, and its answer is not forwarded.
             extra = {'kind': 'tester'}
@@ -138,7 +144,7 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
             if spec.guard:
                 before = score_of(spec.guard, code, visit, stage, 'guard-before') if code is not None else None
                 after = score_of(spec.guard, new, visit, stage, 'guard-after')
-                rolled = before is not None and after.score < before.score
+                rolled = checks.guard_rolls_back(spec.guard, before, after)
                 extra['guard'] = {'checker': spec.guard, 'before': before.score if before else None, 'after': after.score, 'rolled_back': rolled}
                 if rolled:
                     new = code
@@ -147,7 +153,7 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
             answer = session(stage, checkpoint, code, feedback, visit)/'answer.txt'
             feedback = answer.read_text() if answer.exists() else ''
             verdict, origin = factory_spec.verdict_of(feedback), spec.kind
-        picked = flow.pick(stage, verdict, taken)
+        picked = flow.pick(stage, verdict, taken, stalled)
         if trace is not None:
             trace.append({'checkpoint':checkpoint,'stage':stage,'attempt':visit,'verdict':verdict,
                           'next':picked[1].dst if picked else factory_spec.DONE, **extra,

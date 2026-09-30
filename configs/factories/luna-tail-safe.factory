@@ -1,0 +1,9 @@
+# like luna-postcond-safe, but sol writes a systematic guarantee-by-guarantee suite (routes, boundaries, ordering, error classes)
+tests = tester sol61:low prompt tester-tail
+build = luna6:low
+fix   = luna6:low guard safe
+gate  = check safe
+
+tests -> build -> gate
+gate -[fail, max 3, progress]-> fix -> gate
+gate -[pass]-> done

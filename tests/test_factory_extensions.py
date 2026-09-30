@@ -101,6 +101,25 @@ class GrammarTests(unittest.TestCase):
         self.assertEqual(f.max_sessions(), 3)
 
 
+class ProgressGrammarTests(unittest.TestCase):
+    def test_progress_option_parses_and_needs_a_check_source(self):
+        f = parse('tests = tester sol61:low\nbuild = luna6\nfix = luna6\ngate = check safe\n'
+                  'tests -> build -> gate\ngate -[fail, max 2, progress]-> fix -> gate')
+        self.assertTrue(f.edges[2].progress)
+        self.assertEqual(f.edges[2].limit, 2)
+        self.assertEqual(f.to_dict()['edges'][2].get('progress'), True)
+        with self.assertRaisesRegex(FactoryError, 'progress.*check'):
+            parse('build = luna6\nqa = qa sol61:low\nfix = luna6\nbuild -> qa\nqa -[fail, max 2, progress]-> fix -> qa')
+
+    def test_safe_needs_a_tester_like_suite(self):
+        with self.assertRaisesRegex(FactoryError, 'test suite'):
+            parse('build = luna6\nfix = luna6\ngate = check safe\nbuild -> gate\ngate -[fail, max 2]-> fix -> gate')
+
+    def test_progress_is_not_an_eligibility_limit_for_worst_case_counts(self):
+        f = factory_spec.load('luna-postcond-safe')
+        self.assertEqual(f.max_sessions(), 1 + 1 + 3)  # tester + build + three fixes.
+
+
 class AccountingTests(unittest.TestCase):
     def test_checks_are_free_and_attempts_count(self):
         f = parse(BASE + 'fix = luna6\ngate = check smoke\nbuild -> gate\ngate -[fail, max 3]-> fix -> gate\ngate -[pass]-> done')
@@ -130,18 +149,19 @@ class BundledTests(unittest.TestCase):
                         self.assertTrue((REAL/'configs/factory-prompts'/f'{stage.role_file}.md').is_file())
 
 
-def result(verdict='pass', score=None, log='log'):
+def result(verdict='pass', score=None, log='log', details=None):
     score = (1.0 if verdict == 'pass' else 0.0) if score is None else score
-    return checks.CheckResult(verdict, int(score * 10), 10, score, log, {})
+    return checks.CheckResult(verdict, int(score * 10), 10, score, log, details or {})
 
 
 class Sim:
     """Fake sessions and checks over real directories, so code lineage and workspace invariants are exercised."""
 
-    def __init__(self, tmp, text, answers=(), verdicts=(), scores=None, start=None):
+    def __init__(self, tmp, text, answers=(), verdicts=(), scores=None, start=None, details=None):
         self.tmp, self.flow = Path(tmp), parse(text)
         self.answers, self.verdicts = iter(answers), iter(verdicts)
         self.scores = scores or (lambda text: 1.0)
+        self.details = details or (lambda text: {})  # Check details by code text, for safe/progress.
         self.calls, self.checks, self.synced = [], [], []
         self.shared = self.tmp/'shared'
         self.shared.mkdir()
@@ -176,10 +196,11 @@ class Sim:
     def check(self, spec, n, code, feedback, visit, ctx):
         self.checks.append({'stage': ctx['role'], 'checker': spec.checker, 'phase': ctx['phase'], 'variant': ctx['variant'], 'code': code,
                             'feedback': feedback, 'prior': ctx['prior_code'], 'side': ctx['side_codes']})
+        text = (code/'code.txt').read_text() if code else ''
         if ctx['phase'] != 'gate':
-            return result(score=self.scores((code/'code.txt').read_text() if code else ''))
+            return result(score=self.scores(text), details=self.details(text))
         verdict = next(self.verdicts)
-        return result(verdict, log=f'check log {len(self.checks)}')
+        return result(verdict, log=f'check log {len(self.checks)}', details=self.details(text))
 
     def sync(self, code):
         self.synced.append(code)
@@ -263,6 +284,51 @@ class FlowMechanismTests(unittest.TestCase):
         sim.run()
         self.assertIsNone(sim.trace[-1]['guard']['before'])
         self.assertFalse(sim.trace[-1]['guard']['rolled_back'])
+
+    def test_safe_guard_rolls_back_a_fix_that_breaks_a_passing_case_even_if_the_score_rises(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': True, 'failing': ['b', 'c'] if 'fix1' in t else ['a', 'b']}
+        sim = self.sim(text, verdicts=['FAIL'], scores=lambda t: 0.9 if 'fix1' in t else 0.8, details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;')  # 'c' newly fails although 'a' was repaired.
+        self.assertTrue(sim.trace[-1]['guard']['rolled_back'])
+
+    def test_safe_guard_keeps_a_fix_that_only_repairs(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': True, 'failing': ['b'] if 'fix1' in t else ['a', 'b']}
+        sim = self.sim(text, verdicts=['FAIL'], details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;fix1;')
+        self.assertFalse(sim.trace[-1]['guard']['rolled_back'])
+
+    def test_safe_guard_rolls_back_a_fix_that_breaks_the_program(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': 'fix1' not in t, 'failing': []}
+        sim = self.sim(text, verdicts=['FAIL'], details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;')
+
+    def test_progress_arrow_stops_when_a_fix_changes_nothing(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nfix = luna6 guard safe\ngate = check safe\n'
+                'tests -> build -> gate\ngate -[fail, max 3, progress]-> fix -> gate\ngate -[pass]-> done')
+        same = lambda t: {'smoke_ok': True, 'failing': ['a']}  # The fix never changes what fails.
+        sim = self.sim(text, verdicts=['fail'] * 5, details=same, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages().count('fix'), 1)  # Second gate fails identically: no more fixes.
+        self.assertEqual([t.get('stalled') for t in sim.trace if t['stage'] == 'gate'], [None, True])
+        self.assertEqual(sim.trace[-1]['next'], 'done')
+
+    def test_progress_arrow_continues_while_failures_change(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nfix = luna6\ngate = check suite\n'
+                'tests -> build -> gate\ngate -[fail, max 3, progress]-> fix -> gate\ngate -[pass]-> done')
+        details = lambda t: {'regressions': [], 'failures': ['x' * t.count('fix')]}
+        sim = self.sim(text, verdicts=['fail', 'fail', 'fail', 'pass'], details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages().count('fix'), 3)
+        self.assertNotIn(True, [t.get('stalled') for t in sim.trace])
 
     def test_best_of_n_keeps_the_best_and_all_attempts_start_from_the_same_code(self):
         scores = {'build11': 0.2, 'build12': 0.9, 'build13': 0.9}

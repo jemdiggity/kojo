@@ -1,0 +1,9 @@
+# like luna-verified-review, but sol reviews instead of astra (same repro check, max 2 fixes)
+build  = luna6:low
+review = sol61:low prompt review-repro
+verify = check repro
+fix    = luna6:low
+
+build -> review -> verify
+verify -[fail, max 2]-> fix -> review
+verify -[pass]-> done
