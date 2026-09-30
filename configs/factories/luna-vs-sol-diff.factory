@@ -1,0 +1,10 @@
+# luna and sol each build the checkpoint from the same start code; fuzz scripts diff them and luna adjudicates disagreements (max 2)
+tests = tester sol61:low prompt tester-postcond
+build = luna6:low
+alt   = branch sol61:low
+cmp   = check diff alt
+fix   = luna6:low
+
+tests -> build -> alt -> cmp
+cmp -[fail, max 2]-> fix -> cmp
+cmp -[pass]-> done

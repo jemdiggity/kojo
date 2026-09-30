@@ -1,0 +1,7 @@
+# luna builds; a smoke check (compiles, --help runs) rerolls a broken build from the checkpoint's start code, up to 3 times
+build = luna6:low
+gate  = check smoke
+
+build -> gate
+gate -[fail, max 3, reset]-> build
+gate -[pass]-> done
