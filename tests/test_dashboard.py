@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 import tempfile
 import threading
 import unittest
@@ -110,6 +111,15 @@ class LeaderboardTests(unittest.TestCase):
         self.assertEqual((row['strict'], row['iso'], row['partial']), (50, 100, 75))
         self.assertEqual((row['cost_mean'], row['cost_total'], row['minutes_mean']), (2.0, 4.0, 2.0))
         self.assertEqual(row['run_ids'], ['r1', 'r2'])
+
+    def test_ungraded_checkpoints_count_as_not_passed(self):
+        done = self.run_of('r1', 'b', 'm', 'none', True)
+        stopped = self.run_of('r2', 'b', 'm', 'none', True)
+        done, stopped = replace(done, expected=2), replace(stopped, expected=4)
+        (row,) = leaderboard([stopped], 'model')['rows']
+        self.assertEqual((row['strict'], row['partial'], row['checkpoints']), (25, 25, 1))
+        (row,) = leaderboard([done, stopped], 'model')['rows']
+        self.assertEqual(row['strict'], 100 * 2 / (2 + 4))  # 2 passing checkpoints out of 2 + 4 expected
 
     def test_then_by_and_filters(self):
         runs = [self.run_of('r1', 'b1', 'ma', 'none', True), self.run_of('r2', 'b1', 'ma', 'sk', False),
@@ -310,6 +320,19 @@ class StoreOverviewTests(Fixture):
         write(fix / 'evaluation.json', passing('checkpoint_1-Core'))
         (run,) = Store(self.base).overview()['runs']
         self.assertEqual((run['checkpoints_graded'], run['strict_passed']), (1, 1))
+
+    def test_unfinished_run_is_not_scored_on_graded_checkpoints_alone(self):
+        self.add_run('run-a')
+        manifest = self.base / 'results/runs/run-a/manifest.json'
+        write(manifest, {'problem': 'p', 'problem_metadata': {'checkpoints': [1, 2, 3, 4]}})
+        (run,) = Store(self.base).overview()['runs']
+        self.assertEqual((run['checkpoints_graded'], run['checkpoints_total'], run['strict_passed']), (1, 4, 1))
+        self.assertEqual(run['partial_pass'], 0.25)  # one perfect checkpoint of four, not 100%
+
+    def test_run_without_problem_metadata_keeps_its_graded_count(self):
+        self.add_run('run-a')
+        (run,) = Store(self.base).overview()['runs']
+        self.assertEqual((run['checkpoints_total'], run['partial_pass']), (1, 1.0))
 
     def test_run_detail_is_none_for_unknown_runs(self):
         self.assertIsNone(Store(self.base).run_detail('nope'))
