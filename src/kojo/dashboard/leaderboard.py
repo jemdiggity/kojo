@@ -93,7 +93,10 @@ def _row(key, sub, runs):
            'checkpoints': len(checkpoints)}
     for metric in METRICS:
         values = [c[metric] for c in checkpoints if c.get(metric) is not None]
-        row[metric] = 100 * sum(values) / len(values) if values else None
+        # A checkpoint a run never graded (still going, or it stopped early) counts as not passed.
+        missing = sum(max(run.expected - len(run.checkpoints), 0) for run in runs
+                      if any(c.get(metric) is not None for c in run.checkpoints))
+        row[metric] = 100 * sum(values) / (len(values) + missing) if values else None
     row['cost_mean'], row['cost_sd'] = mean_sd([c['cost_usd'] for c in checkpoints])
     row['cost_total'] = sum(c['cost_usd'] or 0 for c in checkpoints)
     row['minutes_mean'], row['minutes_sd'] = mean_sd(
