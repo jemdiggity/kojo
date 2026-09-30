@@ -3,7 +3,7 @@
   "id": "scb-cli-skills-v1",
   "model": "gpt-6-luna",
   "reasoning": "low",
-  "codex_version": "0.158.0",
+  "codex_version": "0.159.1",
   "python": "3.12.8",
   "problem_commit": "38d627ecf668a88f88f8d260f8df8df6116e9b03",
   "runner_commit": "31ceea3add480edb33431e70475c4c70597e6b31",
