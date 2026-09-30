@@ -1,0 +1,133 @@
+{
+  "batch_id": "fx-01-factory-grid",
+  "max_parallel": 6,
+  "description": "Luna circuit_eval with the sol 6.1 base prompt (the best no-skill base in pf-06) under three pipeline factories, 3 seeds each; compare with pf-06 solfull-noskill (build only).",
+  "runs": [
+    {
+      "run_id": "fx-01-luna-qa-gate-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-qa-gate",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-sol-qa-fix-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-sol-qa-fix",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-revise-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-revise",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-qa-gate-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-qa-gate",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-sol-qa-fix-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-sol-qa-fix",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-revise-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-revise",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-qa-gate-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-qa-gate",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-sol-qa-fix-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-sol-qa-fix",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-01-luna-revise-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-revise",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    }
+  ]
+}
