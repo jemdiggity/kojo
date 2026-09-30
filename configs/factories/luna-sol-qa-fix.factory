@@ -1,0 +1,8 @@
+# luna builds -> sol 6.1 QA (it writes and runs tests) -> luna fixes from the report; at most 2 fix/QA rounds
+build = luna6:low
+qa    = sol61:low
+fix   = luna6:low
+
+build -> qa
+qa -[fail, max 2]-> fix -> qa
+qa -[pass]-> done

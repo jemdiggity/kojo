@@ -1,0 +1,9 @@
+# sol writes a suite, luna builds, sol QA reviews; luna's fix is rolled back if it lowers the suite score
+tests = tester sol61:low
+build = luna6:low
+qa    = qa sol61:low
+fix   = luna6:low guard suite
+
+tests -> build -> qa
+qa -[fail]-> fix
+qa -[pass]-> done

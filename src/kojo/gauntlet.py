@@ -85,6 +85,35 @@ def copy_code(source, target):
         target.mkdir(parents=True)
 
 
+def sync_workspace(work, source):
+    """Make `work`'s tracked files equal the frozen `source` (None means empty); generated env/cache files stay."""
+    work = Path(work)
+    work.mkdir(parents=True, exist_ok=True)
+    want = hashes(source) if source else {}
+    have = hashes(work, exclude_generated=True)
+    for name in have.keys() - want.keys():
+        (work/name).unlink()
+    for name, value in want.items():
+        target = work/name
+        if have.get(name) == value:
+            continue
+        for parent in reversed(target.relative_to(work).parents):  # A file where a directory belongs, or the reverse.
+            if (work/parent).is_file() or (work/parent).is_symlink():
+                (work/parent).unlink()
+        if target.is_dir():
+            shutil.rmtree(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(Path(source)/name, target)
+    environments = {p.parent for p in work.rglob('pyvenv.cfg')}
+    for path in sorted((p for p in work.rglob('*') if p.is_dir() and not p.is_symlink()), key=lambda p: -len(p.parts)):
+        relative = path.relative_to(work)
+        generated = any(part in EXCLUDED for part in relative.parts) or any(path == env or env in path.parents for env in environments)
+        if not generated and not any(path.iterdir()) and (not source or not (Path(source)/relative).is_dir()):
+            path.rmdir()  # An emptied directory the source does not have.
+    if hashes(work, exclude_generated=True) != want:
+        raise RuntimeError('Workspace could not be made equal to the frozen source')
+
+
 def evaluation_score(report):
     if report.get("infrastructure_failure") or report.get("pytest_collected", 0) == 0:
         raise RuntimeError("Evaluator infrastructure failure; not a model failure")

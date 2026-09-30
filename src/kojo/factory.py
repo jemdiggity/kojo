@@ -6,15 +6,16 @@ import collections
 import fcntl
 import hashlib
 import math
+import re
 import shutil
 import time
 
 from kojo.catalog import BASE, DATA_ROOT, protocol_digest, harness_digest, factory_instruction_hashes, metadata
 from kojo.execution import audit, run_session, save, session_paths
 from kojo.external_access import audit_external_sources
-from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read, split_counts, pass_diff
+from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read, split_counts, pass_diff, sync_workspace
 from kojo.run_chain import ChainBackend, compose_prompt
-from kojo import claude_execution, factory_spec
+from kojo import checks, claude_execution, factory_spec
 from kojo.quality import analyze_snapshot, headline
 
 
@@ -24,32 +25,45 @@ def adapter(model):
     return audit, run_session
 
 
-def instructions(backend, role):
+def instructions(backend, role, prompt=None):
     # User-level role requests only; the model's stock base prompt stays intact.
     if role not in factory_spec.KINDS:
         raise ValueError('Unknown factory role: ' + role)
-    return (BASE/'configs/factory-prompts'/f'{role}.md').read_text().strip()
+    name = prompt or ('build' if role == 'branch' else role)
+    if not re.fullmatch(r'[a-z][a-z0-9_\-]*', name):
+        raise ValueError('Bad role prompt name: ' + name)
+    return (BASE/'configs/factory-prompts'/f'{name}.md').read_text().strip()
 
 
 VERDICT_REQUEST = ('\n\n# Verdict\nEnd your final response with exactly one line: `VERDICT: PASS` if the code needs '
                    'no further changes, or `VERDICT: FAIL` if it does.')
 
 
-def stage_prompt(experiment, role, checkpoint=5, feedback=None, problem="code_search", verdict=False):
+def label(checkpoint, visit=1, variant=None):
+    """Directory name of one session: later visits to a stage get `-N`, and xN attempts `-attemptK`."""
+    return f'checkpoint_{checkpoint}' + (f'-{visit}' if visit > 1 else '') + (f'-attempt{variant}' if variant else '')
+
+
+def stage_prompt(experiment, role, checkpoint=5, feedback=None, problem="code_search", verdict=False, notes=None, prompt=None, origin=None):
     from kojo.scb_prompt import render_checkpoint
-    if role == 'build':
-        prompt = render_checkpoint(experiment.spec(problem,checkpoint),checkpoint,experiment.b.python, **({'entry_file':experiment.manifest['problems'][problem]['entry_file']} if problem != 'code_search' else {}))
+    if role in ('build', 'branch'):
+        text = render_checkpoint(experiment.spec(problem,checkpoint),checkpoint,experiment.b.python, **({'entry_file':experiment.manifest['problems'][problem]['entry_file']} if problem != 'code_search' else {}))
+        if role == 'branch':
+            return text  # An independent build from the checkpoint's start: the stock prompt, nothing else.
+        if notes:
+            text += '\n\n# Planning notes for this checkpoint\n' + notes
         # Only a loop re-entry carries feedback; a first build is exactly the stock prompt.
-        return prompt + '\n\n# Feedback from the previous review stage\n' + feedback if feedback else prompt
+        heading = '# Deterministic check results' if origin == 'check' else '# Feedback from the previous review stage'
+        return text + '\n\n' + heading + '\n' + feedback if feedback else text
     # Review/fix are explicitly experimental roles, not native SCB checkpoints.
     # Only public specs through this checkpoint; future specs never reach these roles.
-    specs = instructions(None,role) + "\n\n" + "\n\n".join(
+    specs = instructions(None,role,prompt) + "\n\n" + "\n\n".join(
         f"# Public checkpoint {n} specification\n"+experiment.spec(problem,n) for n in range(1,checkpoint+1))
     if role == 'fix' and not (feedback and feedback.strip()):
         raise ValueError('A completed review is required before follow-up')
     if feedback and role in factory_spec.EDIT:
-        specs += '\n\n# Feedback from the independent reviewer\n' + feedback
-    return specs + VERDICT_REQUEST if verdict and role in factory_spec.READ else specs
+        specs += ('\n\n# Deterministic check results\n' if origin == 'check' else '\n\n# Feedback from the independent reviewer\n') + feedback
+    return specs + VERDICT_REQUEST if verdict and role in ('review', 'qa') else specs
 
 
 def quality_note(score):
@@ -61,29 +75,89 @@ def quality_note(score):
     return f"; erosion {quality['erosion']:.3f}, verbosity {quality['verbosity']:.3f}" if quality['erosion'] is not None else '; quality: no Python found'
 
 
-def run_flow(flow, session, checkpoint, source, trace=None):
-    """Walk one checkpoint through a factory's stages; return the code that carries forward."""
-    stage, code, feedback = flow.start, source, None
+def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=None):
+    """Walk one checkpoint through a factory's stages; return the code that carries forward.
+
+    `session(stage, n, source, feedback, visit, **extra)` runs a model stage and returns its run dir;
+    `check(stage, n, code, feedback, visit, ctx)` runs a deterministic check and returns a CheckResult;
+    `sync(code)` makes the shared builder workspace equal `code`. Extra session arguments are given only
+    when they apply: notes (plan text for a build), variant (xN attempt number), origin ('check').
+    """
+    stage, code, feedback, origin, notes = flow.start, source, None, None, None
+    held = source  # What the shared builder workspace holds.
+    reset, side = False, {}
     visits = collections.Counter()
     taken = [0] * len(flow.edges)
+
+    def measure(spec, target, visit, text, role, phase, variant=None):
+        if check is None:
+            raise RuntimeError('This factory has check stages; no checker was provided')
+        return check(spec, checkpoint, target, text, visit, {'prior_code': source, 'side_codes': dict(side), 'role': role, 'phase': phase, 'variant': variant})
+
+    def score_of(name, target, visit, role, phase, variant=None):
+        return measure(factory_spec.Stage(role, factory_spec.CHECK, '', '', checker=name), target, visit, None, role, phase, variant)
+
     while True:
         visits[stage] += 1
-        run = session(stage, checkpoint, code, feedback, visits[stage])
-        verdict = None
-        if flow.stages[stage].edits:
-            code, feedback = run/'submission', None
+        visit, spec = visits[stage], flow.stages[stage]
+        verdict, extra = None, {}
+        if spec.kind == factory_spec.CHECK:
+            found = measure(spec, code, visit, feedback, stage, 'gate')
+            verdict, feedback, origin = found.verdict, found.log, 'check'
+            extra = {'kind': 'check', 'checker': spec.checker, 'score': found.score, 'passed': found.passed, 'total': found.total}
+        elif spec.kind == 'tester':
+            session(stage, checkpoint, None, None, visit)  # A tester never sees code, and its answer is not forwarded.
+            extra = {'kind': 'tester'}
+        elif spec.kind == 'plan':
+            answer = session(stage, checkpoint, code, feedback, visit)/'answer.txt'
+            notes = answer.read_text() if answer.exists() else ''
+            extra = {'kind': 'plan'}
+        elif spec.kind == 'branch':
+            side[stage] = session(stage, checkpoint, source, None, visit)/'submission'  # Built from the checkpoint's start.
+            extra = {'kind': 'branch'}
+        elif spec.edits:
+            if reset:
+                code, feedback, origin = source, None, None
+            options = {}
+            if notes and spec.kind == 'build':
+                options['notes'] = notes
+            if feedback and origin == 'check':
+                options['origin'] = 'check'
+            if spec.attempts > 1:
+                runs = [session(stage, checkpoint, code, feedback, visit, variant=k, **options) for k in range(1, spec.attempts + 1)]
+                scores = [score_of(spec.by, run/'submission', visit, stage, 'score', k) for k, run in enumerate(runs, 1)]
+                winner = max(range(len(runs)), key=lambda i: (scores[i].score, -i))  # Ties go to the earliest attempt.
+                new = runs[winner]/'submission'
+                extra = {'attempts': [{'variant': k, 'score': f.score, 'passed': f.passed, 'total': f.total} for k, f in enumerate(scores, 1)],
+                         'winner': winner + 1}
+            else:
+                if sync and held != code:
+                    sync(code)
+                new = held = session(stage, checkpoint, code, feedback, visit, **options)/'submission'
+            if spec.guard:
+                before = score_of(spec.guard, code, visit, stage, 'guard-before') if code is not None else None
+                after = score_of(spec.guard, new, visit, stage, 'guard-after')
+                rolled = before is not None and after.score < before.score
+                extra['guard'] = {'checker': spec.guard, 'before': before.score if before else None, 'after': after.score, 'rolled_back': rolled}
+                if rolled:
+                    new = code
+            code, feedback, origin = new, None, None
         else:
-            answer = run/'answer.txt'
+            answer = session(stage, checkpoint, code, feedback, visit)/'answer.txt'
             feedback = answer.read_text() if answer.exists() else ''
-            verdict = factory_spec.verdict_of(feedback)
+            verdict, origin = factory_spec.verdict_of(feedback), spec.kind
         picked = flow.pick(stage, verdict, taken)
         if trace is not None:
-            trace.append({'checkpoint':checkpoint,'stage':stage,'attempt':visits[stage],'verdict':verdict,
-                          'next':picked[1].dst if picked else factory_spec.DONE})
+            trace.append({'checkpoint':checkpoint,'stage':stage,'attempt':visit,'verdict':verdict,
+                          'next':picked[1].dst if picked else factory_spec.DONE, **extra,
+                          **({'reset': True} if picked and picked[1].reset else {})})
         if picked is None or picked[1].dst == factory_spec.DONE:
-            return code
+            break
         taken[picked[0]] += 1
-        stage = picked[1].dst
+        stage, reset = picked[1].dst, picked[1].reset
+    if sync and held != code:
+        sync(code)  # The next checkpoint's builder starts from what carries forward.
+    return code
 
 
 def review_and_fix(session, checkpoint, source):
@@ -171,8 +245,8 @@ def parse_args(argv=None):
     if args.source_run and args.review_scope != 'final':
         parser.error('source-run reuses final code only and requires --review-scope final')
     if args.factory:
-        models={name:stage.model for name,stage in args.flow.stages.items()}
-        adapter_options={name:{'effort':stage.effort} for name,stage in args.flow.stages.items()}
+        models={name:stage.model for name,stage in args.flow.stages.items() if stage.kind != factory_spec.CHECK}
+        adapter_options={name:{'effort':stage.effort} for name,stage in args.flow.stages.items() if stage.kind != factory_spec.CHECK}
         args.roles=tuple(models)
     else:
         models={'build':args.build_model,'review':args.review_model,'fix':args.build_model}
@@ -244,10 +318,12 @@ def main(argv=None):
     experiment = Experiment(backend)
     if args.action == 'audit':
         for role in args.roles:
-            kind = args.flow.stages[role].kind
+            stage = args.flow.stages[role]
+            kind = stage.kind
+            first = kind in ('build', 'branch')
             probe = root / 'offline-audit' / role
             adapter(models[role])[0](probe, base_for(models[role]), backend.runtime, None, True,
-                  stage_prompt(experiment, kind, 1 if kind == 'build' else checkpoint_count, None if kind == 'build' else 'Offline review placeholder.', problem=args.problem, verdict=bool(args.factory)), persist=True, model=models[role], network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
+                  stage_prompt(experiment, kind, 1 if first else checkpoint_count, None if first else 'Offline review placeholder.', problem=args.problem, verdict=bool(args.factory), **({'prompt':stage.prompt} if stage.prompt else {})), persist=True, model=models[role], network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
         print('Selected role requests and native isolation verified without inference.', flush=True)
         return
     data.mkdir(parents=True, exist_ok=True)
@@ -274,8 +350,8 @@ def main(argv=None):
         }
         if args.factory:
             record.update({'condition':'custom-factory','factory':args.flow.to_dict(),
-                'role_instruction_sha256':factory_instruction_hashes(sorted({stage.kind for stage in args.flow.stages.values()})),
-                'max_sessions':args.flow.max_sessions()*checkpoint_count,'review_loops':None,'review_loops_per_checkpoint':None,
+                'role_instruction_sha256':factory_instruction_hashes(sorted({stage.role_file for stage in args.flow.stages.values() if stage.role_file})),
+                'max_sessions':args.flow.max_sessions()*checkpoint_count,'max_checks':args.flow.max_checks()*checkpoint_count,'review_loops':None,'review_loops_per_checkpoint':None,
                 'sequence':f'{checkpoint_count} incremental checkpoints, each run through factory {args.flow.name}; review and qa verdicts steer loops, each arrow limit applies per checkpoint',
                 'grading':'All calls finish or stop before grading; no stage receives official results.'})
             (output/'factory.txt').write_text(args.flow.text)
@@ -315,38 +391,44 @@ def main(argv=None):
                 'reused_checkpoints':list(range(1,args.resume_checkpoint+1))})
             first_checkpoint=args.resume_checkpoint+1
 
-        def session(role, n, source, feedback=None, attempt=1):
-            kind = args.flow.stages[role].kind
-            edits = kind in factory_spec.EDIT
-            label = f'checkpoint_{n}' + (f'-{attempt}' if attempt > 1 else '')  # Later visits in a loop get their own directory.
+        suite_dir = data/'suite'
+
+        def session(role, n, source, feedback=None, attempt=1, *, notes=None, variant=None, origin=None):
+            stage = args.flow.stages[role]
+            kind, edits = stage.kind, stage.edits
+            name = label(n, attempt, variant)  # Later visits in a loop, and xN attempts, get their own directory.
             from kojo.skill_sets import describe
             if args.skill_set and describe(args.skill_set)['sha256'] != args.skill_manifest['sha256']:
                 raise RuntimeError('Skill set changed during experiment')
             if protocol_digest() != backend.protocol:
                 raise RuntimeError('Protocol changed during run')
-            run = data / f'training-{role}/{args.problem}/{label}'
-            dest = output / role / label
+            run = data / f'training-{role}/{args.problem}/{name}'
+            dest = output / role / name
             # Native SCB keeps one workspace/environment across checkpoints.
             # The process/conversation is fresh; its filesystem is not reset.
-            shared_work = edits and (kind != 'fix' or args.review_scope == 'checkpoint')
+            shared_work = stage.carries and variant is None and (kind != 'fix' or args.review_scope == 'checkpoint')
             work = data/'builder-workspace/src' if shared_work else run/'src'
             if shared_work:
                 work.mkdir(parents=True,exist_ok=True)
-                if source is None and list(work.iterdir()):
+                if source is None and hashes(work, exclude_generated=True):
                     raise RuntimeError('First builder workspace must be empty')
                 if source is not None and hashes(work, exclude_generated=True) != hashes(source):
                     raise RuntimeError('Shared workspace does not match the preceding frozen source')
+            elif kind == 'tester':
+                work.mkdir(parents=True)  # Only the suite so far: a tester never sees builder code.
+                checks.copy_suite(suite_dir, work/'suite')
             else:
                 copy_code(source,work)
             dest.mkdir(parents=True)
-            save(dest / 'initial-src.json', hashes(source) if source else {})
-            prompt = stage_prompt(experiment, kind, n, feedback, problem=args.problem, verdict=bool(args.factory))
+            save(dest / 'initial-src.json', hashes(work) if kind == 'tester' else hashes(source) if source else {})
+            options = {key:value for key,value in (('notes',notes),('prompt',stage.prompt),('origin',origin)) if value}
+            prompt = stage_prompt(experiment, kind, n, feedback, problem=args.problem, verdict=bool(args.factory), **options)
             (dest / 'prompt.md').write_text(prompt)
-            (dest / 'instructions.md').write_text(instructions(backend, kind))
-            ledger.append({'role':role, 'kind':kind, 'checkpoint':n, 'attempt':attempt, 'reserved_at':time.time()})
+            (dest / 'instructions.md').write_text(instructions(backend, kind, stage.prompt))
+            ledger.append({'role':role, 'kind':kind, 'checkpoint':n, 'attempt':attempt, **({'variant':variant} if variant else {}), 'reserved_at':time.time()})
             save(data / 'ledger.json', ledger)
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
-            print(f'Starting {role} checkpoint {n}' + (f' (visit {attempt})' if attempt > 1 else ''), flush=True)
+            print(f'Starting {role} checkpoint {n}' + (f' (visit {attempt})' if attempt > 1 else '') + (f' (attempt {variant})' if variant else ''), flush=True)
             adapter(models[role])[1](run, base_for(models[role]), prompt, args.seconds_per_session, backend.runtime,
                         None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work, network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
             for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt','stock-instructions.md']:
@@ -368,9 +450,13 @@ def main(argv=None):
                 copy_code(work,run/'submission')
                 shutil.copytree(run/'submission',dest/'submission')
                 save(dest/'snapshot.json',hashes(run/'submission'))
-                frozen.append({'name':args.problem,'checkpoint':n,'run':run,'role':role,'label':label})
+                frozen.append({'name':args.problem,'checkpoint':n,'run':run,'role':role,'label':name})
+            elif kind == 'tester':
+                copy = checks.copy_suite(work/'suite', suite_dir)  # The suite accumulates across checkpoints.
+                checks.copy_suite(suite_dir, dest/'suite')
+                print(f'Suite now has {copy} files', flush=True)
             else:
-                save(dest/'source-changes.json',{'before':hashes(source),'after':hashes(work, exclude_generated=True),
+                save(dest/'source-changes.json',{'before':hashes(source) if source else {},'after':hashes(work, exclude_generated=True),
                                                'carry_forward':'Only answer.txt; no reviewer workspace changes.'})
             try:
                 external=audit_external_sources(run/'transcript.jsonl')
@@ -388,6 +474,24 @@ def main(argv=None):
                 raise RuntimeError('Claude cost unknown or session budget exceeded; stopping before another call')
             return run
 
+        def sync(code):
+            sync_workspace(data/'builder-workspace/src', code)
+
+        def check(spec, n, code, feedback, visit, ctx):
+            """One deterministic check on frozen code; receipts land beside the stage's own session directories."""
+            entry = manifest['problems'][args.problem]['entry_file']
+            context = checks.Context(code_dir=code, entry_file=entry, python=backend.python, prior_code=ctx['prior_code'], side_codes=ctx['side_codes'],
+                                     suite_dir=suite_dir if suite_dir.is_dir() else None, specs={k:experiment.spec(args.problem,k) for k in range(1,n+1)},
+                                     checkpoint=n, feedback=feedback, arg=spec.arg)
+            found = checks.run_check(spec.checker, context)
+            phase = ctx['phase']
+            folder = output/ctx['role']/label(n, visit, ctx['variant'] if phase == 'score' else None)/('' if phase == 'gate' else phase)
+            folder.mkdir(parents=True, exist_ok=True)
+            save(folder/'result.json', {**found.to_dict(), 'checker':spec.checker, 'arg':spec.arg, 'checkpoint':n})
+            (folder/'log.txt').write_text(found.log)
+            print(f"Check {spec.checker} ({ctx['role']}{'' if phase == 'gate' else ' ' + phase}) checkpoint {n}: {found.verdict} {found.passed}/{found.total}", flush=True)
+            return found
+
         try:
             if args.source_run:
                 original=DATA_ROOT/'results/runs'/args.source_run/f'build/checkpoint_{checkpoint_count}'
@@ -398,7 +502,7 @@ def main(argv=None):
             else:
                 for n in range(first_checkpoint,checkpoint_count+1):
                     if args.factory:
-                        previous=run_flow(args.flow,session,n,previous,trace)
+                        previous=run_flow(args.flow,session,n,previous,trace,check,sync)
                     else:
                         previous=run_checkpoint(session,n,previous,review=not args.no_review and args.review_scope == 'checkpoint')
             if not args.no_review and args.review_scope == 'final':
@@ -418,29 +522,38 @@ def main(argv=None):
         # Scoring is exclusively controller-side, after no more model calls can occur.
         scores=[]
         passing=set()
+        # Sessions that did not become the main code (branches, losing attempts, rolled-back stages) do not move the
+        # baseline the next graded session is compared against.
+        aside={(t['stage'],label(t['checkpoint'],t['attempt'],v)) for t in trace for v in range(1,len(t.get('attempts',()))+1) if v!=t.get('winner')}
+        aside|={(t['stage'],label(t['checkpoint'],t['attempt'],t.get('winner'))) for t in trace if t.get('guard',{}).get('rolled_back')}
+        aside|={(t['stage'],label(t['checkpoint'],t['attempt'])) for t in trace if t.get('kind')=='branch'}
         for row in frozen:
-            label=row.get('label',f"checkpoint_{row['checkpoint']}")
-            score=experiment.score([row])[0]; score['role']=row['role']; score['label']=label; scores.append(score)
-            shutil.copy2(row['run']/'grading/evaluation.json',output/row['role']/label/'evaluation.json')
+            where=row.get('label',f"checkpoint_{row['checkpoint']}")
+            score=experiment.score([row])[0]; score['role']=row['role']; score['label']=where; scores.append(score)
+            shutil.copy2(row['run']/'grading/evaluation.json',output/row['role']/where/'evaluation.json')
             report=read(row['run']/'grading/evaluation.json')
             score.update(split_counts(report,row['checkpoint']))
-            passing,broken,gained=pass_diff(report,passing)  # Against the previous graded session of this run.
+            now,broken,gained=pass_diff(report,passing)  # Against the previous graded session of this run.
             score.update({'broken':len(broken),'gained':len(gained)})
+            if (row['role'],where) in aside:
+                score['aside']=True
+            else:
+                passing=now
             if not args.no_quality:
                 # Report-only: a failed analysis is recorded, never allowed to lose the run's grades.
                 try:
                     rows=analyze_snapshot(row['run']/'submission',manifest['problems'][args.problem]['entry_file'],
-                                          DATA_ROOT/'intermediate/runs'/args.run_id/'quality'/row['role']/label,read(output/row['role']/label/'snapshot.json'))
-                    save(output/row['role']/label/'quality.json',rows)
+                                          DATA_ROOT/'intermediate/runs'/args.run_id/'quality'/row['role']/where,read(output/row['role']/where/'snapshot.json'))
+                    save(output/row['role']/where/'quality.json',rows)
                     score['quality']=headline(rows)
                 except Exception as error:
                     score['quality']={'error':f'{type(error).__name__}: {error}'}
             for filename in ['dependency-install.json','dependency-freeze.txt']:
                 receipt=row['run']/filename
                 if receipt.exists():
-                    shutil.copy2(receipt,output/row['role']/label/filename)
+                    shutil.copy2(receipt,output/row['role']/where/filename)
             save(output/'scores.json',scores)
-            print(f"Graded {row['role']} {label}: {score['passed']}/{score['total']} (-{score['broken']} / +{score['gained']}){quality_note(score)}",flush=True)
+            print(f"Graded {row['role']} {where}: {score['passed']}/{score['total']} (-{score['broken']} / +{score['gained']}){quality_note(score)}",flush=True)
         if failure:
             raise failure
 
