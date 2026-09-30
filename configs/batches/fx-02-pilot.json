@@ -1,0 +1,63 @@
+{
+  "batch_id": "fx-02-pilot",
+  "max_parallel": 4,
+  "description": "Pilot of the new tester/branch/xN/repro stages: seed 1 of four fx-02 factories.",
+  "runs": [
+    {
+      "run_id": "fx-02-luna-tester-suite-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-tester-suite",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-02-luna-best-of-3-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-best-of-3",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-02-luna-vs-sol-diff-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-vs-sol-diff",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-02-luna-verified-review-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-verified-review",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-fb919426/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    }
+  ]
+}
