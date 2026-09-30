@@ -112,7 +112,8 @@ function controls(state, data) {
   const thens = choose(thenChoices, (k) => k === state.then, (k) => next(state, { then: k }));
   const experiments = hashOptions(comparisonOptions(state, data));
   const rows = Math.min(Math.max(2, ...Object.values(data.facets).map((f) => f.length)), MAX_LIST_ROWS);
-  const filterLists = Object.entries(FILTERS).map(([name, label]) => filterList(state, data, name, label, rows)).join('');
+  const filterRow = (names) => `<div class="filters">${names.map((name) => filterList(state, data, name, FILTERS[name], rows)).join('')}</div>`;
+  const filterLists = filterRow(['batch', 'run']) + filterRow(Object.keys(FILTERS).filter((name) => name !== 'batch' && name !== 'run'));
   const clear = hasFilters(state) ? `<a href="#${h(next(state, { filters: {} }))}">clear filters</a>` : '';
   return `
     <div class="ctl">
@@ -125,7 +126,7 @@ function controls(state, data) {
       <label>Suggested comparison <select class="wide" data-nav>${experiments}</select></label>
       ${clear}
     </div>
-    <div class="filters">${filterLists}</div>
+    ${filterLists}
     <p class="muted">${poolingNote(state, data)}</p>`;
 }
 
@@ -142,7 +143,8 @@ function filterList(state, data, name, label, rows) {
       return `<option value="${h(value)}" title="${h(title)}"${count || chosen.includes(value) ? '' : ' class="empty"'}${chosen.includes(value) ? ' selected' : ''}>${h(value)} (${count})</option>`;
     })
     .join('');
-  return `<label class="filter">${label}${chosen.length ? ` (${chosen.length} selected)` : ''}
+  const clear = chosen.length ? ` <a href="#${h(next(state, { filters: { ...state.filters, [name]: [] } }))}">clear</a>` : '';
+  return `<label class="filter"><span>${label}${chosen.length ? ` (${chosen.length} selected)` : ''}${clear}</span>
     <select multiple size="${rows}" data-filter="${name}">${options}</select></label>`;
 }
 
@@ -201,12 +203,12 @@ function poolingNote(state, data) {
   return note;
 }
 
-/** Upper end of the bar scale: whole tens of percent. */
-const barScale = (rows, metric) => Math.max(10, Math.ceil(Math.max(0, ...rows.map((r) => r[metric] || 0)) / 10) * 10);
+/** Bars always span the full 0–100% range so groups and filters stay comparable. */
+const BAR_TOP = 100;
 
 function bars(rows, state) {
   const subs = subValues(rows);
-  const top = barScale(rows, state.metric);
+  const top = BAR_TOP;
   const bar = (row, index, label) => {
     const value = row[state.metric];
     const color = PALETTE[(state.then ? subs.indexOf(row.sub) : index) % PALETTE.length];
