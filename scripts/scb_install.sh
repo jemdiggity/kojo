@@ -60,8 +60,8 @@ uv pip install --python intermediate/solver-venv/bin/python --require-hashes -r 
 # Working pinned binaries need no registry resolution on subsequent setup runs.
 codex_version=$(intermediate/provider-cli/node_modules/.bin/codex --version 2>/dev/null || true)
 claude_version=$(intermediate/provider-cli/node_modules/.bin/claude --version 2>/dev/null || true)
-if [ "$codex_version" != 'codex-cli 0.158.0' ] || [ "$claude_version" != '2.1.283 (Claude Code)' ]; then
-    npm install --prefix intermediate/provider-cli --prefer-offline --no-audit --no-fund @openai/codex@0.158.0 @anthropic-ai/claude-code@2.1.283
+if [ "$codex_version" != 'codex-cli 0.159.1' ] || [ "$claude_version" != '2.1.283 (Claude Code)' ]; then
+    npm install --prefix intermediate/provider-cli --prefer-offline --no-audit --no-fund @openai/codex@0.159.1 @anthropic-ai/claude-code@2.1.283
 fi
 intermediate/provider-cli/node_modules/.bin/codex --version
 intermediate/provider-cli/node_modules/.bin/claude --version

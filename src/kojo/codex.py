@@ -53,7 +53,12 @@ def overrides(ignore_user_config=False, native_work=None):
         bases += [ancestor / '.codex/skills' for ancestor in Path(native_work).parents]
     # rglob does not descend into symlinked skill directories. Resolve every
     # reachable directory explicitly, with cycle protection, before disabling.
-    found = set()
+    # Bundled skills can be exposed before their files exist (or while another
+    # CLI replaces them), so filesystem discovery alone cannot disable them.
+    bundled = ('imagegen', 'openai-docs', 'plugin-creator', 'review-agent',
+               'skill-creator', 'skill-installer')
+    found = {str(Path.home() / '.codex/skills/.system' / name / 'SKILL.md')
+             for name in bundled}
     visited = set()
     for base in bases:
         if not base.exists():

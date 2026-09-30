@@ -79,6 +79,9 @@ class QuotaTests(unittest.TestCase):
                 args = overrides(ignore_user_config=True)
             configs = [a for a in args if a.startswith("skills.config=")]
             self.assertIn(str(target / "SKILL.md"), configs[0])
+            virtual = home / '.codex/skills/.system/plugin-creator/SKILL.md'
+            self.assertFalse(virtual.exists())
+            self.assertIn(str(virtual), configs[0])
             self.assertIn("enabled=false", configs[0])
 
 
