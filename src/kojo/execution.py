@@ -125,7 +125,7 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     from kojo.skill_sets import active_source
     native_skill_set = active_source(native_skill_set)
     run.mkdir(parents=True, exist_ok=True)
-    if model not in ("gpt-6-luna", "gpt-6-astra", "gpt-5.6-sol", "gpt-6-sol"):
+    if model not in ("gpt-6-luna", "gpt-6-astra", "gpt-5.6-sol", "gpt-6-sol", "gpt-6.1-sol"):
         raise ValueError("Unsupported experiment model")
     work = Path(work_path) if work_path is not None else run / ("src" if isolated_src else "work")
     work.mkdir(parents=True, exist_ok=True)
@@ -144,6 +144,9 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     if effort not in ("low", "medium", "high", "xhigh", "max"):
         raise ValueError("Unsupported Codex effort")
     args += ["-c", "model=" + json.dumps(model), "-c", "model_reasoning_effort=" + json.dumps(effort)]
+    catalog = run / 'model-catalog.json'
+    if catalog.exists():
+        args += ['-c', 'model_catalog_json=' + json.dumps(str(catalog.resolve()))]
     args += [
         "-c",
         "features.shell_tool=true",
@@ -175,9 +178,29 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
     ]
 
 
+def freeze_model_catalog(run, model):
+    """Bind audit and inference to one current catalog, not a shared CLI cache."""
+    path = run / 'model-catalog.json'
+    if path.exists():
+        catalog = json.loads(path.read_text())
+    else:
+        result = subprocess.run(
+            ['codex', *overrides(ignore_user_config=True), '-c', 'model_provider="openai"',
+             'debug', 'models'], check=True, capture_output=True, text=True, timeout=30)
+        catalog = json.loads(result.stdout)
+    entries = [entry for entry in catalog.get('models', []) if entry.get('slug') == model]
+    if len(entries) != 1 or not entries[0].get('base_instructions', '').strip():
+        raise RuntimeError(f'Model catalog lacks stock instructions for {model}; refusing fallback metadata')
+    if not path.exists():
+        save(path, catalog)
+    return path
+
+
 def audit(run, instructions, runtime=None, skill=None, isolated_src=False, prompt=None, persist=False, model="gpt-6-luna", work_path=None, network_enabled=False, effort="low", native_skill_set=None):
     from kojo.skill_sets import active_source
     native_skill_set = active_source(native_skill_set)
+    run.mkdir(parents=True, exist_ok=True)
+    freeze_model_catalog(run, model)
     cmd = command(run, instructions, runtime, skill, isolated_src, persist, model, work_path, network_enabled, effort, native_skill_set)
     received = queue.Queue()
 
@@ -210,9 +233,6 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
         'model_providers.audit.wire_api="responses"',
         "-c",
         "model_providers.audit.requires_openai_auth=false",
-        "-c",
-        "model_catalog_json="
-        + json.dumps(str(Path.home() / ".codex/models_cache.json")),
         "-c",
         "features.enable_request_compression=false",
     ]

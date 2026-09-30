@@ -22,6 +22,7 @@ BASE = Path(__file__).resolve().parents[2]
 MODELS = {
     'sonnet55': 'claude-sonnet-5-5',
     'opus55': 'claude-opus-5-5',
+    'sol61': 'gpt-6.1-sol',
     'sol6': 'gpt-6-sol',
     'astra6': 'gpt-6-astra',
     'opus5': 'claude-opus-5',
