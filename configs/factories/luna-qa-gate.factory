@@ -1,0 +1,7 @@
+# luna builds -> luna QA runs the program against the specs; a failed QA sends the report back to build (max 2)
+build = luna6:low
+qa    = luna6:low
+
+build -> qa
+qa -[fail, max 2]-> build
+qa -[pass]-> done
