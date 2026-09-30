@@ -46,7 +46,7 @@ class SetupTests(unittest.TestCase):
 set -eu
 echo install >> npm-calls
 mkdir -p intermediate/provider-cli/node_modules/.bin
-printf '#!/bin/sh\necho "codex-cli 0.158.0"\n' > intermediate/provider-cli/node_modules/.bin/codex
+printf '#!/bin/sh\necho "codex-cli 0.159.1"\n' > intermediate/provider-cli/node_modules/.bin/codex
 printf '#!/bin/sh\necho "2.1.283 (Claude Code)"\n' > intermediate/provider-cli/node_modules/.bin/claude
 chmod +x intermediate/provider-cli/node_modules/.bin/*
 ''')

@@ -18,6 +18,26 @@ class SuiteLauncherTests(unittest.TestCase):
             save.assert_not_called()
             call.assert_not_called()
 
+    def test_sol61_plan_reaches_codex_with_requested_effort(self):
+        from kojo.factory import parse_args
+        from kojo.factory_spec import parse
+        from kojo.execution import command, cost
+        import tempfile
+        for effort in ('low', 'medium', 'high', 'xhigh', 'max'):
+            with self.subTest(effort=effort):
+                run = suite.plans('sol61', ['sol61'], ['circuit_eval'], efforts=[effort])[0]['runs'][0]
+                _, models, options = parse_args(['audit', '--run-id', run['run_id'], *run['factory_args']])
+                stage = parse(f'build = sol61:{effort}').stages['build']
+                self.assertEqual(stage.model, 'gpt-6.1-sol')
+                self.assertEqual(models['build'], stage.model)
+                self.assertEqual(options['build']['effort'], stage.effort)
+                with tempfile.TemporaryDirectory() as directory:
+                    cmd = command(Path(directory), None, model=models['build'], **options['build'])
+                self.assertIn('model="gpt-6.1-sol"', cmd)
+                self.assertIn(f'model_reasoning_effort="{effort}"', cmd)
+        self.assertAlmostEqual(cost({'input_tokens': 1000, 'cached_input_tokens': 500,
+                                     'output_tokens': 100}, 'gpt-6.1-sol'), .00205)
+
     def test_published_experiment(self):
         # The README's reproduction command: these exact models and problems.
         models = ['sonnet55', 'opus55', 'sol6', 'astra6', 'fable51', 'opus5', 'sol56']
