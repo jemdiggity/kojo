@@ -5,8 +5,10 @@ import copy
 import io
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -17,7 +19,9 @@ from kojo.gauntlet import (
     Experiment,
     SimulatedBackend,
     evaluation_score,
+    save,
     skill_valid,
+    thaw,
 )
 
 
@@ -146,9 +150,51 @@ class GauntletTests(unittest.TestCase):
             backend = fixture(directory)
             experiment = Experiment(backend)
             rows = experiment.solve_chain("training-1", "code_search", "")
-            (rows[0]["run"] / "submission/implementation").write_text("tampered")
+            frozen = rows[0]["run"] / "submission/implementation"
+            with self.assertRaises(PermissionError):  # Frozen output is read-only.
+                frozen.write_text("tampered")
+            thaw(frozen.parent)
+            frozen.write_text("tampered")
             with self.assertRaisesRegex(RuntimeError, "changed checkpoint"):
                 experiment.solve_chain("training-1", "code_search", "")
+
+    def test_concurrent_grading_keeps_row_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            backend = fixture(directory)
+            rows = [{"name": "xjq", "checkpoint": n, "run": Path(directory) / f"runs/r{n}"} for n in range(1, 5)]
+            finished = []
+            original = backend.grade
+
+            def slow(submission, name, checkpoint, dest):
+                time.sleep(0.05 * (5 - checkpoint))  # Later rows finish first.
+                finished.append(checkpoint)
+                return original(submission, name, checkpoint, dest)
+
+            with patch.object(backend, "grade", side_effect=slow):
+                scores = Experiment(backend).score(rows, jobs=4)
+            self.assertEqual([s["checkpoint"] for s in scores], [1, 2, 3, 4])
+            self.assertEqual(finished, [4, 3, 2, 1])
+            for row in rows:
+                self.assertTrue((row["run"] / "grading/evaluation.json").exists())
+
+    def test_partial_grading_output_is_an_error_and_a_finished_one_is_reused(self):
+        with tempfile.TemporaryDirectory() as directory, patch("kojo.gauntlet.check_repositories", lambda cfg: None):
+            backend = Backend(load_config(), {}, Path(directory) / "runs", Path(directory) / "results")
+            dest = Path(directory) / "grading"
+            dest.mkdir()
+            with self.assertRaisesRegex(RuntimeError, "Incomplete grading output"):
+                backend.grade(Path(directory), "xjq", 1, dest)
+            save(dest / "evaluation.json", {"infrastructure_failure": False, "pytest_collected": 1,
+                                            "pass_counts": {"Core": 1}, "total_counts": {"Core": 1}})
+            self.assertEqual(backend.grade(Path(directory), "xjq", 1, dest)["strict"], 1)
+
+    def test_stop_kills_running_evaluators(self):
+        with tempfile.TemporaryDirectory() as directory:
+            backend = Backend(load_config(), {}, Path(directory) / "runs", Path(directory) / "results")
+            process = subprocess.Popen(["sleep", "30"], start_new_session=True)
+            backend._evaluators.add(process)
+            backend.stop()
+            self.assertEqual(process.returncode, -9)
 
     def test_infrastructure_failure_is_not_a_score(self):
         for row in [

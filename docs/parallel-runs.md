@@ -4,6 +4,9 @@ The batch launcher runs independent instances of the SCB
 factory. Each instance still completes its checkpoints sequentially, including
 build → review → fix when reviews are enabled. Parallelism does not change the
 model prompt, checkpoint source flow, grading, or timeout policy.
+Once a run's model calls have finished, it grades its frozen stage outputs several at a
+time (`--grading-jobs`, default 4), so a batch can have up to `max_parallel × grading
+jobs` evaluators running at once.
 
 Claude auto-memory remains disabled in every session. Each run has a separate
 workspace, virtual environment, session IDs, logs, receipts, and grading outputs.

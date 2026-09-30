@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 
 import collections
+import concurrent.futures
 import fcntl
 import hashlib
 import math
@@ -13,7 +14,7 @@ import time
 from kojo.catalog import BASE, DATA_ROOT, protocol_digest, harness_digest, factory_instruction_hashes, metadata
 from kojo.execution import audit, run_session, save, session_paths
 from kojo.external_access import audit_external_sources
-from kojo.gauntlet import Experiment, copy_code, hashes, preflight, read, split_counts, pass_diff, sync_workspace
+from kojo.gauntlet import DEFAULT_GRADING_JOBS, Experiment, copy_code, freeze, hashes, preflight, read, split_counts, pass_diff, sync_workspace
 from kojo.run_chain import ChainBackend, compose_prompt
 from kojo import checks, claude_execution, factory_spec
 from kojo.quality import analyze_snapshot, headline
@@ -190,6 +191,7 @@ def parse_args(argv=None):
     parser.add_argument('--claude-max-output-tokens', type=int, help='Optional response-token allowance, verified against the emitted request')
     parser.add_argument('--no-review', action='store_true')
     parser.add_argument('--no-quality', action='store_true', help='Skip the static quality analysis of each stage output (needs uvx and network)')
+    parser.add_argument('--grading-jobs', type=int, default=DEFAULT_GRADING_JOBS, help=f'Stage outputs graded and analyzed at the same time once every model call has finished (default: {DEFAULT_GRADING_JOBS}; 1 grades one at a time)')
     parser.add_argument('--no-network', action='store_true', help='Historical restricted-network diagnostic; default permits network access')
     parser.add_argument('--review-scope', choices=['checkpoint','final'], help='One review/fix loop per checkpoint (default); final preserves historical runs')
     parser.add_argument('--seconds-per-session', type=int, default=600, help='Time limit for each builder, reviewer, and fixer session (default: 600)')
@@ -240,6 +242,8 @@ def parse_args(argv=None):
         parser.error('Invalid resume run ID')
     if args.seconds_per_session <= 0:
         parser.error('seconds-per-session must be positive')
+    if args.grading_jobs < 1:
+        parser.error('grading-jobs must be positive')
     if args.source_run and (args.no_review or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-' for c in args.source_run)):
         parser.error('source-run needs a review and a valid run ID')
     if args.source_run and args.review_scope != 'final':
@@ -339,6 +343,7 @@ def main(argv=None):
             'prompt_protocol':'stock-cli-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':('stock provider CLI; no override' if args.base_text is None else 'CUSTOM override for Codex roles: '+str(args.base_instructions)), 'base_instructions_sha256':(None if args.base_text is None else hashlib.sha256(args.base_text.encode()).hexdigest()),'checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':('per role; see effort_by_role' if any(adapter_options.values()) else 'low'),'source_run':args.source_run,'quota_monitor_only':args.monitor_only,'network_enabled':not args.no_network,'dependency_policy':'requirements.txt rebuilt in a fresh grading venv; install report and freeze recorded' if not args.no_network else 'historical pinned runtime only','external_access_policy':'report-only native transcript audit after every session; validity judged by the user',
             'sequence':('reused frozen builder' if args.source_run else f'{checkpoint_count} incremental build checkpoints') + ('' if args.no_review else (', each followed by one review and one fix; fixed code carries forward' if args.review_scope == 'checkpoint' else ', one final review, one follow-up')),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
+            'grading_jobs':args.grading_jobs,
             'provider_by_role':{role:'claude' if model in claude_execution.MODELS else 'codex' for role,model in models.items()},
             'effort_by_role':{role:adapter_options[role].get('effort','low') for role in models},
             'claude_cli_version':claude_execution.VERSION if any(m in claude_execution.MODELS for m in models.values()) else None,
@@ -449,6 +454,7 @@ def main(argv=None):
             if edits:
                 copy_code(work,run/'submission')
                 shutil.copytree(run/'submission',dest/'submission')
+                freeze(run/'submission'); freeze(dest/'submission')  # Frozen evidence stays exactly what was hashed.
                 save(dest/'snapshot.json',hashes(run/'submission'))
                 frozen.append({'name':args.problem,'checkpoint':n,'run':run,'role':role,'label':name})
             elif kind == 'tester':
@@ -520,6 +526,25 @@ def main(argv=None):
                 'unmetered_sessions':sum(r.get('usage') is None for r in sessions),
                 'actual_subscription_cash_cost_usd':None})
         # Scoring is exclusively controller-side, after no more model calls can occur.
+        # Each frozen stage output is graded and analyzed on its own, several at a time;
+        # the results are recorded in the order the sessions ran.
+        def measure(row):
+            where=row.get('label',f"checkpoint_{row['checkpoint']}")
+            outcome={}
+            try:
+                outcome['score']=experiment.score([row])[0]
+            except Exception as error:
+                outcome['error']=error
+                return outcome
+            if not args.no_quality:
+                # Report-only: a failed analysis is recorded, never allowed to lose the run's grades.
+                try:
+                    rows=analyze_snapshot(row['run']/'submission',manifest['problems'][args.problem]['entry_file'],
+                                          DATA_ROOT/'intermediate/runs'/args.run_id/'quality'/row['role']/where,read(output/row['role']/where/'snapshot.json'))
+                    outcome['quality']=(rows,headline(rows))
+                except Exception as error:
+                    outcome['quality_error']=f'{type(error).__name__}: {error}'
+            return outcome
         scores=[]
         passing=set()
         # Sessions that did not become the main code (branches, losing attempts, rolled-back stages) do not move the
@@ -527,33 +552,40 @@ def main(argv=None):
         aside={(t['stage'],label(t['checkpoint'],t['attempt'],v)) for t in trace for v in range(1,len(t.get('attempts',()))+1) if v!=t.get('winner')}
         aside|={(t['stage'],label(t['checkpoint'],t['attempt'],t.get('winner'))) for t in trace if t.get('guard',{}).get('rolled_back')}
         aside|={(t['stage'],label(t['checkpoint'],t['attempt'])) for t in trace if t.get('kind')=='branch'}
-        for row in frozen:
-            where=row.get('label',f"checkpoint_{row['checkpoint']}")
-            score=experiment.score([row])[0]; score['role']=row['role']; score['label']=where; scores.append(score)
-            shutil.copy2(row['run']/'grading/evaluation.json',output/row['role']/where/'evaluation.json')
-            report=read(row['run']/'grading/evaluation.json')
-            score.update(split_counts(report,row['checkpoint']))
-            now,broken,gained=pass_diff(report,passing)  # Against the previous graded session of this run.
-            score.update({'broken':len(broken),'gained':len(gained)})
-            if (row['role'],where) in aside:
-                score['aside']=True
-            else:
-                passing=now
-            if not args.no_quality:
-                # Report-only: a failed analysis is recorded, never allowed to lose the run's grades.
-                try:
-                    rows=analyze_snapshot(row['run']/'submission',manifest['problems'][args.problem]['entry_file'],
-                                          DATA_ROOT/'intermediate/runs'/args.run_id/'quality'/row['role']/where,read(output/row['role']/where/'snapshot.json'))
+        pool=concurrent.futures.ThreadPoolExecutor(max_workers=args.grading_jobs)
+        try:
+            outcomes=[pool.submit(measure,row) for row in frozen]
+            for row,future in zip(frozen,outcomes):
+                outcome=future.result()
+                if 'error' in outcome:
+                    raise outcome['error']
+                where=row.get('label',f"checkpoint_{row['checkpoint']}")
+                score=outcome['score']; score['role']=row['role']; score['label']=where; scores.append(score)
+                shutil.copy2(row['run']/'grading/evaluation.json',output/row['role']/where/'evaluation.json')
+                report=read(row['run']/'grading/evaluation.json')
+                score.update(split_counts(report,row['checkpoint']))
+                now,broken,gained=pass_diff(report,passing)  # Against the previous graded session of this run.
+                score.update({'broken':len(broken),'gained':len(gained)})
+                if (row['role'],where) in aside:
+                    score['aside']=True
+                else:
+                    passing=now
+                if 'quality' in outcome:
+                    rows,score['quality']=outcome['quality']
                     save(output/row['role']/where/'quality.json',rows)
-                    score['quality']=headline(rows)
-                except Exception as error:
-                    score['quality']={'error':f'{type(error).__name__}: {error}'}
-            for filename in ['dependency-install.json','dependency-freeze.txt']:
-                receipt=row['run']/filename
-                if receipt.exists():
-                    shutil.copy2(receipt,output/row['role']/where/filename)
-            save(output/'scores.json',scores)
-            print(f"Graded {row['role']} {where}: {score['passed']}/{score['total']} (-{score['broken']} / +{score['gained']}){quality_note(score)}",flush=True)
+                elif 'quality_error' in outcome:
+                    score['quality']={'error':outcome['quality_error']}
+                for filename in ['dependency-install.json','dependency-freeze.txt']:
+                    receipt=row['run']/filename
+                    if receipt.exists():
+                        shutil.copy2(receipt,output/row['role']/where/filename)
+                save(output/'scores.json',scores)
+                print(f"Graded {row['role']} {where}: {score['passed']}/{score['total']} (-{score['broken']} / +{score['gained']}){quality_note(score)}",flush=True)
+        except BaseException:
+            backend.stop()  # Evaluators still running in other threads are killed, as an interrupted sequential grade was.
+            raise
+        finally:
+            pool.shutdown(wait=True, cancel_futures=True)
         if failure:
             raise failure
 
