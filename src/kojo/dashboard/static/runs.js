@@ -10,10 +10,14 @@ const batchRow = (batch) => {
   return `<tr><td>${h(batch.id)}</td><td>${h(batch.action)}</td><td>${pills}</td><td>${batch.cancelled ? 'cancelled' : ''}</td></tr>`;
 };
 
+/** A muted "n/N graded" note when the run hasn't graded every checkpoint, so its score isn't read as final. */
+const progress = (run) =>
+  run.checkpoints_graded < run.checkpoints_total ? ` <span class="muted">(${run.checkpoints_graded}/${run.checkpoints_total} graded)</span>` : '';
+
 const runRow = (run) => `
   <tr class="click" data-href="run/${run.id}"><td>${h(run.id)}</td><td class="${run.status}">${h(run.status)}</td>
-  <td>${h(run.models.join(', '))}</td><td class="num">${run.strict_passed}/${run.checkpoints_graded}</td>
-  <td class="num">${percent(run.partial_pass)}</td><td class="num">${usd(run.cost_usd)}</td>
+  <td>${h(run.models.join(', '))}</td><td class="num">${run.strict_passed}/${run.checkpoints_total}</td>
+  <td class="num">${percent(run.partial_pass)}${progress(run)}</td><td class="num">${usd(run.cost_usd)}</td>
   <td class="num">${duration(run.elapsed_seconds)}</td></tr>`;
 
 /** All runs, or only those in the `ids` query parameter (linked from the leaderboard). */
@@ -47,7 +51,7 @@ export async function runView({ parts: [id] }) {
   const rows = run.checkpoints.map(checkpointRow).join('') || '<tr><td colspan="8" class="muted">No checkpoints yet.</td></tr>';
   render(`<p><a href="#runs" data-back>← Back</a></p>
     <h2 class="first">${h(run.id)} ${copyButton(h(run.id), 'Copy run name')} <span class="pill ${run.status}">${h(run.status)}</span></h2>
-    <p class="muted">${run.batch ? `Batch ${h(run.batch)} · ` : ''}${h(run.models.join(', '))} · ${run.strict_passed}/${run.checkpoints_graded} strict · ${usd(run.cost_usd)} · ${duration(run.elapsed_seconds)}</p>
+    <p class="muted">${run.batch ? `Batch ${h(run.batch)} · ` : ''}${h(run.models.join(', '))} · ${run.strict_passed}/${run.checkpoints_total} strict${progress(run)} · ${usd(run.cost_usd)} · ${duration(run.elapsed_seconds)}</p>
     <h2>Checkpoints</h2><div class="scroll"><table><tr>${header}</tr>${rows}</table></div>
     <details data-key="log"><summary>Controller log (tail)</summary><pre>${h(log) || 'No log.'}</pre></details>`);
 }
