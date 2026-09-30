@@ -100,7 +100,7 @@ class AccountingTests(unittest.TestCase):
         g = parse('tests = tester sol61:low\nbuild = luna6 x3 by suite\ntests -> build')
         self.assertEqual((g.max_sessions(), g.max_checks()), (4, 3))
         h = parse('build = luna6\nfix = luna6 guard smoke\nqa = qa astra6\nbuild -> qa\nqa -[fail, max 2]-> fix -> qa')
-        self.assertEqual((h.max_sessions(), h.max_checks()), (5, 4))
+        self.assertEqual((h.max_sessions(), h.max_checks()), (6, 4))
 
     def test_reset_loop_costs_each_reroll(self):
         f = parse(BASE + 'gate = check smoke\nbuild -> gate\ngate -[fail, max 3, reset]-> build\ngate -[pass]-> done')
