@@ -76,6 +76,14 @@ def permission_args(work, runtime=None, readonly_skill=False, isolated_src=False
     ]
 
 
+def node_compile_cache():
+    """One warm compile cache for every Node process the harness starts, outside any workspace.
+    Node would otherwise put it under TMPDIR, which sessions point at their workspace, and a fresh
+    workspace never has a warm cache anyway. Node writes entries atomically, so sessions can share it."""
+    # Node creates the directory itself and treats an unusable one as "no cache", never as an error.
+    return str(Path(os.environ.get("KOJO_NODE_COMPILE_CACHE", str(Path.home() / "Library/Caches/kojo/node-compile-cache"))).expanduser())
+
+
 def shell_environment(work):
     """Tool-only overrides; do not change the controller's :tmpdir resolution."""
     return {
@@ -83,6 +91,7 @@ def shell_environment(work):
         # zsh uses TMPPREFIX for heredocs independently of TMPDIR.
         "TMPPREFIX": str(work / ".kojo-zsh"),
         "PYTHONDONTWRITEBYTECODE": "1",
+        "NODE_COMPILE_CACHE": node_compile_cache(),
     }
 
 

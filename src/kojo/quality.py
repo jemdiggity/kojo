@@ -7,13 +7,14 @@ import shutil
 import subprocess
 
 from kojo.catalog import BASE
-from kojo.gauntlet import hashes
+from kojo.gauntlet import hashes, thaw
 
 VERSION = '0.1.3'
 
 
 def prepare(source, dest, entrypoint, normalize):
     shutil.copytree(source, dest, symlinks=True)
+    thaw(dest)  # Frozen snapshots are read-only; the analysis copy is renamed in place.
     mapping = {}
     entry = dest/entrypoint
     if normalize and entry.is_file() and not entry.is_symlink() and entry.suffix != '.py':

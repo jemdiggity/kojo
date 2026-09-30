@@ -15,7 +15,7 @@ import threading
 import time
 import uuid
 
-from kojo.execution import save, shell_environment
+from kojo.execution import node_compile_cache, save, shell_environment
 
 VERSION = "2.1.283"
 MODELS = ("claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1", "claude-haiku-4-5-20251001")
@@ -75,6 +75,7 @@ def environment(effort, *, audit_url=None, config_dir=None, max_output_tokens=No
         "DISABLE_AUTOUPDATER": "1",
         "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "NODE_COMPILE_CACHE": node_compile_cache(),  # The CLI's own Node process; the settings env covers its tool shells.
     })
     if model in ("claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5", "claude-fable-5-1"):
         env.pop("MAX_THINKING_TOKENS", None)  # Adaptive thinking; keep CLI token defaults.

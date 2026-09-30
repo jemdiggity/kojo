@@ -18,6 +18,7 @@ class ClaudeTests(unittest.TestCase):
         self.assertEqual(models['build'], 'claude-fable-5-1')
         self.assertEqual(options['build']['effort'], 'medium')
         env = claude.environment('medium', model=models['build'])
+        self.assertTrue(Path(env['NODE_COMPILE_CACHE']).is_absolute())  # Shared and warm, never under the workspace TMPDIR.
         self.assertNotIn('MAX_THINKING_TOKENS', env)
         self.assertNotIn('CLAUDE_CODE_MAX_OUTPUT_TOKENS', env)
 

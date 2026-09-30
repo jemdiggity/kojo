@@ -8,7 +8,7 @@ This corrects the old grader's unconditional `python ENTRYPOINT` assumption. Aft
 python3.12 scripts/scb_regrade.py RUN_ID --output results/comparisons/NEW_OUTPUT
 ```
 
-Use a new output directory. Each source is verified against its frozen snapshot before and after evaluation. The adapter keeps upstream tests and include_prior_tests settings, uses the normal dependency setup, and writes corrected scores separately. Original raw scores are never overwritten. Grading executes submitted programs, but does not call a model. Detailed grader logs remain under `intermediate/regrading/NEW_OUTPUT`.
+Use a new output directory. Checkpoints are graded several at a time (`--jobs N`, default 4); the record keeps checkpoint order. Each source is verified against its frozen snapshot before and after evaluation. The adapter keeps upstream tests and include_prior_tests settings, uses the normal dependency setup, and writes corrected scores separately. Original raw scores are never overwritten. Grading executes submitted programs, but does not call a model. Detailed grader logs remain under `intermediate/regrading/NEW_OUTPUT`.
 
 The first correction is `results/comparisons/20260928-dex-subset/astra-api-regraded`: Astra's `config_server` is a shell launcher for its Python service, so the old zero scores were all startup syntax errors rather than API assertions.
 

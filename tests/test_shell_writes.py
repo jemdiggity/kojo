@@ -17,6 +17,7 @@ class ShellWriteTests(unittest.TestCase):
             work=Path(d)
             sandbox=['codex','sandbox',*permission_args(work,isolated_src=True),'-P','scb','-C',str(work)]
             env=shell_environment(work)
+            cache=Path(env['NODE_COMPILE_CACHE']);self.assertTrue(cache.is_absolute() and not cache.is_relative_to(work))  # Shared, outside the workspace.
             env['TMPPREFIX']='/tmp/zsh'  # Old zsh default, even with a writable TMPDIR.
             failed=subprocess.run(sandbox+['/usr/bin/env',*[f'{k}={v}' for k,v in env.items()],
                 '/bin/zsh','-lc',"cat > broken <<'EOF'\nhello\nEOF\n"],capture_output=True,text=True)
