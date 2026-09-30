@@ -135,6 +135,8 @@ function controls(state, data) {
  * ctrl/cmd-click toggles. The page wires its change event (see wireFilters) because the hash
  * depends on the whole selection.
  */
+const LONG_FILTERS = ['batch', 'run']; // their values are long identifiers, so their lists are twice as wide
+
 function filterList(state, data, name, label, rows) {
   const chosen = state.filters[name] || [];
   const options = data.facets[name]
@@ -144,7 +146,7 @@ function filterList(state, data, name, label, rows) {
     })
     .join('');
   const clear = chosen.length ? ` <a href="#${h(next(state, { filters: { ...state.filters, [name]: [] } }))}">clear</a>` : '';
-  return `<label class="filter"><span>${label}${chosen.length ? ` (${chosen.length} selected)` : ''}${clear}</span>
+  return `<label class="filter${LONG_FILTERS.includes(name) ? ' long' : ''}"><span>${label}${chosen.length ? ` (${chosen.length} selected)` : ''}${clear}</span>
     <select multiple size="${rows}" data-filter="${name}">${options}</select></label>`;
 }
 
