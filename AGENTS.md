@@ -12,3 +12,6 @@ outputs to the main checkout is expected; keep code changes in the task worktree
 
 Plans, batch records, vendor checkouts, and virtual environments stay in the
 task worktree, following the existing launcher conventions.
+
+Do not add agent attribution to commits or pull requests: no `Co-Authored-By`
+trailers naming an AI agent and no "Generated with" lines.
