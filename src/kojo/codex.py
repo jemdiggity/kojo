@@ -25,6 +25,7 @@ def overrides(ignore_user_config=False, native_work=None):
         "memories.generate_memories": False,
         "approval_policy": "never",
         "features.skip_host_skill_discovery": native_work is None,
+        "skills.bundled.enabled": False,
     }
     for name in [
         "plugins",
@@ -150,7 +151,12 @@ class Metadata:
         skills = [s for row in data["data"] for s in row["skills"]]
         enabled = {str(Path(s["path"]).resolve()) for s in skills if s["enabled"]}
         if enabled != set(expected):
-            raise RuntimeError("Unexpected enabled skill; refusing inference")
+            extra = sorted(enabled - set(expected))
+            missing = sorted(set(expected) - enabled)
+            raise RuntimeError(
+                "Unexpected enabled skill; refusing inference"
+                + f" (extra={extra[:5]} missing={missing[:5]})"
+            )
         return {"discovered": len(skills), "enabled": len(enabled), "paths": sorted(enabled)}
 
     def close(self):
