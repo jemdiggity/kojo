@@ -1,0 +1,8 @@
+# luna builds; the public spec examples are run against it and mismatches go back to luna as a fix report (max 3)
+build = luna6:low
+fix   = luna6:low
+gate  = check examples
+
+build -> gate
+gate -[fail, max 3]-> fix -> gate
+gate -[pass]-> done

@@ -1,0 +1,5 @@
+# sol writes a spec-only suite; luna makes three independent builds and the one passing most suite cases is kept
+tests = tester sol61:low
+build = luna6:low x3 by suite
+
+tests -> build
