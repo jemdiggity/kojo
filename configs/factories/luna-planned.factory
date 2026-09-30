@@ -1,0 +1,9 @@
+# sol plans the checkpoint, luna builds from the plan, spec examples are run and mismatches go back to luna (max 2)
+plan  = plan sol61:low
+build = luna6:low
+fix   = luna6:low
+gate  = check examples
+
+plan -> build -> gate
+gate -[fail, max 2]-> fix -> gate
+gate -[pass]-> done

@@ -1,0 +1,5 @@
+# luna builds, then reviews and fixes its own code once (verifies before finishing)
+build  = luna6:low
+revise = luna6:low
+
+build -> revise

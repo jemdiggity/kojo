@@ -1,0 +1,9 @@
+# sol writes a spec-only test suite (growing each checkpoint); luna builds, and failing or regressing cases go back to luna (max 3)
+tests = tester sol61:low
+build = luna6:low
+fix   = luna6:low
+gate  = check suite
+
+tests -> build -> gate
+gate -[fail, max 3]-> fix -> gate
+gate -[pass]-> done
