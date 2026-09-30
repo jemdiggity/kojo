@@ -18,7 +18,12 @@ from kojo.known_skill_sets import KNOWN, resolve
 
 NONE = 'none'
 PROBLEMS = {'code_search': 5, 'circuit_eval': 8, 'database_migration': 5,
-            'dynamic_config_service_api': 4}
+            'dynamic_config_service_api': 4,
+            # SCBench problems rated Hard (checkpoint counts from the vendored specs); the two eve_* Hard problems need
+            # an SDE asset adapter this harness lacks
+            'dag_execution': 3, 'dynamic_buffer': 4, 'metric_transform_lang': 5,
+            'rejector': 5, 'sith': 6, 'sheeteval': 7, 'meshctl': 8, 'mocked_http': 8,
+            'recli': 8, 'test_translator': 8}
 
 PARALLEL = ('models', 'models-skills', 'models-skills-efforts', 'all')
 
