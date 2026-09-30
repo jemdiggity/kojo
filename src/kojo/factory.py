@@ -4,6 +4,7 @@ from pathlib import Path
 
 import collections
 import fcntl
+import hashlib
 import math
 import shutil
 import time
@@ -124,7 +125,16 @@ def parse_args(argv=None):
     parser.add_argument('--monitor-only', action='store_true', help='Explicit user-authorized waiver of the weekly floor for this bounded run')
     parser.add_argument('--skill-set', type=Path)
     parser.add_argument('--skill-set-sha256')
+    parser.add_argument('--base-instructions', type=Path, help='Replace the Codex base instructions with this file\'s text (a deliberate departure from stock protocol; Codex models only)')
     args = parser.parse_args(argv)
+    args.base_text = None
+    if args.base_instructions:
+        try:
+            args.base_text = args.base_instructions.read_text()
+        except OSError as error:
+            parser.error(f'Cannot read --base-instructions: {error}')
+        if not args.base_text.strip():
+            parser.error('--base-instructions file is empty')
     if args.factory:
         used = [flag for flag, value in [('--build-model', args.build_model), ('--review-model', args.review_model), ('--claude-effort', args.claude_effort),
                 ('--codex-effort', args.codex_effort), ('--no-review', args.no_review), ('--review-scope', args.review_scope),
@@ -205,6 +215,9 @@ def last_completed_checkpoint(output, model, effort, count):
 def main(argv=None):
     args, models, adapter_options = parse_args(argv)
     active_models=[models[role] for role in args.roles]
+    if args.base_text is not None and any(m in claude_execution.MODELS for m in active_models):
+        raise SystemExit('--base-instructions applies to Codex models only; this factory uses a Claude model')
+    base_for = lambda model: None if model in claude_execution.MODELS else args.base_text
     cfg, manifest = preflight(check_codex=False) if all(m in claude_execution.MODELS for m in active_models) else preflight()
     manifest['problems'][args.problem]=metadata(args.problem)
     checkpoint_count=len(manifest['problems'][args.problem]['checkpoints'])
@@ -233,7 +246,7 @@ def main(argv=None):
         for role in args.roles:
             kind = args.flow.stages[role].kind
             probe = root / 'offline-audit' / role
-            adapter(models[role])[0](probe, None, backend.runtime, None, True,
+            adapter(models[role])[0](probe, base_for(models[role]), backend.runtime, None, True,
                   stage_prompt(experiment, kind, 1 if kind == 'build' else checkpoint_count, None if kind == 'build' else 'Offline review placeholder.', problem=args.problem, verdict=bool(args.factory)), persist=True, model=models[role], network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
         print('Selected role requests and native isolation verified without inference.', flush=True)
         return
@@ -247,7 +260,7 @@ def main(argv=None):
             'run_id':args.run_id, 'problem':args.problem, 'problem_metadata':manifest['problems'][args.problem], 'condition':'checkpoint-review-factory' if args.review_scope == 'checkpoint' else 'single-review-factory',
             'pins':cfg, 'protocol_sha256':backend.protocol, 'harness_sha256':harness_digest(), 'role_instruction_sha256':factory_instruction_hashes(), 'quota':read(BASE / 'configs/quota.json'),
             'max_sessions':(0 if args.source_run else checkpoint_count)+(0 if args.no_review else (2*checkpoint_count if args.review_scope == 'checkpoint' else 2)), 'seconds_per_session':args.seconds_per_session, 'review_loops':0 if args.no_review else (checkpoint_count if args.review_scope == 'checkpoint' else 1), 'review_scope':args.review_scope, 'review_loops_per_checkpoint':0 if args.no_review else (1 if args.review_scope == 'checkpoint' else None), 'skills':args.skill_manifest,
-            'prompt_protocol':'stock-cli-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':'stock provider CLI; no override','checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':('per role; see effort_by_role' if any(adapter_options.values()) else 'low'),'source_run':args.source_run,'quota_monitor_only':args.monitor_only,'network_enabled':not args.no_network,'dependency_policy':'requirements.txt rebuilt in a fresh grading venv; install report and freeze recorded' if not args.no_network else 'historical pinned runtime only','external_access_policy':'report-only native transcript audit after every session; validity judged by the user',
+            'prompt_protocol':'stock-cli-scb-just-solve-v1','builder_specs':'current checkpoint only','base_instructions':('stock provider CLI; no override' if args.base_text is None else 'CUSTOM override for Codex roles: '+str(args.base_instructions)), 'base_instructions_sha256':(None if args.base_text is None else hashlib.sha256(args.base_text.encode()).hexdigest()),'checkpoint_workspace':'persistent directory including virtualenv; fresh CLI conversation','review_specs':'public specs through current checkpoint; custom review intervention','models':models,'reasoning':('per role; see effort_by_role' if any(adapter_options.values()) else 'low'),'source_run':args.source_run,'quota_monitor_only':args.monitor_only,'network_enabled':not args.no_network,'dependency_policy':'requirements.txt rebuilt in a fresh grading venv; install report and freeze recorded' if not args.no_network else 'historical pinned runtime only','external_access_policy':'report-only native transcript audit after every session; validity judged by the user',
             'sequence':('reused frozen builder' if args.source_run else f'{checkpoint_count} incremental build checkpoints') + ('' if args.no_review else (', each followed by one review and one fix; fixed code carries forward' if args.review_scope == 'checkpoint' else ', one final review, one follow-up')),
             'grading':'All calls finish or stop before grading; reviewer and fixer never receive official results.',
             'provider_by_role':{role:'claude' if model in claude_execution.MODELS else 'codex' for role,model in models.items()},
@@ -334,12 +347,16 @@ def main(argv=None):
             save(data / 'ledger.json', ledger)
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
             print(f'Starting {role} checkpoint {n}' + (f' (visit {attempt})' if attempt > 1 else ''), flush=True)
-            adapter(models[role])[1](run, None, prompt, args.seconds_per_session, backend.runtime,
+            adapter(models[role])[1](run, base_for(models[role]), prompt, args.seconds_per_session, backend.runtime,
                         None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work, network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
             for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt','stock-instructions.md']:
                 if filename == 'answer.txt' and not (run/filename).exists():
                     continue  # A timed-out session may have no final answer; preserve its code/receipts.
+                if filename == 'stock-instructions.md' and not (run/filename).exists():
+                    continue  # Only stock-base sessions record the model's own base text.
                 shutil.copy2(run/filename, dest/filename)
+            if args.base_text is not None and models[role] not in claude_execution.MODELS:
+                (dest/'base-instructions.md').write_text(args.base_text)  # the override this session actually ran with
             from kojo.skill_sets import install
             install(work, args.skill_set, 'claude' if models[role] in claude_execution.MODELS else 'codex')
             state=read(run/'run.json')

@@ -34,6 +34,12 @@ class Run:
     settings: dict  # model, skill, factory, effort, problem
     checkpoints: list = field(default_factory=list)  # each checkpoint's final stage output
     intermediate: list = field(default_factory=list)  # earlier code-changing stages a later stage replaced
+    expected: int = 0  # checkpoints the problem has; 0 when unknown, so only graded ones count
+
+
+def expected_checkpoints(manifest):
+    """How many checkpoints the run's problem has, or 0 if the manifest doesn't say."""
+    return len((manifest.get('problem_metadata') or {}).get('checkpoints') or [])
 
 
 def _skill_name(manifest):
@@ -159,7 +165,8 @@ class Store:
             settings = {'model': final[0]['model'] or UNKNOWN, 'effort': final[0]['effort'] or UNKNOWN,
                         'skill': _skill_name(manifest), 'factory': _factory_name(manifest),
                         'problem': manifest.get('problem') or UNKNOWN}
-            runs.append(Run(run_id, config.get('batch_id') or run_id, settings, final, intermediate))
+            runs.append(Run(run_id, config.get('batch_id') or run_id, settings, final, intermediate,
+                            expected_checkpoints(manifest)))
         return runs
 
     def _batch_states(self):
@@ -181,10 +188,13 @@ class Store:
         batch, status, exit_code = states.get(run_id, (None, None, None))
         graded = final_checkpoints(rows)  # one per checkpoint, not one per role that ran
         partial = [r['partial'] for r in graded if r['partial'] is not None]
+        manifest = load_json(self.results / 'runs' / run_id / 'manifest.json') or {}
+        total = max(len(graded), expected_checkpoints(manifest))
+        missing = total - len(graded)  # not graded (yet), so not passed: a lone perfect checkpoint isn't 100%
         return {'id': run_id, 'batch': batch, 'status': self._run_status(run_id, status),
-                'exit_code': exit_code, 'checkpoints_graded': len(graded),
+                'exit_code': exit_code, 'checkpoints_graded': len(graded), 'checkpoints_total': total,
                 'strict_passed': sum(r['strict'] for r in graded),
-                'partial_pass': sum(partial) / len(partial) if partial else None,
+                'partial_pass': sum(partial) / (len(partial) + missing) if partial else None,
                 'cost_usd': sum(r['cost_usd'] or 0 for r in rows),
                 'elapsed_seconds': sum(r['elapsed_seconds'] or 0 for r in rows),
                 'models': sorted({r['model'] for r in rows if r['model']})}
