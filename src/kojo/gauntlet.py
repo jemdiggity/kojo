@@ -297,6 +297,8 @@ class Backend:
             "UV_PYTHON": "3.12.8",
             "PYTEST_ADDOPTS": ".evaluation_tests",
             "PYTHONPATH": str(self.runtime / "lib/python3.12/site-packages"),
+            "SCB_SUBMISSION_ROOT": str(Path(submission).resolve()),
+            "PYTHONDONTWRITEBYTECODE": "1",  # the submission is graded in place and must stay byte-identical
         }
         if install_dependencies:
             env.pop('PYTHONPATH',None)

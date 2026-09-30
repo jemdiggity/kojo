@@ -1,0 +1,90 @@
+run_id,problem,factory,phase,skill,partial_pct,strict_checkpoints,passed_per_checkpoint,builder_seconds,api_price_usd,source
+sm0a-database-migration-sonnet-medium-none,database_migration,sonnet-medium,baseline,none,95.1,1/5,39/39 60/62 84/87 108/117 123/137,344,2.42,official scores.json
+sm0b-database-migration-sonnet-medium-none,database_migration,sonnet-medium,baseline,none,92.5,1/5,39/39 56/62 80/87 106/117 123/137,384,2.54,official scores.json
+sm1-database-migration-sonnet-medium-none,database_migration,sonnet-medium,round 1,none,93.5,1/5,39/39 58/62 82/87 107/117 121/137,345,2.31,official scores.json
+sm1-database-migration-sonnet-medium-s1a-enumerate-examples-9416d8ee0f,database_migration,sonnet-medium,round 1,s1a-enumerate-examples,92.2,1/5,39/39 57/62 81/87 105/117 118/137,375,2.70,official scores.json
+sm1-database-migration-sonnet-medium-s1b-union-echo-092bb0fada,database_migration,sonnet-medium,round 1,s1b-union-echo,53.3,0/5,20/39 31/62 46/87 65/117 78/137,366,2.52,official scores.json
+sm1-database-migration-sonnet-medium-s1c-state-errors-0fc6a1d9b2,database_migration,sonnet-medium,round 1,s1c-state-errors,95.4,1/5,39/39 60/62 84/87 110/117 123/137,398,2.74,official scores.json
+sm1-database-migration-sonnet-medium-s1d-regression-script-8319441fb1,database_migration,sonnet-medium,round 1,s1d-regression-script,93.4,1/5,39/39 58/62 82/87 107/117 120/137,495,3.04,official scores.json
+sm1-database-migration-sonnet-medium-s1e-one-page-card-75b1ac2bc1,database_migration,sonnet-medium,round 1,s1e-one-page-card,70.2,0/5,30/39 41/62 58/87 84/117 95/137,407,2.56,official scores.json
+sm2-database-migration-sonnet-medium-none,database_migration,sonnet-medium,round 2,none,95.3,1/5,39/39 60/62 84/87 109/117 123/137,366,2.36,official scores.json
+sm2-database-migration-sonnet-medium-s1c-state-errors-0fc6a1d9b2,database_migration,sonnet-medium,round 2,s1c-state-errors,94.3,1/5,39/39 58/62 82/87 109/117 124/137,337,2.25,official scores.json
+sm2-database-migration-sonnet-medium-s2a-exact-shape-035afa9cbf,database_migration,sonnet-medium,round 2,s2a-exact-shape,91.9,1/5,39/39 56/62 80/87 106/117 119/137,380,2.54,official scores.json
+sm2-database-migration-sonnet-medium-s2b-parity-identity-551619f8f6,database_migration,sonnet-medium,round 2,s2b-parity-identity,92.1,1/5,39/39 56/62 80/87 105/117 121/137,386,2.39,official scores.json
+sm2-database-migration-sonnet-medium-s2c-state-reader-df0a2ed6be,database_migration,sonnet-medium,round 2,s2c-state-reader,95.7,1/5,39/39 60/62 84/87 111/117 124/137,304,2.03,official scores.json
+sm2-database-migration-sonnet-medium-s2d-replay-audit-c443592256,database_migration,sonnet-medium,round 2,s2d-replay-audit,92.2,1/5,39/39 56/62 80/87 106/117 121/137,372,2.49,official scores.json
+sm2-database-migration-sonnet-medium-s2e-base-control-be20c37b51,database_migration,sonnet-medium,round 2,s2e-base-control,92.3,1/5,39/39 56/62 80/87 107/117 120/137,367,2.41,official scores.json
+dc1a-dynamic-config-service-api-sonnet-medium-none,dynamic_config_service_api,sonnet-medium,baseline,none,68.8,0/4,45/47 87/93 25/76 43/81,1304,5.71,official scores.json
+dc1b-dynamic-config-service-api-sonnet-medium-none,dynamic_config_service_api,sonnet-medium,baseline,none,69.7,0/4,45/47 87/93 24/76 47/81,1130,5.16,official scores.json
+dc2-dynamic-config-service-api-sonnet-medium-d1a-empty-state-7b9008ca82,dynamic_config_service_api,sonnet-medium,round 1,d1a-empty-state,91.8,0/4,45/47 90/93 70/76 67/81,1155,5.55,official scores.json
+dc2-dynamic-config-service-api-sonnet-medium-d1b-error-set-dc7d70936c,dynamic_config_service_api,sonnet-medium,round 1,d1b-error-set,70.2,0/4,45/47 91/93 26/76 43/81,1111,4.54,official scores.json
+dc2-dynamic-config-service-api-sonnet-medium-d1c-exact-words-2fdda7f93b,dynamic_config_service_api,sonnet-medium,round 1,d1c-exact-words,70.0,2/4,47/47 93/93 25/76 38/81,1007,5.10,official scores.json
+dc2-dynamic-config-service-api-sonnet-medium-d1d-combined-card-9fb3bc49ea,dynamic_config_service_api,sonnet-medium,round 1,d1d-combined-card,71.4,0/4,45/47 91/93 24/76 49/81,1076,4.70,official scores.json
+dc2-dynamic-config-service-api-sonnet-medium-d1e-replay-7b778482e8,dynamic_config_service_api,sonnet-medium,round 1,d1e-replay,70.5,0/4,45/47 91/93 25/76 45/81,1269,5.43,official scores.json
+dc2-dynamic-config-service-api-sonnet-medium-none,dynamic_config_service_api,sonnet-medium,round 1,none,68.4,0/4,45/47 91/93 25/76 38/81,1042,4.97,official scores.json
+dc3-dynamic-config-service-api-sonnet-medium-d1a-empty-state-7b9008ca82,dynamic_config_service_api,sonnet-medium,round 2,d1a-empty-state,92.8,0/4,45/47 90/93 73/76 67/81,1448,6.24,official scores.json
+dc3-dynamic-config-service-api-sonnet-medium-d2a-inherit-91c2ca8c49,dynamic_config_service_api,sonnet-medium,round 2,d2a-inherit,92.1,2/4,47/47 93/93 68/76 64/81,1226,5.76,official scores.json
+dc3-dynamic-config-service-api-sonnet-medium-d2b-accept-fb2d6fc524,dynamic_config_service_api,sonnet-medium,round 2,d2b-accept,70.2,0/4,45/47 91/93 24/76 45/81,1110,4.97,official scores.json
+dc3-dynamic-config-service-api-sonnet-medium-d2c-alias-006aa2bcb0,dynamic_config_service_api,sonnet-medium,round 2,d2c-alias,70.2,0/4,45/47 90/93 25/76 45/81,947,4.26,official scores.json
+dc3-dynamic-config-service-api-sonnet-medium-d2d-errorset-fa35d8350f,dynamic_config_service_api,sonnet-medium,round 2,d2d-errorset,85.5,0/4,45/47 91/93 47/76 70/81,1202,5.37,official scores.json
+dc3-dynamic-config-service-api-sonnet-medium-d2e-lean-6cbe4c295d,dynamic_config_service_api,sonnet-medium,round 2,d2e-lean,90.8,0/4,45/47 86/93 72/76 65/81,1260,5.42,official scores.json
+dc4-dynamic-config-service-api-sonnet-medium-d1a-empty-state-7b9008ca82,dynamic_config_service_api,sonnet-medium,round 3,d1a-empty-state,69.4,0/4,44/47 90/93 26/76 43/81,1244,5.86,official scores.json
+dc4-dynamic-config-service-api-sonnet-medium-d3a-gate-lean-c336a82a73,dynamic_config_service_api,sonnet-medium,round 3,d3a-gate-lean,91.9,0/4,45/47 90/93 72/76 65/81,1023,5.35,official scores.json
+dc4-dynamic-config-service-api-sonnet-medium-d3b-inherit-500cfa62f3,dynamic_config_service_api,sonnet-medium,round 3,d3b-inherit,96.0,1/4,47/47 92/93 73/76 72/81,1320,5.53,official scores.json
+dc4-dynamic-config-service-api-sonnet-medium-d3c-omit-18913fcabd,dynamic_config_service_api,sonnet-medium,round 3,d3c-omit,94.3,2/4,47/47 93/93 70/76 69/81,1097,5.96,official scores.json
+dc4-dynamic-config-service-api-sonnet-medium-d3d-exact-words-523aac8290,dynamic_config_service_api,sonnet-medium,round 3,d3d-exact-words,93.4,2/4,47/47 93/93 71/76 65/81,1163,5.31,official scores.json
+dc4-dynamic-config-service-api-sonnet-medium-d3e-accept-42107a055c,dynamic_config_service_api,sonnet-medium,round 3,d3e-accept,94.6,2/4,47/47 93/93 70/76 70/81,1053,5.06,official scores.json
+hd1-dag-execution-sonnet-medium-none,dag_execution,sonnet-medium,no-skill baseline (batch cancelled part-way),none,89.3,0/3,31/33 36/41 44/51,561,2.94,official scores.json
+hd1-dynamic-buffer-sonnet-medium-none,dynamic_buffer,sonnet-medium,no-skill baseline (batch cancelled part-way),none,93.3,0/1,28/30,2067,3.54,official scores.json
+hd1-meshctl-sonnet-medium-none,meshctl,sonnet-medium,no-skill baseline (batch cancelled part-way),none,0.0,0/8,0/83 0/116 0/150 0/194 0/267 0/40 0/42 0/78,436,3.38,official scores.json
+hd1-metric-transform-lang-sonnet-medium-none,metric_transform_lang,sonnet-medium,no-skill baseline (batch cancelled part-way),none,0.0,0/5,0/46 0/98 0/164 0/226 0/74,1466,7.88,official scores.json
+hd1-mocked-http-sonnet-medium-none,mocked_http,sonnet-medium,no-skill baseline (batch cancelled part-way),none,0.0,0/8,0/29 0/55 0/78 0/100 0/120 0/147 0/165 0/200,1204,6.55,official scores.json
+hd1-recli-sonnet-medium-none,recli,sonnet-medium,no-skill baseline (batch cancelled part-way),none,79.8,1/8,34/34 61/71 88/105 113/133 121/151 133/184 152/214 153/255,880,5.07,official scores.json
+hd1-rejector-sonnet-medium-none,rejector,sonnet-medium,no-skill baseline (batch cancelled part-way),none,94.3,1/5,21/21 32/34 47/50 61/67 73/79,753,3.53,official scores.json
+hd1-sheeteval-sonnet-medium-none,sheeteval,sonnet-medium,no-skill baseline (batch cancelled part-way),none,1.6,0/7,1/24 1/44 1/68 1/93 1/116 1/144 1/164,432,2.74,official scores.json
+hd1-sith-sonnet-medium-none,sith,sonnet-medium,no-skill baseline (batch cancelled part-way),none,1.6,0/3,1/39 1/75 1/108,2061,6.34,official scores.json
+hd1-test-translator-sonnet-medium-none,test_translator,sonnet-medium,no-skill baseline (batch cancelled part-way),none,48.6,0/5,90/102 218/609 312/703 591/1021 265/1582,2053,6.67,official scores.json
+hd2-dynamic-buffer-sonnet-medium-none,dynamic_buffer,sonnet-medium,no-skill baseline (rerun),none,90.0,1/4,30/30 44/50 92/104 144/172,3018,12.82,official scores.json
+hd2-sith-sonnet-medium-none,sith,sonnet-medium,no-skill baseline (rerun),none,1.1,0/6,1/39 1/75 1/108 1/146 1/186 1/228,2313,10.36,official scores.json
+hd2-test-translator-sonnet-medium-none,test_translator,sonnet-medium,no-skill baseline (rerun),none,36.3,0/8,90/102 217/609 311/703 602/1021 286/1582 287/1790 292/1960 295/2069,2301,10.83,official scores.json
+hc1-circuit-eval-luna-low-none,circuit_eval,luna-low,round 1,none,61.2,1/8,36/36 36/99 37/205 265/430 284/457 357/508 372/529 401/566,827,0.06,official scores.json
+hc1-circuit-eval-luna-low-v1-spec-checklist-dddb5a510d,circuit_eval,luna-low,round 1,v1-spec-checklist,98.9,1/8,36/36 98/99 204/205 424/430 451/457 501/508 521/529 555/566,1703,0.14,official scores.json
+hc1-circuit-eval-luna-low-v2-run-examples-15ef2eaab3,circuit_eval,luna-low,round 1,v2-run-examples,89.3,2/8,36/36 99/99 66/205 414/430 439/457 487/508 516/529 546/566,1676,0.12,official scores.json
+hc1-circuit-eval-luna-low-v3-error-contract-3cfbfc3178,circuit_eval,luna-low,round 1,v3-error-contract,70.0,1/8,36/36 52/99 120/205 294/430 308/457 358/508 376/529 406/566,1258,0.08,official scores.json
+hc1-circuit-eval-luna-low-v4-regression-guard-f6c006d75f,circuit_eval,luna-low,round 1,v4-regression-guard,97.8,2/8,36/36 99/99 203/205 424/430 445/457 495/508 514/529 524/566,1766,0.16,official scores.json
+hc1-circuit-eval-luna-low-v5-terse-d459ebbd0c,circuit_eval,luna-low,round 1,v5-terse,76.3,1/8,36/36 36/99 153/205 334/430 360/457 410/508 430/529 460/566,1301,0.08,official scores.json
+hc2b-circuit-eval-luna-low-r2a-persistent-suite-635f9a3b92,circuit_eval,luna-low,round 2,r2a-persistent-suite,87.7,2/8,36/36 99/99 169/205 353/430 379/457 429/508 449/529 479/566,1110,0.08,official scores.json
+hc2b-circuit-eval-luna-low-r2b-shared-code-guard-789dcba032,circuit_eval,luna-low,round 2,r2b-shared-code-guard,62.9,1/8,36/36 36/99 37/205 229/430 290/457 393/508 408/529 438/566,948,0.06,official scores.json
+hc2b-circuit-eval-luna-low-r2c-combination-grid-da8cec5d2d,circuit_eval,luna-low,round 2,r2c-combination-grid,99.3,3/8,36/36 99/99 205/205 427/430 453/457 503/508 523/529 556/566,1238,0.08,official scores.json
+hc2b-circuit-eval-luna-low-r2d-postcondition-fidelity-c36b455b46,circuit_eval,luna-low,round 2,r2d-postcondition-fidelity,99.6,2/8,36/36 99/99 204/205 428/430 455/457 506/508 527/529 560/566,1876,0.16,official scores.json
+hc2b-circuit-eval-luna-low-r2e-combined-tight-76ad741f34,circuit_eval,luna-low,round 2,r2e-combined-tight,99.1,1/8,35/36 98/99 205/205 428/430 455/457 506/508 526/529 557/566,1084,0.07,official scores.json
+hc2b-circuit-eval-luna-low-v1-spec-checklist-dddb5a510d,circuit_eval,luna-low,round 2,v1-spec-checklist,91.7,2/8,36/36 99/99 170/205 384/430 411/457 461/508 479/529 511/566,1499,0.10,official scores.json
+hc3-circuit-eval-luna-low-none,circuit_eval,luna-low,round 3 + external,none,72.2,2/8,36/36 99/99 106/205 274/430 292/457 338/508 351/529 371/566,998,0.06,official scores.json
+hc3-circuit-eval-luna-low-r3a-no-known-failure-dac53d5103,circuit_eval,luna-low,round 3 + external,r3a-no-known-failure,84.8,2/8,36/36 99/99 203/205 282/430 352/457 403/508 424/529 437/566,1329,0.08,official scores.json
+hc3-circuit-eval-luna-low-r3b-discriminating-grid-d1c6391dc4,circuit_eval,luna-low,round 3 + external,r3b-discriminating-grid,99.4,2/8,36/36 99/99 204/205 427/430 454/457 505/508 526/529 556/566,1701,0.12,official scores.json
+hc3-circuit-eval-luna-low-r3c-rewrite-safe-tokenizer-4701d39266,circuit_eval,luna-low,round 3 + external,r3c-rewrite-safe-tokenizer,70.2,2/8,36/36 99/99 203/205 203/430 222/457 273/508 293/529 325/566,1371,0.08,official scores.json
+hc3-circuit-eval-luna-low-r3d-guarantee-fixtures-ce1110ea54,circuit_eval,luna-low,round 3 + external,r3d-guarantee-fixtures,91.7,2/8,36/36 99/99 177/205 389/430 410/457 455/508 473/529 500/566,1427,0.09,official scores.json
+hc3-circuit-eval-luna-low-r3e-light-suite-69e5d506d6,circuit_eval,luna-low,round 3 + external,r3e-light-suite,99.4,2/8,36/36 99/99 204/205 428/430 455/457 505/508 522/529 556/566,1687,0.11,official scores.json
+hc3q-circuit-eval-luna-low-pocock-impl-886cecf2e5,circuit_eval,luna-low,round 3 + external,pocock-impl,79.0,0/5,35/36 98/99 1/205 426/430 453/457,621,0.03,official scores.json
+hc3r-circuit-eval-luna-low-pocock-1aa6349522,circuit_eval,luna-low,round 3 + external,pocock,75.4,1/7,36/36 50/99 127/205 271/430 352/457 402/508 507/529,946,0.06,official scores.json
+hc3q-circuit-eval-luna-low-pocock-impl-886cecf2e5,circuit_eval,luna-low,external,pocock-impl,79.0,0/5,35/36 98/99 1/205 426/430 453/457,621,0.03,official scores.json
+hc3r-circuit-eval-luna-low-pocock-1aa6349522,circuit_eval,luna-low,external,pocock,75.4,1/7,36/36 50/99 127/205 271/430 352/457 402/508 507/529,946,0.06,official scores.json
+hc4p-circuit-eval-luna-low-pocock-1aa6349522,circuit_eval,luna-low,replicates,pocock,62.0,0/8,35/36 98/99 128/205 211/430 225/457 263/508 224/529 255/566,1187,0.07,official scores.json
+hc4p-circuit-eval-luna-low-r2d-postcondition-fidelity-c36b455b46,circuit_eval,luna-low,replicates,r2d-postcondition-fidelity,91.5,1/8,36/36 98/99 203/205 370/430 391/457 442/508 463/529 496/566,1407,0.09,official scores.json
+dbm1-database-migration-luna-low-r2d-postcondition-fidelity-c36b455b46,database_migration,luna-low,luna skills on database_migration,r2d-postcondition-fidelity,91.6,1/4,39/39 60/62 82/87 88/117,664,0.05,official scores.json
+dbm1-database-migration-luna-low-r3b-discriminating-grid-d1c6391dc4,database_migration,luna-low,luna skills on database_migration,r3b-discriminating-grid,93.7,2/5,39/39 62/62 85/87 101/117 116/137,574,0.03,official scores.json
+dbm1-database-migration-luna-low-r3e-light-suite-69e5d506d6,database_migration,luna-low,luna skills on database_migration,r3e-light-suite,93.8,2/5,39/39 62/62 85/87 104/117 113/137,607,0.04,official scores.json
+20260929-sol61-medium-skills-01-circuit-eval-sol61-medium-none,circuit_eval,"gpt-6.1-sol:medium (build-only, no factory file)",cross-model (sol61 medium),none,100.0,8/8,36/36 99/99 205/205 430/430 457/457 508/508 529/529 566/566,2695,1.44,official scores.json
+20260929-sol61-medium-skills-01-circuit-eval-sol61-medium-r2d-postcondition-fidelity-c36b455b46,circuit_eval,"gpt-6.1-sol:medium (build-only, no factory file)",cross-model (sol61 medium),r2d-postcondition-fidelity,100.0,8/8,36/36 99/99 205/205 430/430 457/457 508/508 529/529 566/566,3871,2.29,official scores.json
+20260929-sol61-medium-skills-01-database-migration-sol61-medium-none,database_migration,"gpt-6.1-sol:medium (build-only, no factory file)",cross-model (sol61 medium),none,94.8,1/5,39/39 60/62 84/87 108/117 121/137,1944,0.95,official scores.json
+20260929-sol61-medium-skills-01-database-migration-sol61-medium-r2d-postcondition-fidelity-c36b455b46,database_migration,"gpt-6.1-sol:medium (build-only, no factory file)",cross-model (sol61 medium),r2d-postcondition-fidelity,95.7,1/5,39/39 60/62 84/87 110/117 125/137,2198,1.23,official scores.json
+20260929-sol61-medium-skills-01-dynamic-config-service-api-sol61-medium-none,dynamic_config_service_api,"gpt-6.1-sol:medium (build-only, no factory file)",cross-model (sol61 medium),none,64.7,0/4,45/47 90/93 26/76 26/81,1968,1.06,official scores.json
+20260929-sol61-medium-skills-01-dynamic-config-service-api-sol61-medium-r2d-postcondition-fidelity-c36b455b46,dynamic_config_service_api,"gpt-6.1-sol:medium (build-only, no factory file)",cross-model (sol61 medium),r2d-postcondition-fidelity,66.6,2/4,47/47 93/93 26/76 26/81,2362,1.29,official scores.json
+20260928-database-migration-sonnet55-medium-01,database_migration,"claude-sonnet-5-5:medium (build-only, no factory file)",baseline (older launcher),none,92.5,1/5,39/39 58/62 82/87 103/117 119/137,357,2.37,official scores.json
+20260929-dynamic-config-service-api-sonnet55-medium-02,dynamic_config_service_api,"claude-sonnet-5-5:medium (build-only, no factory file)",baseline (older launcher),none,70.5,0/4,45/47 90/93 24/76 47/81,1197,5.53,official scores.json
+20260928-circuit-eval-sonnet55-medium-01,circuit_eval,"claude-sonnet-5-5:medium (build-only, no factory file)",baseline (older launcher),none,99.9,6/8,36/36 99/99 205/205 430/430 457/457 508/508 527/529 562/566,1013,5.00,official scores.json
+hd1-meshctl-sonnet-medium-none,meshctl,sonnet-medium,"no-skill baseline (regraded, fixed launcher)",none,92.7,0/8,77/83 105/116 134/150 175/194 238/267 39/40 41/42 74/78,,,regrade: .tmp/regrade/meshctl/regrading.json
+hd1-metric-transform-lang-sonnet-medium-none,metric_transform_lang,sonnet-medium,"no-skill baseline (regraded, fixed launcher)",none,94.5,2/5,46/46 98/98 162/164 176/226 71/74,,,regrade: .tmp/regrade/metric-transform-lang/regrading.json
+hd1-mocked-http-sonnet-medium-none,mocked_http,sonnet-medium,"no-skill baseline (regraded, fixed launcher)",none,81.0,0/8,24/29 45/55 66/78 80/100 95/120 119/147 128/165 163/200,,,regrade: .tmp/regrade/mocked-http/regrading.json
+hd1-sheeteval-sonnet-medium-none,sheeteval,sonnet-medium,"no-skill baseline (regraded, fixed launcher)",none,91.6,0/6,23/24 41/44 61/68 83/93 105/116 131/144,,,regrade: .tmp/regrade/sheeteval/regrading.json
+hd2-sith-sonnet-medium-none,sith,sonnet-medium,"no-skill baseline (regraded, fixed launcher)",none,94.3,0/6,38/39 73/75 105/108 134/146 172/186 204/228,,,regrade: .tmp/regrade/sith/regrading.json
