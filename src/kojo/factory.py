@@ -105,7 +105,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['audit', 'run'])
     parser.add_argument('--run-id', required=True)
-    parser.add_argument('--problem', choices=['code_search','circuit_eval','database_migration','dynamic_config_service_api'], default='code_search')
+    parser.add_argument('--problem', choices=['code_search','circuit_eval','database_migration','dynamic_config_service_api','dag_execution','dynamic_buffer','metric_transform_lang','rejector','sith','sheeteval','meshctl','mocked_http','recli','test_translator'], default='code_search')
     model_choices=['gpt-6-luna','gpt-6-astra','gpt-5.6-sol','gpt-6-sol','gpt-6.1-sol',*claude_execution.MODELS]
     parser.add_argument('--factory', help='Factory description (configs/factories/NAME.factory or a .factory path); replaces the model, effort and review options')
     parser.add_argument('--build-model', choices=model_choices)
