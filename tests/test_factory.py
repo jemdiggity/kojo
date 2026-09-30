@@ -124,10 +124,34 @@ class FactoryTests(unittest.TestCase):
             root=Path(d);work=root/'work';(work/'.venv/bin').mkdir(parents=True)
             (work/'.venv/bin/python').symlink_to(sys.executable)
             (work/'code_search').write_text('pass')
+            (work/'node-compile-cache/v24').mkdir(parents=True);(work/'node-compile-cache/v24/0e90a45f').write_bytes(b'cache')
+            (work/'__pycache__').mkdir();(work/'__pycache__/code_search.cpython-312.pyc').write_bytes(b'bytecode')
             copy_code(work,root/'snapshot')
             self.assertEqual(list(hashes(root/'snapshot')),['code_search'])
+            self.assertEqual(list(hashes(work,exclude_generated=True)),['code_search'])
             (work/'leak').symlink_to('/etc/hosts')
             with self.assertRaises(RuntimeError):copy_code(work,root/'blocked')
+
+    def test_frozen_snapshot_is_read_only_and_copies_of_it_are_writable(self):
+        import os,subprocess
+        from kojo.gauntlet import freeze,sync_workspace
+        from kojo.quality import prepare
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);frozen=root/'submission';(frozen/'pkg').mkdir(parents=True)
+            (frozen/'code_search').write_text('import pkg.helper\n');(frozen/'pkg/__init__.py').write_text('');(frozen/'pkg/helper.py').write_text('value=1\n')
+            freeze(frozen);before=hashes(frozen)
+            self.assertFalse(os.access(frozen,os.W_OK));self.assertFalse(os.access(frozen/'pkg/helper.py',os.W_OK))
+            # Importing the frozen code in place, without PYTHONDONTWRITEBYTECODE, leaves no bytecode behind.
+            env={k:v for k,v in os.environ.items() if k!='PYTHONDONTWRITEBYTECODE'}
+            run=subprocess.run([sys.executable,'-c','import pkg.helper;print(pkg.helper.value)'],cwd=frozen,env=env,capture_output=True,text=True)
+            self.assertEqual(run.stdout.strip(),'1',run.stderr)
+            self.assertEqual(hashes(frozen),before);self.assertFalse((frozen/'pkg/__pycache__').exists())
+            copy_code(frozen,root/'work')
+            (root/'work/pkg/helper.py').write_text('value=2\n');(root/'work/new.py').write_text('')  # A workspace copy is writable.
+            synced=root/'synced';sync_workspace(synced,frozen)
+            (synced/'pkg/helper.py').write_text('value=3\n')
+            self.assertEqual(prepare(frozen,root/'analysis','code_search',True),{'code_search':'code_search.py'})  # The analysis copy renames in place.
+            self.assertEqual(hashes(frozen),before)
 
     def test_stock_command_does_not_override_base_instructions(self):
         with tempfile.TemporaryDirectory() as d:

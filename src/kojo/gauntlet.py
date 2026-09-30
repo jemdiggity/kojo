@@ -1,6 +1,7 @@
 """Fixed-budget skill learning and paired SCB evaluation; official grading stays external."""
 
 import argparse
+import concurrent.futures
 import fcntl
 import hashlib
 import json
@@ -10,9 +11,11 @@ import random
 import re
 import shutil
 import shlex
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 from kojo.catalog import (
@@ -29,6 +32,8 @@ from kojo.execution import audit, run_session, save, session_paths
 DATA = BASE / "intermediate/gauntlet"
 OUTPUT = BASE / "results/gauntlet"
 CONDITIONS = ["baseline", "initial", "learned"]
+# Snapshots graded at the same time once every model call has finished.
+DEFAULT_GRADING_JOBS = 4
 EXCLUDED = {
     "SPEC.md",
     "SKILL.md",
@@ -40,6 +45,7 @@ EXCLUDED = {
     ".venv",
     "__pycache__",
     ".pytest_cache",
+    "node-compile-cache",  # Node's compile cache, written wherever TMPDIR points.
 }
 
 
@@ -74,6 +80,23 @@ def hashes(directory, exclude_generated=False):
     return result
 
 
+def freeze(directory):
+    """Frozen evidence is read-only, files and directories alike, so nothing that later runs or
+    imports it in place (bytecode, caches, scratch files) can change the tree its snapshot describes."""
+    directory = Path(directory)
+    for path in [*sorted(directory.rglob("*"), key=lambda p: -len(p.parts)), directory]:
+        if not path.is_symlink():
+            path.chmod(path.stat().st_mode & ~0o222)
+
+
+def thaw(directory):
+    """A working copy of frozen evidence must be writable again (copies keep the source's modes)."""
+    directory = Path(directory)
+    for path in [directory, *directory.rglob("*")]:
+        if not path.is_symlink():
+            path.chmod(path.stat().st_mode | 0o200)
+
+
 def copy_code(source, target):
     def ignore(directory, names):
         return [n for n in names if n in EXCLUDED or n.endswith(".pyc") or (Path(directory)/n/'pyvenv.cfg').is_file() or (Path(directory)/n).is_socket()]
@@ -81,6 +104,7 @@ def copy_code(source, target):
     if source:
         hashes(source, exclude_generated=True)
         shutil.copytree(source, target, ignore=ignore)
+        thaw(target)
     else:
         target.mkdir(parents=True)
 
@@ -104,6 +128,7 @@ def sync_workspace(work, source):
             shutil.rmtree(target)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(Path(source)/name, target)
+        target.chmod(target.stat().st_mode | 0o200)  # The source is frozen read-only.
     environments = {p.parent for p in work.rglob('pyvenv.cfg')}
     for path in sorted((p for p in work.rglob('*') if p.is_dir() and not p.is_symlink()), key=lambda p: -len(p.parts)):
         relative = path.relative_to(work)
@@ -222,17 +247,37 @@ def plan(cfg, manifest):
     }
 
 
-def evaluation_environment(python, dependency_report=None):
-    """SCB local setup; network runs rebuild declared dependencies per snapshot."""
+def evaluation_environment(python, dependency_report=None, venv=None):
+    """SCB local setup; network runs rebuild declared dependencies once per snapshot.
+
+    The evaluator runs its setup commands before every pytest spawn: several collection
+    passes and the test run, each in a fresh workspace copy. Building the environment on
+    every spawn repeated the venv creation and install five to twelve times per checkpoint,
+    so the snapshot's environment is built once, at `venv`, and each workspace's `.venv`
+    is a link to it. The install receipts are written by that one build."""
     commands=[]
     entry=str(python)
     if dependency_report is not None:
+        venv=Path(venv) if venv is not None else dependency_report.with_name('grading-venv')
         report=shlex.quote(str(dependency_report))
         frozen=shlex.quote(str(dependency_report.with_name('dependency-freeze.txt')))
-        commands=[shlex.quote(str(python))+' -m venv .venv',
-                  'if [ -f requirements.txt ]; then .venv/bin/python -m pip install --disable-pip-version-check --no-input --no-cache-dir --report '+report+' -r requirements.txt; fi',
-                  '.venv/bin/python -m pip freeze > '+frozen]
-        commands = ['/bin/sh -c ' + shlex.quote(command) for command in commands]
+        script='\n'.join([
+            'set -u',
+            'if [ -L .venv ]; then exit 0; fi',
+            'venv='+shlex.quote(str(venv)),
+            'status=0',
+            'if [ ! -f "$venv/.kojo-ready" ]; then',
+            '  '+shlex.quote(str(python))+' -m venv "$venv" || exit 1',
+            '  if [ -f requirements.txt ]; then "$venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir --report '+report+' -r requirements.txt || status=$?; fi',
+            '  "$venv/bin/python" -m pip freeze > '+frozen,
+            # A failed install is retried by the next spawn, as before; the tests still run.
+            '  if [ "$status" -eq 0 ]; then touch "$venv/.kojo-ready"; fi',
+            'fi',
+            # Neither snapshot copier keeps a venv, so anything already at .venv is not graded code.
+            'rm -rf .venv',
+            'ln -s "$venv" .venv',
+            'exit "$status"'])
+        commands=['/bin/sh -c '+shlex.quote(script)]
         entry='.venv/bin/python'
     return {'type':'local','name':'gauntlet-python312','environment':{'include_os_env':True},
             'setup':{'commands':[],'eval_commands':commands},
@@ -250,6 +295,17 @@ class Backend:
         self.runtime = BASE / cfg["runtime"]
         self.python = Path(sys._base_executable).resolve()
         self.protocol = protocol_digest()
+        self._evaluators = set()
+        self._evaluators_lock = threading.Lock()
+
+    def stop(self):
+        """Kill every evaluator this backend still has running (grades may run in several threads)."""
+        with self._evaluators_lock:
+            running = list(self._evaluators)
+        for process in running:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
 
     def authorize(self):
         path = BASE / "configs/gauntlet-approval.json"
@@ -309,14 +365,20 @@ class Backend:
         )
 
     def grade(self, submission, name, checkpoint, dest):
+        """Official grade of one frozen snapshot. Safe to run for several snapshots at once:
+        everything it writes is beside `dest`, and the snapshot's environment lives in a
+        temporary directory for the duration of the evaluator."""
         check_repositories(self.cfg)
-        if dest.exists():
+        if (dest / "evaluation.json").exists():
             return evaluation_score(read(dest / "evaluation.json"))
-        config = self.data / "local.yaml"
+        if dest.exists():
+            raise RuntimeError("Incomplete grading output exists; inspect its log before grading again")
+        config = dest.with_name(dest.name + "-environment.json")
         config.parent.mkdir(parents=True, exist_ok=True)
         install_dependencies=getattr(self,'install_dependencies',False)
         dependency_report=dest.parent/'dependency-install.json' if install_dependencies else None
-        config.write_text(json.dumps(evaluation_environment(self.python,dependency_report),indent=2)+'\n')
+        environment = tempfile.TemporaryDirectory(prefix="kojo-grading-venv-")
+        config.write_text(json.dumps(evaluation_environment(self.python,dependency_report,Path(environment.name)/'venv'),indent=2)+'\n')
         env = {
             **os.environ,
             "MSWEA_GLOBAL_CONFIG_DIR": str(self.data / "mswea"),
@@ -346,7 +408,7 @@ class Backend:
             str(config),
             "--json",
         ]
-        with dest.with_suffix(".log").open("w") as log:
+        with environment, dest.with_suffix(".log").open("w") as log:
             process = subprocess.Popen(
                 cmd,
                 env=env,
@@ -354,16 +416,19 @@ class Backend:
                 stderr=subprocess.STDOUT,
                 start_new_session=True,
             )
+            with self._evaluators_lock:
+                self._evaluators.add(process)
             try:
                 if process.wait(timeout=900):
                     raise RuntimeError("Evaluator command failed; inspect its log")
             except BaseException:
                 if process.poll() is None:
-                    import signal
-
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
                 raise
+            finally:
+                with self._evaluators_lock:
+                    self._evaluators.discard(process)
         return evaluation_score(read(dest / "evaluation.json"))
 
 
@@ -510,6 +575,7 @@ class Experiment:
                 skill,
             )
             copy_code(work, submission)
+            freeze(submission)
             save(
                 run / "snapshot.json",
                 {"skill_sha256": expected, "files": hashes(submission)},
@@ -519,22 +585,25 @@ class Experiment:
             print(f"{stage}: {name} checkpoint {n} frozen", flush=True)
         return rows
 
-    def score(self, rows):
-        scores = []
-        for row in rows:
-            scores.append(
-                {
-                    **self.b.grade(
-                        row["run"] / "submission",
-                        row["name"],
-                        row["checkpoint"],
-                        row["run"] / "grading",
-                    ),
-                    "name": row["name"],
-                    "checkpoint": row["checkpoint"],
-                }
-            )
-        return scores
+    def score(self, rows, jobs=1):
+        """Official grades in row order. With `jobs` above one the evaluators run at the same
+        time; each snapshot has its own submission, workspace copies, environment and output."""
+        def one(row):
+            return {
+                **self.b.grade(
+                    row["run"] / "submission",
+                    row["name"],
+                    row["checkpoint"],
+                    row["run"] / "grading",
+                ),
+                "name": row["name"],
+                "checkpoint": row["checkpoint"],
+            }
+        if jobs <= 1 or len(rows) <= 1:
+            return [one(row) for row in rows]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
+            futures = [pool.submit(one, row) for row in rows]
+            return [future.result() for future in futures]
 
     def writer(self, version, current=None, training=None):
         target = self.output / "skills" / version / "SKILL.md"

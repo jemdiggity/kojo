@@ -219,3 +219,10 @@ change no code, so they have no output to measure. A quality analysis that fails
 in `scores.json` and never costs the run its grades; `--no-quality` skips it (it needs `uvx`
 and network access). Runs made before this can be analyzed afterwards with
 `scripts/scb_quality.py`.
+
+Stage outputs are independent snapshots, so several are graded and analyzed at the same
+time once every model call has finished: `--grading-jobs N` (default 4; `1` grades one at a
+time). The `Graded` lines, `scores.json` and the `-N / +M` diffs still follow session order,
+and the manifest records `grading_jobs`. Each snapshot gets its own fresh grading
+environment, built once and shared by the evaluator's collection passes and test run;
+the install and freeze receipts come from that one build.

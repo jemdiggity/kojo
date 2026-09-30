@@ -156,7 +156,7 @@ class ControllerTests(unittest.TestCase):
         return [{'variant': 'upstream', 'metrics': {'files_scanned': 0, 'total_loc': 0, 'erosion': None, 'verbosity': None}},
                 {'variant': 'entrypoint-normalized', 'metrics': {'files_scanned': 1, 'total_loc': 7, 'erosion': 0.5, 'verbosity': 0.25}}]
 
-    def run_main(self, flow_text, answers, extra=(), quality=None):
+    def run_main(self, flow_text, answers, extra=(), quality=None, score=None):
         base = Path(self.enterContext(tempfile.TemporaryDirectory()))
         (base/'configs').mkdir()
         (base/'configs/quota.json').write_text('{}')
@@ -165,7 +165,9 @@ class ControllerTests(unittest.TestCase):
         path.write_text(flow_text)
         calls, graded = [], []
         script = iter(answers)
-        backend = SimpleNamespace(protocol='fixed', runtime=base/'runtime', python='/python')
+        backend = SimpleNamespace(protocol='fixed', runtime=base/'runtime', python='/python', stopped=0)
+        backend.stop = lambda: setattr(backend, 'stopped', backend.stopped + 1)
+        self.backend, self.base = backend, base
 
         def inference(run, instructions, prompt, seconds, *args, work_path, model, effort, **kwargs):
             name = run.parents[1].name.removeprefix('training-')
@@ -183,12 +185,13 @@ class ControllerTests(unittest.TestCase):
                 (run/filename).write_text(json.dumps(value))
             (run/'stock-instructions.md').write_text('stock')
 
-        def score(rows):
+        def default_score(rows):
             row = rows[0]
             graded.append(row['run'].parents[1].name + '/' + row['run'].name)
             (row['run']/'grading').mkdir()
             (row['run']/'grading/evaluation.json').write_text('{}')
             return [{'passed': 1, 'total': 1}]
+        score = score or default_score
 
         fake_meta = lambda name, repo=None: {'name': name, 'entry_file': 'code_search', 'checkpoints': [1, 2]}
         with contextlib.ExitStack() as stack:
@@ -214,9 +217,10 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual([c[2:4] for c in calls[:3]], [('gpt-6-luna', 'high'), ('claude-sonnet-5-5', 'low'), ('gpt-6-astra', 'medium')])
         self.assertTrue(calls[2][4].startswith('fix|1|notes'))
         self.assertTrue(all(c[4].endswith('|True') for c in calls if c[0] == 'review'))
-        self.assertEqual(graded, ['training-build/checkpoint_1', 'training-fix/checkpoint_1', 'training-build/checkpoint_2'])
+        self.assertCountEqual(graded, ['training-build/checkpoint_1', 'training-fix/checkpoint_1', 'training-build/checkpoint_2'])  # Graded concurrently.
         manifest = json.loads((root/'manifest.json').read_text())
         self.assertEqual(manifest['condition'], 'custom-factory')
+        self.assertEqual(manifest['grading_jobs'], factory.DEFAULT_GRADING_JOBS)
         self.assertEqual(manifest['max_sessions'], 2 * parse(text).max_sessions())
         self.assertEqual(manifest['effort_by_role'], {'build': 'high', 'review': 'low', 'fix': 'medium'})
         self.assertEqual(manifest['factory']['edges'][1], {'from': 'review', 'to': 'fix', 'when': 'fail', 'max': 3})
@@ -241,6 +245,28 @@ class ControllerTests(unittest.TestCase):
         scored = json.loads((root/'scores.json').read_text())
         self.assertEqual(scored[0]['quality'], {'error': 'RuntimeError: uvx missing'})
         self.assertFalse((root/'build/checkpoint_1/quality.json').exists())
+
+    def test_grading_jobs_are_recorded_and_must_be_positive(self):
+        _, graded, root = self.run_main('build = luna6\n', [], extra=['--grading-jobs', '1'])
+        self.assertEqual(graded, ['training-build/checkpoint_1', 'training-build/checkpoint_2'])  # One at a time keeps session order.
+        self.assertEqual(json.loads((root/'manifest.json').read_text())['grading_jobs'], 1)
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            factory.parse_args(['audit', '--run-id', 'x', '--grading-jobs', '0'])
+
+    def test_grading_failure_keeps_earlier_scores_in_order_and_stops_evaluators(self):
+        def failing(rows):
+            row = rows[0]
+            if row['run'].name == 'checkpoint_1':
+                (row['run']/'grading').mkdir()
+                (row['run']/'grading/evaluation.json').write_text('{}')
+                return [{'passed': 1, 'total': 1}]
+            raise RuntimeError('Evaluator command failed; inspect its log')
+        with self.assertRaisesRegex(RuntimeError, 'Evaluator command failed'):
+            self.run_main('build = luna6\n', [], score=failing)
+        root = self.base/'results/runs/flow-test'
+        self.assertEqual([r['label'] for r in json.loads((root/'scores.json').read_text())], ['checkpoint_1'])
+        self.assertTrue((root/'build/checkpoint_1/evaluation.json').exists())
+        self.assertEqual(self.backend.stopped, 1)
 
     def test_no_quality_skips_the_analysis(self):
         def forbidden(*args):
