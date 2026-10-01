@@ -101,6 +101,23 @@ class GrammarTests(unittest.TestCase):
         self.assertEqual(f.max_sessions(), 3)
 
 
+class SkillGrammarTests(unittest.TestCase):
+    def test_skill_attribute_parses_and_unknown_skills_are_rejected(self):
+        f = parse('build = luna6:low skill r2d-postcondition-fidelity prompt revise\n') if False else parse('build = luna6:low skill r2d-postcondition-fidelity')
+        self.assertEqual(f.stages['build'].skill, 'r2d-postcondition-fidelity')
+        self.assertEqual(f.to_dict()['stages']['build']['skill'], 'r2d-postcondition-fidelity')
+        with self.assertRaisesRegex(FactoryError, 'unknown skill set'):
+            parse('build = luna6:low skill nope-not-there')
+        with self.assertRaisesRegex(FactoryError, 'skill'):
+            parse('build = luna6:low skill')
+
+    def test_run_level_skill_sets_cannot_be_mixed_with_stage_skills(self):
+        path = Path(tempfile.mkdtemp())/'mixed.factory'
+        path.write_text('build = luna6:low skill r2d-postcondition-fidelity')
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            factory.parse_args(['audit', '--run-id', 'x', '--factory', str(path), '--skill-set', str(REAL/'configs/skill-sets/r3e-light-suite')])
+
+
 class ProgressGrammarTests(unittest.TestCase):
     def test_progress_option_parses_and_needs_a_check_source(self):
         f = parse('tests = tester sol61:low\nbuild = luna6\nfix = luna6\ngate = check safe\n'
@@ -600,10 +617,11 @@ class ControllerExtensionTests(unittest.TestCase):
         (base/'configs').mkdir()
         (base/'configs/quota.json').write_text('{}')
         shutil.copytree(REAL/'configs/factory-prompts', base/'configs/factory-prompts')
+        shutil.copytree(REAL/'configs/skill-sets', base/'configs/skill-sets')
         path = base/'demo.factory'
         path.write_text(flow_text)
         flow = parse(flow_text)
-        self.calls, self.prompts, self.graded, self.contexts = [], [], [], []
+        self.calls, self.prompts, self.graded, self.contexts, self.skill_sets = [], [], [], [], {}
         script = iter(outcomes)
         backend = SimpleNamespace(protocol='fixed', runtime=base/'runtime', python='/python')
 
@@ -611,6 +629,7 @@ class ControllerExtensionTests(unittest.TestCase):
             name = run.parents[1].name.removeprefix('training-')
             kind = flow.stages[name].kind
             self.calls.append((name, run.name, sorted(p.name for p in work_path.iterdir())))
+            self.skill_sets.setdefault(name, kwargs.get('native_skill_set'))
             run.mkdir(parents=True, exist_ok=True)
             if kind == 'tester':
                 cases = work_path/'suite/cases.json'
@@ -693,6 +712,27 @@ class ControllerExtensionTests(unittest.TestCase):
         self.assertEqual([(t['stage'], t['verdict']) for t in trace if t['checkpoint'] == 1], [('tests', None), ('build', None), ('gate', 'fail'), ('fix', None), ('gate', 'pass')])
         self.assertEqual(trace[2]['score'], 0.5)
         self.assertFalse((root/'tests/checkpoint_1/quality.json').exists())
+
+    def test_a_stage_skill_reaches_only_that_stage_and_is_recorded(self):
+        text = ('tests = tester sol61:low\nbuild = luna6:low skill r2d-postcondition-fidelity\nfix = luna6:low skill r2d-postcondition-fidelity\n'
+                'gate = check suite\ntests -> build -> gate\ngate -[fail, max 1]-> fix -> gate\ngate -[pass]-> done\n')
+        root, base = self.run_main(text, [('fail', 0.5), ('pass', 1.0), ('pass', 1.0)], checkpoints=1)
+        skill = base/'configs/skill-sets/r2d-postcondition-fidelity'
+        self.assertIsNone(self.skill_sets['tests'])  # The tester gets no skill.
+        self.assertEqual((self.skill_sets['build'], self.skill_sets['fix']), (skill, skill))
+        manifest = json.loads((root/'manifest.json').read_text())
+        self.assertEqual(sorted(manifest['stage_skills']), ['build', 'fix'])
+        self.assertEqual(manifest['factory']['stages']['build']['skill'], 'r2d-postcondition-fidelity')
+        self.assertTrue((root/'skill-sets/r2d-postcondition-fidelity/SKILL.md').is_file())
+        self.assertTrue((base/'intermediate/runs/flow-test/gauntlet/builder-workspace/src/.agents/skills').is_dir())
+
+    def test_a_stage_without_a_skill_does_not_inherit_one_from_the_shared_workspace(self):
+        text = ('tests = tester sol61:low\nbuild = luna6:low skill r2d-postcondition-fidelity\nfix = luna6:low\n'
+                'gate = check suite\ntests -> build -> gate\ngate -[fail, max 1]-> fix -> gate\ngate -[pass]-> done\n')
+        root, base = self.run_main(text, [('fail', 0.5), ('pass', 1.0), ('pass', 1.0)], checkpoints=1)
+        self.assertIsNotNone(self.skill_sets['build'])
+        self.assertIsNone(self.skill_sets['fix'])
+        self.assertFalse((base/'intermediate/runs/flow-test/gauntlet/builder-workspace/src/.agents/skills').exists())
 
     def test_plan_notes_and_check_feedback_reach_the_prompts(self):
         text = 'plan = plan sol61:low\nbuild = luna6:low\nfix = luna6:low\ngate = check smoke\nplan -> build -> gate\ngate -[fail, max 1]-> fix'
