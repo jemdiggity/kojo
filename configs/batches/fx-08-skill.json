@@ -1,7 +1,7 @@
 {
   "batch_id": "fx-08-skill",
-  "max_parallel": 10,
-  "description": "The r2d postcondition-fidelity skill (run-level --skill-set: installed for every stage including the sol tester and QA; the per-stage attribute is on branch dev-overnight) on luna-postcond-safe-v2 and luna-guarded-loop, 5 seeds each. Compare with the fx-06 no-skill twins.",
+  "max_parallel": 5,
+  "description": "The r2d postcondition-fidelity skill (run-level --skill-set: installed for every stage including the sol tester) on luna-postcond-safe-v2, 5 seeds. Compare with the fx-06 no-skill twin. (luna-guarded-loop+skill dropped: its QA loop takes ~3 h per run.)",
   "runs": [
     {
       "run_id": "fx-08-luna-postcond-safe-v2-r2d-s1",
@@ -10,22 +10,6 @@
         "circuit_eval",
         "--factory",
         "luna-postcond-safe-v2",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md",
-        "--skill-set",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/skill-sets/r2d-postcondition-fidelity"
-      ]
-    },
-    {
-      "run_id": "fx-08-luna-guarded-loop-r2d-s1",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-guarded-loop",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -52,44 +36,12 @@
       ]
     },
     {
-      "run_id": "fx-08-luna-guarded-loop-r2d-s2",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-guarded-loop",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md",
-        "--skill-set",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/skill-sets/r2d-postcondition-fidelity"
-      ]
-    },
-    {
       "run_id": "fx-08-luna-postcond-safe-v2-r2d-s3",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
         "luna-postcond-safe-v2",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md",
-        "--skill-set",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/skill-sets/r2d-postcondition-fidelity"
-      ]
-    },
-    {
-      "run_id": "fx-08-luna-guarded-loop-r2d-s3",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-guarded-loop",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -116,44 +68,12 @@
       ]
     },
     {
-      "run_id": "fx-08-luna-guarded-loop-r2d-s4",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-guarded-loop",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md",
-        "--skill-set",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/skill-sets/r2d-postcondition-fidelity"
-      ]
-    },
-    {
       "run_id": "fx-08-luna-postcond-safe-v2-r2d-s5",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
         "luna-postcond-safe-v2",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md",
-        "--skill-set",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/skill-sets/r2d-postcondition-fidelity"
-      ]
-    },
-    {
-      "run_id": "fx-08-luna-guarded-loop-r2d-s5",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-guarded-loop",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
