@@ -131,6 +131,33 @@ class SafeTests(Base):
         self.assertFalse(checks.guard_rolls_back('suite', found(score=.8), found(score=.8)))
 
 
+class ChangedTests(Base):
+    def test_unchanged_code_fails_and_edited_code_passes(self):
+        start = self.code(name='start')
+        same = self.code(name='same')
+        edited = self.code(PROGRAM + '\n# edited\n', name='edited')
+        added = self.code(name='added', extra={'helper.py': 'x = 1\n'})
+        self.assertEqual(run_check('changed', self.ctx(same, prior_code=start)).verdict, 'fail')
+        for code in (edited, added):
+            got = run_check('changed', self.ctx(code, prior_code=start))
+            self.assertEqual((got.verdict, got.passed, got.total, got.details['changed']), ('pass', 1, 1, True))
+
+    def test_caches_and_environments_do_not_count_as_a_change(self):
+        start = self.code(name='start')
+        noisy = self.code(name='noisy', extra={'prog.pyc': 'x'})
+        (noisy/'__pycache__').mkdir()
+        (noisy/'__pycache__/prog.cpython-312.pyc').write_bytes(b'0')
+        (noisy/'.venv').mkdir()
+        (noisy/'.venv/pyvenv.cfg').write_text('home')
+        self.assertEqual(run_check('changed', self.ctx(noisy, prior_code=start)).verdict, 'fail')
+
+    def test_the_first_checkpoint_needs_some_program_files(self):
+        empty = self.tmp/'empty'
+        empty.mkdir()
+        self.assertEqual(run_check('changed', self.ctx(empty)).verdict, 'fail')
+        self.assertEqual(run_check('changed', self.ctx(self.code(name='built'))).verdict, 'pass')
+
+
 class SuiteCopyTests(Base):
     def make(self, name, files):
         directory = self.tmp/name

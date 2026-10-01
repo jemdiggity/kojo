@@ -1,0 +1,6 @@
+# luna builds at low effort; a build that left the code exactly as the checkpoint started (a bail-out) is redone from the start code, up to 2 times
+build = luna6:low
+fresh = check changed
+
+build -> fresh
+fresh -[fail, max 2, reset]-> build

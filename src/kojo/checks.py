@@ -7,6 +7,7 @@ and truncated output. Checks read only public information: specs 1..N, the code 
 """
 from dataclasses import dataclass, field
 import difflib
+import hashlib
 import importlib.util
 import json
 import os
@@ -714,6 +715,33 @@ def check_suite(ctx):
                   {'regressions': regressions, 'failures': others, 'invalid': invalid, 'prior_ran': before is not None, 'suite_cases': len(cases)})
 
 
+def code_hashes(code_dir):
+    """{relative path: sha256} of the program's own files (no caches or environments)."""
+    found = {}
+    root = Path(code_dir)
+    for path in sorted(root.rglob('*')) if root.is_dir() else []:
+        relative = path.relative_to(root)
+        if path.is_symlink() or not path.is_file() or any(part in GENERATED for part in relative.parts) or path.suffix == '.pyc':
+            continue
+        found[str(relative)] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return found
+
+
+def check_changed(ctx):
+    """Fails when a build left the code exactly as the checkpoint started (a bail-out), or wrote nothing at all."""
+    now = code_hashes(ctx.code_dir)
+    start = code_hashes(ctx.prior_code) if ctx.prior_code else {}
+    if not now:
+        verdict, note = 'fail', 'The build wrote no program files.'
+    elif now == start:
+        verdict, note = 'fail', 'The build left every file exactly as the checkpoint started: nothing was implemented.'
+    else:
+        verdict, note = 'pass', 'The build changed the code.'
+    return CheckResult(verdict, int(verdict == 'pass'), 1, 1.0 if verdict == 'pass' else 0.0,
+                       f'Deterministic check `changed` (run by the harness, no model involved): {note}',
+                       {'changed': verdict == 'pass', 'files': len(now), 'files_at_start': len(start)})
+
+
 def check_safe(ctx):
     """Smoke and the accumulated suite as one gate. As a `guard` it also vetoes any suite case that newly fails."""
     smoke = check_smoke(ctx)
@@ -829,7 +857,8 @@ def check_diff(ctx):
     return result('diff', agreed, total, sections, {'scripts': total, 'disagreements': len(disagreements), 'invalid': invalid})
 
 
-CHECKS = {'smoke': check_smoke, 'examples': check_examples, 'suite': check_suite, 'safe': check_safe, 'repro': check_repro, 'diff': check_diff}
+CHECKS = {'smoke': check_smoke, 'examples': check_examples, 'suite': check_suite, 'safe': check_safe, 'repro': check_repro, 'diff': check_diff,
+          'changed': check_changed}
 CHECKERS = tuple(CHECKS)
 
 

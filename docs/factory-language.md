@@ -148,6 +148,7 @@ third-party dependencies are not available to checks.
 | `examples` | Extracts runnable examples from public specs 1..N and compares stdout (trailing whitespace normalized; equal JSON in another layout counts as equal) and the stated exit code. Reports `spec example mismatch` with a diff. Finding nothing passes with total 0. |
 | `safe` | `smoke`; if the program starts, then `suite`. One gate for "runs at all, and passes the suite". Its details list the failing case names, and `guard safe` uses them (see Attributes). A program that does not start scores 0.0 and only the smoke log reaches the fixer. |
 | `suite` | Runs the accumulated suite; if the previous checkpoint's code exists, also runs it there and lists REGRESSIONS (passed before, fail now) first. Invalid cases are listed but never blamed on the code. |
+| `changed` | Fails when the build left the code byte-identical to the checkpoint's starting code (or wrote no program files at all): a bail-out. Ignores caches and environments. Pair it with `-[fail, max N, reset]-> build` to redo the build. |
 | `repro` | Parses repro cases (suite case schema, one fenced `json` block) from the previous stage's answer, runs them, and reports only CONFIRMED failures (the actual result does not meet the stated expectation). No parseable repros passes with total 0. |
 | `diff NAME` | Runs each `suite/fuzz/*.py` with `ENTRY_A` (this code) and `ENTRY_B` (branch `NAME`); exit 0 means agreement, and disagreements are logged. |
 
@@ -211,6 +212,9 @@ Variants built from the `fx-02` results (report `2026-09-30-fx-02-factory-sweep.
 | `luna-postcond-safe` | `luna-postcond` with one `check safe` gate, `guard safe` on the fix (a fix that breaks the program or any passing case is discarded), and a `progress` arrow (stop when a fix changes nothing). |
 | `luna-tail-safe` | `luna-postcond-safe` with the `tester-tail` prompt: a systematic pass over every guarantee (routes to it, boundaries, output order, error classes, feature interactions) and scripts that report problems with an explicit exit 1. The prompt names no problem-specific behavior. |
 | `luna-verified-review-sol` | `luna-verified-review` with sol 6.1 as the reviewer instead of astra (the same `repro` check). |
+
+| `luna-low-reroll` | The build-only control plus `check changed`: a build that changed nothing is redone from the start code (max 2). |
+| `luna-postcond-safe-v2` | `luna-postcond-safe` plus the same bail-out reroll before the gate; the guard fix and the `progress` arrow apply. |
 
 `configs/batches/fx-02-factory-grid.json` runs all ten on `circuit_eval`, three seeds each.
 

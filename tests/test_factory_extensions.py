@@ -319,6 +319,22 @@ class FlowMechanismTests(unittest.TestCase):
         self.assertEqual(sim.text(), 'base;build1;fix1;')  # Its failing cases are not "new": the old code had no suite result.
         self.assertFalse(sim.trace[-1]['guard']['rolled_back'])
 
+    def test_a_bail_out_is_rerolled_from_the_start_code(self):
+        text = ('build = luna6\nfresh = check changed\nbuild -> fresh\nfresh -[fail, max 2, reset]-> build')
+        sim = self.sim(text, verdicts=['fail', 'fail', 'pass'], start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['build'] * 3)
+        self.assertEqual([c['source'] for c in sim.calls], [sim.source] * 3)
+        self.assertEqual(sim.text(), 'base;build3;')  # Each reroll starts again from the checkpoint's start.
+        self.assertEqual([t.get('reset') for t in sim.trace], [None, True, None, True, None, None])
+
+    def test_a_spent_reroll_budget_ends_with_the_current_code(self):
+        text = ('build = luna6\nfresh = check changed\nbuild -> fresh\nfresh -[fail, max 1, reset]-> build')
+        sim = self.sim(text, verdicts=['fail', 'fail'], start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['build', 'build'])
+        self.assertEqual(sim.trace[-1]['next'], 'done')
+
     def test_a_timed_out_fix_is_abandoned_and_the_run_goes_on(self):
         text = 'build = luna6\nfix = luna6\ngate = check smoke\nbuild -> gate\ngate -[fail, max 2]-> fix -> gate\ngate -[pass]-> done'
         sim = self.sim(text, verdicts=['fail', 'fail', 'pass'], timeouts={('fix', 1)}, start='base;')
