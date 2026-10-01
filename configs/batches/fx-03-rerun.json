@@ -1,15 +1,15 @@
 {
-  "batch_id": "fx-02-factory-grid",
-  "max_parallel": 6,
-  "description": "Ten deterministic-check pipelines on circuit_eval (Luna builds; sol 6.1/astra for tester, plan, qa, review and branch stages), 3 seeds each, all under the sol 6.1 base prompt. Compare with pf-06 solfull-noskill (build only) and fx-01. (remainder after the pilot runs)",
+  "batch_id": "fx-03-rerun",
+  "max_parallel": 20,
+  "description": "Rerun of the best fx-02 factories on Codex 0.159.2 with the builder python fixed to 3.12.8 (control luna-low, postcond, regress-net, guarded-fix, best-of-3), plus three variants: postcond-safe (smoke+suite gate, guard safe, progress arrow), tail-safe (plus the tester-tail prompt) and verified-review-sol (sol reviewer). 5 seeds each, all under the sol 6.1 base prompt, circuit_eval.",
   "runs": [
     {
-      "run_id": "fx-02-luna-smoke-reroll-s1",
+      "run_id": "fx-03-luna-low-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-smoke-reroll",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -18,35 +18,7 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-examples-fix-s1",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-examples-fix",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-guarded-fix-s1",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-guarded-fix",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-postcond-s1",
+      "run_id": "fx-03-luna-postcond-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
@@ -60,21 +32,7 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-planned-s1",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-planned",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-regress-net-s1",
+      "run_id": "fx-03-luna-regress-net-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
@@ -88,12 +46,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-smoke-reroll-s2",
+      "run_id": "fx-03-luna-guarded-fix-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-smoke-reroll",
+        "luna-guarded-fix",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -102,35 +60,7 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-examples-fix-s2",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-examples-fix",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-tester-suite-s2",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-tester-suite",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-best-of-3-s2",
+      "run_id": "fx-03-luna-best-of-3-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
@@ -144,12 +74,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-guarded-fix-s2",
+      "run_id": "fx-03-luna-postcond-safe-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-guarded-fix",
+        "luna-postcond-safe",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -158,7 +88,49 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-postcond-s2",
+      "run_id": "fx-03-luna-tail-safe-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-tail-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-verified-review-sol-s1",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-verified-review-sol",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-low-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-postcond-s2",
       "factory_args": [
         "--problem",
         "circuit_eval",
@@ -172,49 +144,7 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-vs-sol-diff-s2",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-vs-sol-diff",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-verified-review-s2",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-verified-review",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-planned-s2",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-planned",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-regress-net-s2",
+      "run_id": "fx-03-luna-regress-net-s2",
       "factory_args": [
         "--problem",
         "circuit_eval",
@@ -228,12 +158,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-smoke-reroll-s3",
+      "run_id": "fx-03-luna-guarded-fix-s2",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-smoke-reroll",
+        "luna-guarded-fix",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -242,35 +172,7 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-examples-fix-s3",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-examples-fix",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-tester-suite-s3",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-tester-suite",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-best-of-3-s3",
+      "run_id": "fx-03-luna-best-of-3-s2",
       "factory_args": [
         "--problem",
         "circuit_eval",
@@ -284,12 +186,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-guarded-fix-s3",
+      "run_id": "fx-03-luna-postcond-safe-s2",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-guarded-fix",
+        "luna-postcond-safe",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -298,7 +200,49 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-postcond-s3",
+      "run_id": "fx-03-luna-tail-safe-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-tail-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-verified-review-sol-s2",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-verified-review-sol",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-low-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-postcond-s3",
       "factory_args": [
         "--problem",
         "circuit_eval",
@@ -312,54 +256,306 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-vs-sol-diff-s3",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-vs-sol-diff",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-verified-review-s3",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-verified-review",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-planned-s3",
-      "factory_args": [
-        "--problem",
-        "circuit_eval",
-        "--factory",
-        "luna-planned",
-        "--seconds-per-session",
-        "1800",
-        "--monitor-only",
-        "--base-instructions",
-        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
-      ]
-    },
-    {
-      "run_id": "fx-02-luna-regress-net-s3",
+      "run_id": "fx-03-luna-regress-net-s3",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
         "luna-regress-net",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-guarded-fix-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-guarded-fix",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-best-of-3-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-best-of-3",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-postcond-safe-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-postcond-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-tail-safe-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-tail-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-verified-review-sol-s3",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-verified-review-sol",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-low-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-postcond-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-postcond",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-regress-net-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-regress-net",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-guarded-fix-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-guarded-fix",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-best-of-3-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-best-of-3",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-postcond-safe-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-postcond-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-tail-safe-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-tail-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-verified-review-sol-s4",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-verified-review-sol",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-low-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-postcond-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-postcond",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-regress-net-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-regress-net",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-guarded-fix-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-guarded-fix",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-best-of-3-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-best-of-3",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-postcond-safe-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-postcond-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-tail-safe-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-tail-safe",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-03-luna-verified-review-sol-s5",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-verified-review-sol",
         "--seconds-per-session",
         "1800",
         "--monitor-only",

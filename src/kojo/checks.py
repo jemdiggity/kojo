@@ -7,6 +7,7 @@ and truncated output. Checks read only public information: specs 1..N, the code 
 """
 from dataclasses import dataclass, field
 import difflib
+import hashlib
 import importlib.util
 import json
 import os
@@ -549,23 +550,42 @@ def check_examples(ctx):
 
 # --- the accumulated suite ---------------------------------------------------------------------------
 
+class SuiteTooLarge(Exception):
+    """A suite over SUITE_FILES / SUITE_BYTES; the previous suite is left untouched."""
+
+    def __init__(self, count, size):
+        super().__init__(f'suite has {count} files and {size} bytes; the limits are {SUITE_FILES} files and {SUITE_BYTES} bytes')
+        self.count, self.size = count, size
+
+
 def copy_suite(source, target):
-    """Copy a suite directory (regular files only, size-capped, no caches); returns the number of files copied."""
+    """Copy a suite directory (regular files only, size-capped, no caches); returns the number of files copied.
+
+    The copy is built beside `target` and swapped in only when it fits, so an oversized suite raises
+    SuiteTooLarge and leaves the existing `target` exactly as it was (never a silently truncated suite)."""
     source, target = Path(source), Path(target)
+    staging = target.parent / f'.{target.name}.staging'
+    if staging.exists():
+        shutil.rmtree(staging)
+    staging.mkdir(parents=True)
+    count = size = 0
+    try:
+        for path in sorted(source.rglob('*')) if source.is_dir() else []:
+            relative = path.relative_to(source)
+            if path.is_symlink() or not path.is_file() or any(part in GENERATED for part in relative.parts) or path.suffix == '.pyc':
+                continue
+            size += path.stat().st_size
+            count += 1
+            if count > SUITE_FILES or size > SUITE_BYTES:
+                raise SuiteTooLarge(count, size)
+            (staging / relative).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, staging / relative)
+    except BaseException:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
     if target.exists():
         shutil.rmtree(target)
-    target.mkdir(parents=True)
-    count = size = 0
-    for path in sorted(source.rglob('*')) if source.is_dir() else []:
-        relative = path.relative_to(source)
-        if path.is_symlink() or not path.is_file() or any(part in GENERATED for part in relative.parts) or path.suffix == '.pyc':
-            continue
-        size += path.stat().st_size
-        count += 1
-        if count > SUITE_FILES or size > SUITE_BYTES:
-            break
-        (target / relative).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, target / relative)
+    staging.rename(target)
     return count
 
 
@@ -621,6 +641,24 @@ def run_script_case(ctx, code_dir, suite_dir, case):
     return execute_script(ctx, Path(suite_dir) / case['script'], case['args'], env, ctx.timeout * 3)
 
 
+SCRIPT_BUGS = r'(?:[\w.]+\.)?(NameError|UnboundLocalError|SyntaxError|IndentationError|TabError|ImportError|ModuleNotFoundError)\b'
+
+
+def script_crashed(run, suite_dir=None):
+    """A suite script that died on an error only a broken script can produce: the script is wrong, not the program.
+
+    Testers signal failure by raising or exiting non-zero, so an arbitrary exception may be an intended
+    failure, and a crash parsing the program's output may be the program's fault; only undefined names,
+    bad imports and syntax errors are attributed to the script."""
+    if run.error or run.timed_out or run.exit in (None, 0):
+        return False
+    last = next((line for line in reversed(run.stderr.strip().splitlines()) if line.strip()), '').strip()
+    if re.match(SCRIPT_BUGS, last):
+        return True
+    # A script that cannot open a data file it was given inside the suite (copied incompletely or never written).
+    return bool(suite_dir and last.startswith('FileNotFoundError') and str(Path(suite_dir).resolve()) in last)
+
+
 def run_suite(ctx, code_dir, cases):
     """{name: (case, run, problems)} for every valid case run against `code_dir`."""
     outcomes = {}
@@ -648,10 +686,16 @@ def check_suite(ctx):
     cases, invalid, errors = load_suite(ctx.suite_dir)
     if errors or (not cases and not invalid):
         note = errors[0] if errors else 'The accumulated suite has no cases yet.'
-        return result('suite', 0, 0, [note], {'invalid': invalid, 'errors': errors, 'suite_cases': 0})
+        return result('suite', 0, 0, [note], {'invalid': invalid, 'errors': errors, 'suite_cases': 0,
+                                              'suite_missing': bool(ctx.suite_dir)})  # Nothing to check; visible in the log, not a code failure.
     now = run_suite(ctx, ctx.code_dir, cases)
     before = run_suite(ctx, ctx.prior_code, cases) if ctx.prior_code and Path(ctx.prior_code).is_dir() else None
-    failing = [name for name, (_, _, problems) in now.items() if problems]
+    crashed = {name for name, (case, run, problems) in now.items() if problems and 'script' in case and script_crashed(run, ctx.suite_dir)}
+    for name in sorted(crashed):
+        last = next(line for line in reversed(now[name][1].stderr.strip().splitlines()) if line.strip())
+        invalid.append({'name': name, 'error': f'{name}: script crashed ({last.strip()[:160]}); fix the script, this says nothing about the program'})
+    cases = [case for case in cases if case['name'] not in crashed]
+    failing = [name for name, (_, _, problems) in now.items() if problems and name not in crashed]
     regressions = [name for name in failing if before and not before[name][2]]
     others = [name for name in failing if name not in regressions]
     sections = []
@@ -669,6 +713,74 @@ def check_suite(ctx):
     passed = len(cases) - len(failing)
     return result('suite', passed, len(cases), sections,
                   {'regressions': regressions, 'failures': others, 'invalid': invalid, 'prior_ran': before is not None, 'suite_cases': len(cases)})
+
+
+def code_hashes(code_dir):
+    """{relative path: sha256} of the program's own files (no caches or environments)."""
+    found = {}
+    root = Path(code_dir)
+    for path in sorted(root.rglob('*')) if root.is_dir() else []:
+        relative = path.relative_to(root)
+        if path.is_symlink() or not path.is_file() or any(part in GENERATED for part in relative.parts) or path.suffix == '.pyc':
+            continue
+        found[str(relative)] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return found
+
+
+def check_changed(ctx):
+    """Fails when a build left the code exactly as the checkpoint started (a bail-out), or wrote nothing at all."""
+    now = code_hashes(ctx.code_dir)
+    start = code_hashes(ctx.prior_code) if ctx.prior_code else {}
+    if not now:
+        verdict, note = 'fail', 'The build wrote no program files.'
+    elif now == start:
+        verdict, note = 'fail', 'The build left every file exactly as the checkpoint started: nothing was implemented.'
+    else:
+        verdict, note = 'pass', 'The build changed the code.'
+    return CheckResult(verdict, int(verdict == 'pass'), 1, 1.0 if verdict == 'pass' else 0.0,
+                       f'Deterministic check `changed` (run by the harness, no model involved): {note}',
+                       {'changed': verdict == 'pass', 'files': len(now), 'files_at_start': len(start)})
+
+
+def check_safe(ctx):
+    """Smoke and the accumulated suite as one gate. As a `guard` it also vetoes any suite case that newly fails."""
+    smoke = check_smoke(ctx)
+    if smoke.verdict != 'pass':
+        return CheckResult('fail', smoke.passed, smoke.total, 0.0, smoke.log,
+                           {'smoke_ok': False, 'failing': [], 'invalid': [], 'suite_cases': 0, 'smoke': smoke.details})
+    suite = check_suite(ctx)
+    d = suite.details
+    failing = sorted(d.get('regressions', []) + d.get('failures', []))
+    return CheckResult(suite.verdict, suite.passed, suite.total, suite.score, suite.log,
+                       {**d, 'smoke_ok': True, 'failing': failing})
+
+
+def failure_signature(found):
+    """What is failing, comparable across visits of one check stage (used by `[progress]` arrows)."""
+    d = found.details or {}
+    if 'failing' in d:
+        return ('cases', tuple(d['failing']), bool(d.get('smoke_ok', True)))
+    if 'regressions' in d or 'failures' in d:
+        return ('cases', tuple(sorted(d.get('regressions', []) + d.get('failures', []))), True)
+    return ('score', found.passed, found.total)
+
+
+def guard_rolls_back(checker, before, after):
+    """Whether a guarded stage's result is discarded.
+
+    `safe` discards the result when the program no longer starts, when the suite score fell, or when more suite
+    cases newly fail than newly pass; a fix that repairs more than it breaks is kept, and a program that did not
+    start before the stage cannot be made worse by one that now starts. The other checkers veto a lower score."""
+    if before is None:
+        return False
+    if checker == 'safe':
+        if not after.details.get('smoke_ok', True):
+            return True
+        if not before.details.get('smoke_ok', True):
+            return False  # `before` has no suite result to compare; the repaired program starts.
+        was, now = set(before.details.get('failing', [])), set(after.details.get('failing', []))
+        return after.score < before.score or len(now - was) > len(was - now)
+    return after.score < before.score
 
 
 # --- reviewer repro cases ----------------------------------------------------------------------------
@@ -745,7 +857,8 @@ def check_diff(ctx):
     return result('diff', agreed, total, sections, {'scripts': total, 'disagreements': len(disagreements), 'invalid': invalid})
 
 
-CHECKS = {'smoke': check_smoke, 'examples': check_examples, 'suite': check_suite, 'repro': check_repro, 'diff': check_diff}
+CHECKS = {'smoke': check_smoke, 'examples': check_examples, 'suite': check_suite, 'safe': check_safe, 'repro': check_repro, 'diff': check_diff,
+          'changed': check_changed}
 CHECKERS = tuple(CHECKS)
 
 

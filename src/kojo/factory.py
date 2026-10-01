@@ -89,11 +89,17 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
     reset, side = False, {}
     visits = collections.Counter()
     taken = [0] * len(flow.edges)
+    failing_before = {}  # check stage -> what failed on its previous visit this checkpoint
+    scored = {}          # (code, checker, tester visits) -> the check result already computed for that exact code
+    states = [('start', 0, None, source)]  # every code that carried forward: (stage, visit, winning attempt, code)
 
     def measure(spec, target, visit, text, role, phase, variant=None):
         if check is None:
             raise RuntimeError('This factory has check stages; no checker was provided')
         return check(spec, checkpoint, target, text, visit, {'prior_code': source, 'side_codes': dict(side), 'role': role, 'phase': phase, 'variant': variant})
+
+    def suite_version():
+        return sum(n for name, n in visits.items() if flow.stages[name].kind == 'tester')
 
     def score_of(name, target, visit, role, phase, variant=None):
         return measure(factory_spec.Stage(role, factory_spec.CHECK, '', '', checker=name), target, visit, None, role, phase, variant)
@@ -101,14 +107,20 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
     while True:
         visits[stage] += 1
         visit, spec = visits[stage], flow.stages[stage]
-        verdict, extra = None, {}
+        verdict, extra, stalled = None, {}, False
         if spec.kind == factory_spec.CHECK:
             found = measure(spec, code, visit, feedback, stage, 'gate')
             verdict, feedback, origin = found.verdict, found.log, 'check'
             extra = {'kind': 'check', 'checker': spec.checker, 'score': found.score, 'passed': found.passed, 'total': found.total}
+            scored[(str(code), spec.checker, suite_version())] = found
+            signature = checks.failure_signature(found)
+            stalled = found.verdict == 'fail' and failing_before.get(stage) == signature  # Nothing changed since the last visit.
+            failing_before[stage] = signature
+            if stalled:
+                extra['stalled'] = True
         elif spec.kind == 'tester':
-            session(stage, checkpoint, None, None, visit)  # A tester never sees code, and its answer is not forwarded.
-            extra = {'kind': 'tester'}
+            made = session(stage, checkpoint, None, None, visit)  # A tester never sees code, and its answer is not forwarded.
+            extra = {'kind': 'tester', **({'suite_rejected': True} if (made/'suite-rejected.json').exists() else {})}
         elif spec.kind == 'plan':
             answer = session(stage, checkpoint, code, feedback, visit)/'answer.txt'
             notes = answer.read_text() if answer.exists() else ''
@@ -134,20 +146,29 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
             else:
                 if sync and held != code:
                     sync(code)
-                new = held = session(stage, checkpoint, code, feedback, visit, **options)/'submission'
-            if spec.guard:
-                before = score_of(spec.guard, code, visit, stage, 'guard-before') if code is not None else None
+                made = session(stage, checkpoint, code, feedback, visit, **options)
+                if (made/'timed-out').exists():
+                    new, held = code, made/'interrupted-source'  # The shared workspace holds the abandoned edits.
+                    extra['timed_out'] = True
+                else:
+                    new = held = made/'submission'
+            if spec.guard and not extra.get('timed_out'):
+                before = None
+                if code is not None:  # The gate that just ran on this exact code is the "before" score.
+                    before = scored.get((str(code), spec.guard, suite_version())) or score_of(spec.guard, code, visit, stage, 'guard-before')
                 after = score_of(spec.guard, new, visit, stage, 'guard-after')
-                rolled = before is not None and after.score < before.score
+                rolled = checks.guard_rolls_back(spec.guard, before, after)
                 extra['guard'] = {'checker': spec.guard, 'before': before.score if before else None, 'after': after.score, 'rolled_back': rolled}
                 if rolled:
                     new = code
             code, feedback, origin = new, None, None
+            if spec.carries and not extra.get('timed_out') and not extra.get('guard', {}).get('rolled_back'):
+                states.append((stage, visit, extra.get('winner'), code))
         else:
             answer = session(stage, checkpoint, code, feedback, visit)/'answer.txt'
             feedback = answer.read_text() if answer.exists() else ''
             verdict, origin = factory_spec.verdict_of(feedback), spec.kind
-        picked = flow.pick(stage, verdict, taken)
+        picked = flow.pick(stage, verdict, taken, stalled)
         if trace is not None:
             trace.append({'checkpoint':checkpoint,'stage':stage,'attempt':visit,'verdict':verdict,
                           'next':picked[1].dst if picked else factory_spec.DONE, **extra,
@@ -156,6 +177,26 @@ def run_flow(flow, session, checkpoint, source, trace=None, check=None, sync=Non
             break
         taken[picked[0]] += 1
         stage, reset = picked[1].dst, picked[1].reset
+    if check is not None and code is not None and any(spec.kind == factory_spec.CHECK for spec in flow.stages.values()):
+        # A loop can run out of fixes with the program still unable to start; never carry that forward when an
+        # earlier state of this checkpoint (or its starting code) does start.
+        if score_of('smoke', code, visits[stage], stage, 'final-smoke').verdict != 'pass':
+            entry = {'checkpoint': checkpoint, 'stage': 'final-smoke', 'attempt': 1, 'verdict': 'fail', 'next': factory_spec.DONE,
+                     'kind': 'final', 'fallback_to': None}
+            for index in range(len(states) - 1, -1, -1):
+                name, number, winner, candidate = states[index]
+                if candidate is None or candidate == code:
+                    continue
+                if score_of('smoke', candidate, number or visits[stage], stage, f'final-smoke-{name}-{number}').verdict == 'pass':
+                    entry['fallback_to'] = {'stage': name, 'attempt': number}
+                    entry['abandoned'] = [{'stage': n_, 'attempt': v_, 'winner': w_} for n_, v_, w_, c_ in states[index + 1:]]
+                    print(f'Checkpoint {checkpoint} ended with a program that does not start; carrying the code from {name} (visit {number}) instead', flush=True)
+                    code = candidate
+                    break
+            else:
+                print(f'Checkpoint {checkpoint} ended with a program that does not start, and no earlier state does either', flush=True)
+            if trace is not None:
+                trace.append(entry)
     if sync and held != code:
         sync(code)  # The next checkpoint's builder starts from what carries forward.
     return code
@@ -447,20 +488,29 @@ def main(argv=None):
             from kojo.skill_sets import install
             install(work, args.skill_set, 'claude' if models[role] in claude_execution.MODELS else 'codex')
             state=read(run/'run.json')
-            if state['status']!='complete':
+            timed_out = state['status']!='complete'
+            if timed_out:
                 print(f"Stopped {role} checkpoint {n}: {state['status']}; usage={state.get('usage')}; API-equivalent USD={state.get('api_price_equivalent_usd')}",flush=True)
                 copy_code(work,run/'interrupted-source')
-                raise RuntimeError('Incomplete checkpoint; chain stopped without carrying its source forward')
+                if kind not in ('fix','revise','refactor') or source is None:
+                    raise RuntimeError('Incomplete checkpoint; chain stopped without carrying its source forward')
+                # A stage that only improves existing code can be abandoned: its starting code is a valid result.
+                (run/'timed-out').write_text(state['status'])
+                print(f'{role} checkpoint {n} did not finish; its starting code carries on', flush=True)
             if edits:
-                copy_code(work,run/'submission')
+                copy_code(source if timed_out else work,run/'submission')
                 shutil.copytree(run/'submission',dest/'submission')
                 freeze(run/'submission'); freeze(dest/'submission')  # Frozen evidence stays exactly what was hashed.
                 save(dest/'snapshot.json',hashes(run/'submission'))
                 frozen.append({'name':args.problem,'checkpoint':n,'run':run,'role':role,'label':name})
             elif kind == 'tester':
-                copy = checks.copy_suite(work/'suite', suite_dir)  # The suite accumulates across checkpoints.
+                try:
+                    copy = checks.copy_suite(work/'suite', suite_dir)  # The suite accumulates across checkpoints.
+                    print(f'Suite now has {copy} files', flush=True)
+                except checks.SuiteTooLarge as error:
+                    save(run/'suite-rejected.json', {'error': str(error), 'files': error.count, 'bytes': error.size})
+                    print(f'WARNING tester suite rejected, keeping the previous suite: {error}', flush=True)
                 checks.copy_suite(suite_dir, dest/'suite')
-                print(f'Suite now has {copy} files', flush=True)
             else:
                 save(dest/'source-changes.json',{'before':hashes(source) if source else {},'after':hashes(work, exclude_generated=True),
                                                'carry_forward':'Only answer.txt; no reviewer workspace changes.'})
@@ -496,6 +546,8 @@ def main(argv=None):
             save(folder/'result.json', {**found.to_dict(), 'checker':spec.checker, 'arg':spec.arg, 'checkpoint':n})
             (folder/'log.txt').write_text(found.log)
             print(f"Check {spec.checker} ({ctx['role']}{'' if phase == 'gate' else ' ' + phase}) checkpoint {n}: {found.verdict} {found.passed}/{found.total}", flush=True)
+            if found.details.get('suite_missing'):
+                print(f'WARNING checkpoint {n}: the suite is empty or unreadable, so check {spec.checker} checked nothing', flush=True)
             return found
 
         try:
@@ -552,6 +604,8 @@ def main(argv=None):
         aside={(t['stage'],label(t['checkpoint'],t['attempt'],v)) for t in trace for v in range(1,len(t.get('attempts',()))+1) if v!=t.get('winner')}
         aside|={(t['stage'],label(t['checkpoint'],t['attempt'],t.get('winner'))) for t in trace if t.get('guard',{}).get('rolled_back')}
         aside|={(t['stage'],label(t['checkpoint'],t['attempt'])) for t in trace if t.get('kind')=='branch'}
+        aside|={(t['stage'],label(t['checkpoint'],t['attempt'])) for t in trace if t.get('timed_out')}
+        aside|={(a['stage'],label(t['checkpoint'],a['attempt'],a.get('winner'))) for t in trace for a in t.get('abandoned',())}
         pool=concurrent.futures.ThreadPoolExecutor(max_workers=args.grading_jobs)
         try:
             outcomes=[pool.submit(measure,row) for row in frozen]

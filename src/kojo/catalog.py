@@ -11,6 +11,21 @@ BASE = Path(__file__).resolve().parents[2]
 REPO = BASE / "intermediate/vendor/scb-problems"
 
 
+def load_dotenv():
+    """Fill unset variables from the gitignored BASE/.env (KEY=VALUE lines); real environment wins."""
+    try:
+        lines = (BASE / ".env").read_text().splitlines()
+    except OSError:
+        return
+    for line in lines:
+        key, sep, value = line.strip().partition("=")
+        if sep and key and not key.startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
+load_dotenv()
+
+
 def data_root():
     """Where run output lives: $KOJO_DATA_DIR, else the main checkout, so it outlives any worktree."""
     override = os.environ.get("KOJO_DATA_DIR")

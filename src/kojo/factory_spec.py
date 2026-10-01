@@ -12,7 +12,7 @@
 Stages are `NAME = [KIND] MODEL[:EFFORT] [xN] [by CHECKER] [guard CHECKER] [prompt NAME]`, or
 `NAME = check CHECKER [ARG]` for a deterministic stage without a model; KIND defaults to NAME. A
 flow line chains stages with arrows, and an arrow may carry `[pass]`, `[fail]`, `[max N]` and
-`[reset]` in any mix. See docs/factory-language.md.
+`[reset]` and `[progress]` in any mix. See docs/factory-language.md.
 """
 from dataclasses import dataclass, field
 import hashlib
@@ -43,9 +43,9 @@ FILES = ('tester',)                                       # Writes the run-level
 KINDS = EDIT + READ + FILES
 CHECK = 'check'                                           # Deterministic, no model.
 VERDICT = ('review', 'qa', CHECK)                         # Stages whose result selects [pass]/[fail] arrows.
-SCORING = ('smoke', 'examples', 'suite')                  # Checkers usable after `by` and `guard`.
-CHECKERS = SCORING + ('repro', 'diff')
-SUITE_CHECKERS = ('suite', 'diff')                        # Need a tester to have written the suite.
+SCORING = ('smoke', 'examples', 'suite', 'safe')          # Checkers usable after `by` and `guard`.
+CHECKERS = SCORING + ('repro', 'diff', 'changed')
+SUITE_CHECKERS = ('suite', 'diff', 'safe')                # Need a tester to have written the suite.
 PROMPTLESS = ('build', 'branch')                          # Use the upstream prompt, not a role request.
 DONE = 'done'
 NAME = r'[a-z][a-z0-9_]*'
@@ -99,6 +99,7 @@ class Edge:
     when: str = None   # 'pass' or 'fail': the source stage's verdict; None means always
     limit: int = None  # Most times this edge may be taken per checkpoint; None means unlimited
     reset: bool = False  # Restart the destination from the code the checkpoint began with, without feedback
+    progress: bool = False  # Only while the source check's failures differ from its previous visit this checkpoint
 
 
 @dataclass
@@ -113,10 +114,12 @@ class Factory:
     def sha256(self):
         return hashlib.sha256(self.text.encode()).hexdigest()
 
-    def pick(self, stage, verdict, taken):
-        """The first outgoing edge whose condition holds and whose limit is unspent, as (index, edge)."""
+    def pick(self, stage, verdict, taken, stalled=False):
+        """The first outgoing edge whose condition holds and whose limit is unspent, as (index, edge).
+
+        A `progress` edge is skipped while `stalled` (the source check failed exactly as on its previous visit)."""
         for index, edge in enumerate(self.edges):
-            if edge.src != stage or (edge.when and edge.when != verdict):
+            if edge.src != stage or (edge.when and edge.when != verdict) or (stalled and edge.progress):
                 continue
             if edge.limit is None or taken[index] < edge.limit:
                 return index, edge
@@ -156,7 +159,7 @@ class Factory:
             return row
         return {'name': self.name, 'sha256': self.sha256, 'start': self.start,
                 'stages': {n: stage(s) for n, s in self.stages.items()},
-                'edges': [{'from': e.src, 'to': e.dst, 'when': e.when, 'max': e.limit, **({'reset': True} if e.reset else {})}
+                'edges': [{'from': e.src, 'to': e.dst, 'when': e.when, 'max': e.limit, **({'reset': True} if e.reset else {}), **({'progress': True} if e.progress else {})}
                           for e in self.edges]}
 
 
@@ -185,18 +188,20 @@ def parse(text, name='factory', base=BASE):
                     fail(f'expected a stage name, got {node!r}')
             for src, dst, option in zip(nodes, nodes[1:], options):
                 when = limit = None
-                reset = False
+                reset = progress = False
                 for item in (option or '').split(','):
                     item = item.strip()
                     if item in ('pass', 'fail') and when is None:
                         when = item
                     elif item == 'reset' and not reset:
                         reset = True
+                    elif item == 'progress' and not progress:
+                        progress = True
                     elif (m := re.fullmatch(r'max[ =](\d+)', item)) and limit is None and int(m[1]) > 0:
                         limit = int(m[1])
                     elif item:
-                        fail(f'unknown arrow option {item!r}; use pass, fail, max N or reset')
-                edges.append(Edge(src, dst, when, limit, reset))
+                        fail(f'unknown arrow option {item!r}; use pass, fail, max N, reset or progress')
+                edges.append(Edge(src, dst, when, limit, reset, progress))
             order += nodes
             continue
         found = re.fullmatch(rf'({NAME})\s*=\s*(.+)', line)
@@ -279,6 +284,8 @@ def validate(factory, name):
             raise FactoryError(f'{name}: [{edge.when}] needs a review, qa or check source; {edge.src!r} gives no verdict')
         if edge.dst != DONE and stages[edge.dst].kind == 'fix' and not stages[edge.src].verdicts:
             raise FactoryError(f'{name}: fix {edge.dst!r} needs a review or qa (or a check) before it; use revise for an unprompted pass')
+        if edge.progress and stages[edge.src].kind != CHECK:
+            raise FactoryError(f'{name}: [progress] needs a check source; {edge.src!r} is not a check stage')
         if edge.reset and (edge.dst == DONE or not stages[edge.dst].carries):
             raise FactoryError(f'{name}: [reset] must lead to a build, revise, refactor or fix stage, not {edge.dst!r}')
     # Ahead of the first code-changing stage there is no code: only tester and plan stages may run, and it must be a build.

@@ -97,6 +97,111 @@ class RegistryTests(unittest.TestCase):
         self.assertIn('could not run', got.log)
 
 
+class SafeTests(Base):
+    CASES = [case('say', ['say', 'hi'], stdout='hi'), case('add', ['add', '1', '1'], stdout='2')]
+
+    def test_a_working_program_passing_the_suite_passes(self):
+        got = run_check('safe', self.ctx(suite_dir=self.suite(self.CASES)))
+        self.assertEqual((got.verdict, got.passed, got.total, got.score), ('pass', 2, 2, 1.0))
+        self.assertEqual((got.details['smoke_ok'], got.details['failing']), (True, []))
+
+    def test_a_broken_program_fails_with_score_zero_and_only_the_smoke_log(self):
+        broken = self.code('if True:\nprint(1)\n', name='broken')
+        got = run_check('safe', self.ctx(broken, suite_dir=self.suite(self.CASES)))
+        self.assertEqual((got.verdict, got.score, got.details['smoke_ok']), ('fail', 0.0, False))
+        self.assertIn('do not compile', got.log)
+
+    def test_failing_cases_are_named_sorted(self):
+        cases = self.CASES + [case('bad', ['add', '1'], stdout='9'), case('bad2', ['say', 'x'], stdout='y')]
+        got = run_check('safe', self.ctx(suite_dir=self.suite(cases)))
+        self.assertEqual((got.verdict, got.details['failing']), ('fail', ['bad', 'bad2']))
+        self.assertEqual(checks.failure_signature(got), ('cases', ('bad', 'bad2'), True))
+
+    def test_guard_rule(self):
+        def found(smoke_ok=True, failing=(), score=1.0):
+            return checks.CheckResult('pass', 0, 0, score, '', {'smoke_ok': smoke_ok, 'failing': list(failing)})
+        self.assertFalse(checks.guard_rolls_back('safe', None, found()))
+        self.assertTrue(checks.guard_rolls_back('safe', found(), found(smoke_ok=False)))
+        self.assertTrue(checks.guard_rolls_back('safe', found(failing='a', score=.5), found(failing='ab', score=.9)))  # New failure, higher score.
+        self.assertFalse(checks.guard_rolls_back('safe', found(failing='ab'), found(failing='a')))
+        self.assertFalse(checks.guard_rolls_back('safe', found(smoke_ok=False, score=0.0), found(failing='ab', score=.4)))  # Now it starts.
+        self.assertFalse(checks.guard_rolls_back('safe', found(failing='ab'), found(failing='bc')))  # One repaired, one broken.
+        self.assertTrue(checks.guard_rolls_back('safe', found(failing='a', score=.9), found(failing='b', score=.8)))  # Score fell.
+        self.assertTrue(checks.guard_rolls_back('suite', found(score=.9), found(score=.8)))
+        self.assertFalse(checks.guard_rolls_back('suite', found(score=.8), found(score=.8)))
+
+
+class ChangedTests(Base):
+    def test_unchanged_code_fails_and_edited_code_passes(self):
+        start = self.code(name='start')
+        same = self.code(name='same')
+        edited = self.code(PROGRAM + '\n# edited\n', name='edited')
+        added = self.code(name='added', extra={'helper.py': 'x = 1\n'})
+        self.assertEqual(run_check('changed', self.ctx(same, prior_code=start)).verdict, 'fail')
+        for code in (edited, added):
+            got = run_check('changed', self.ctx(code, prior_code=start))
+            self.assertEqual((got.verdict, got.passed, got.total, got.details['changed']), ('pass', 1, 1, True))
+
+    def test_caches_and_environments_do_not_count_as_a_change(self):
+        start = self.code(name='start')
+        noisy = self.code(name='noisy', extra={'prog.pyc': 'x'})
+        (noisy/'__pycache__').mkdir()
+        (noisy/'__pycache__/prog.cpython-312.pyc').write_bytes(b'0')
+        (noisy/'.venv').mkdir()
+        (noisy/'.venv/pyvenv.cfg').write_text('home')
+        self.assertEqual(run_check('changed', self.ctx(noisy, prior_code=start)).verdict, 'fail')
+
+    def test_the_first_checkpoint_needs_some_program_files(self):
+        empty = self.tmp/'empty'
+        empty.mkdir()
+        self.assertEqual(run_check('changed', self.ctx(empty)).verdict, 'fail')
+        self.assertEqual(run_check('changed', self.ctx(self.code(name='built'))).verdict, 'pass')
+
+
+class SuiteCopyTests(Base):
+    def make(self, name, files):
+        directory = self.tmp/name
+        for relative, body in files.items():
+            (directory/relative).parent.mkdir(parents=True, exist_ok=True)
+            (directory/relative).write_text(body)
+        return directory
+
+    def test_an_oversized_suite_leaves_the_previous_one_untouched(self):
+        previous = self.make('previous', {'cases.json': '[1]', 'a.py': 'x'})
+        big = self.make('big', {'cases.json': '[2]', 'data.json': '0' * 100})
+        with patch.object(checks, 'SUITE_BYTES', 50), self.assertRaises(checks.SuiteTooLarge):
+            checks.copy_suite(big, previous)
+        self.assertEqual(sorted(p.name for p in previous.iterdir()), ['a.py', 'cases.json'])
+        self.assertEqual((previous/'cases.json').read_text(), '[1]')
+        self.assertFalse((self.tmp/'.previous.staging').exists())
+
+    def test_too_many_files_is_rejected_whole_not_truncated(self):
+        many = self.make('many', {f'f{i}.txt': 'x' for i in range(5)})
+        target = self.tmp/'target'
+        with patch.object(checks, 'SUITE_FILES', 3), self.assertRaises(checks.SuiteTooLarge):
+            checks.copy_suite(many, target)
+        self.assertFalse(target.exists())
+
+    def test_a_fitting_suite_replaces_the_old_one_completely(self):
+        target = self.make('target', {'old.txt': 'old'})
+        checks.copy_suite(self.make('new', {'cases.json': '[]'}), target)
+        self.assertEqual([p.name for p in target.iterdir()], ['cases.json'])
+
+    def test_a_missing_data_file_inside_the_suite_is_a_script_bug(self):
+        suite = self.tmp/'suite'
+        cases = [{'name': 'reads', 'script': 'checks/reads.py'}, {'name': 'other', 'script': 'checks/other.py'}]
+        files = {'checks/reads.py': 'import os\nopen(os.environ["SUITE_DIR"] + "/data.json")\n',
+                 'checks/other.py': 'open("/definitely/not/there.txt")\n'}
+        got = run_check('suite', self.ctx(suite_dir=self.suite(cases, files)))
+        self.assertEqual([e['name'] for e in got.details['invalid']], ['reads'])
+        self.assertEqual(got.details['failures'], ['other'])  # A path outside the suite stays the program's problem.
+
+    def test_an_empty_or_unreadable_suite_is_flagged(self):
+        self.assertTrue(run_check('suite', self.ctx(suite_dir=self.suite('{not json'))).details['suite_missing'])
+        self.assertTrue(run_check('safe', self.ctx(suite_dir=self.suite([]))).details['suite_missing'])
+        self.assertFalse(run_check('suite', self.ctx()).details.get('suite_missing'))  # No suite wanted at all.
+
+
 class SmokeTests(Base):
     def test_a_working_program_passes(self):
         got = run_check('smoke', self.ctx())
@@ -363,6 +468,18 @@ class SuiteTests(Base):
         self.assertEqual(got.details['failures'], ['bad-logic'])
         self.assertEqual(len(got.details['invalid']), 1)
         self.assertIn('wrong answer', got.log)
+
+    def test_script_bugs_are_tester_errors_but_raised_failures_count(self):
+        cases = [{'name': 'ok', 'script': 'checks/ok.py'}, {'name': 'undefined', 'script': 'checks/undefined.py'},
+                 {'name': 'raises', 'script': 'checks/raises.py'}, {'name': 'parse', 'script': 'checks/parse.py'}]
+        files = {'checks/ok.py': 'pass\n', 'checks/undefined.py': 'print(nope_not_defined)\n',
+                 'checks/raises.py': 'raise RuntimeError("the program is wrong")\n',
+                 'checks/parse.py': 'import json\njson.loads("not json")\n'}
+        got = run_check('suite', self.ctx(suite_dir=self.suite(cases, files)))
+        self.assertEqual((got.passed, got.total), (1, 3))  # The NameError script is dropped from the count.
+        self.assertEqual(sorted(got.details['failures']), ['parse', 'raises'])
+        self.assertEqual([e['name'] for e in got.details['invalid']], ['undefined'])
+        self.assertIn('script crashed (NameError', got.log)
 
     def test_script_path_cannot_escape_the_suite(self):
         (self.tmp/'outside.py').write_text('print(1)\n')

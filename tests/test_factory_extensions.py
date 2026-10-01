@@ -101,6 +101,25 @@ class GrammarTests(unittest.TestCase):
         self.assertEqual(f.max_sessions(), 3)
 
 
+class ProgressGrammarTests(unittest.TestCase):
+    def test_progress_option_parses_and_needs_a_check_source(self):
+        f = parse('tests = tester sol61:low\nbuild = luna6\nfix = luna6\ngate = check safe\n'
+                  'tests -> build -> gate\ngate -[fail, max 2, progress]-> fix -> gate')
+        self.assertTrue(f.edges[2].progress)
+        self.assertEqual(f.edges[2].limit, 2)
+        self.assertEqual(f.to_dict()['edges'][2].get('progress'), True)
+        with self.assertRaisesRegex(FactoryError, 'progress.*check'):
+            parse('build = luna6\nqa = qa sol61:low\nfix = luna6\nbuild -> qa\nqa -[fail, max 2, progress]-> fix -> qa')
+
+    def test_safe_needs_a_tester_like_suite(self):
+        with self.assertRaisesRegex(FactoryError, 'test suite'):
+            parse('build = luna6\nfix = luna6\ngate = check safe\nbuild -> gate\ngate -[fail, max 2]-> fix -> gate')
+
+    def test_progress_is_not_an_eligibility_limit_for_worst_case_counts(self):
+        f = factory_spec.load('luna-postcond-safe')
+        self.assertEqual(f.max_sessions(), 1 + 1 + 3)  # tester + build + three fixes.
+
+
 class AccountingTests(unittest.TestCase):
     def test_checks_are_free_and_attempts_count(self):
         f = parse(BASE + 'fix = luna6\ngate = check smoke\nbuild -> gate\ngate -[fail, max 3]-> fix -> gate\ngate -[pass]-> done')
@@ -130,18 +149,20 @@ class BundledTests(unittest.TestCase):
                         self.assertTrue((REAL/'configs/factory-prompts'/f'{stage.role_file}.md').is_file())
 
 
-def result(verdict='pass', score=None, log='log'):
+def result(verdict='pass', score=None, log='log', details=None):
     score = (1.0 if verdict == 'pass' else 0.0) if score is None else score
-    return checks.CheckResult(verdict, int(score * 10), 10, score, log, {})
+    return checks.CheckResult(verdict, int(score * 10), 10, score, log, details or {})
 
 
 class Sim:
     """Fake sessions and checks over real directories, so code lineage and workspace invariants are exercised."""
 
-    def __init__(self, tmp, text, answers=(), verdicts=(), scores=None, start=None):
+    def __init__(self, tmp, text, answers=(), verdicts=(), scores=None, start=None, details=None, timeouts=()):
         self.tmp, self.flow = Path(tmp), parse(text)
         self.answers, self.verdicts = iter(answers), iter(verdicts)
         self.scores = scores or (lambda text: 1.0)
+        self.details = details or (lambda text: {})  # Check details by code text, for safe/progress.
+        self.timeouts = set(timeouts)  # (stage, visit) sessions that run out of time
         self.calls, self.checks, self.synced = [], [], []
         self.shared = self.tmp/'shared'
         self.shared.mkdir()
@@ -166,7 +187,12 @@ class Sim:
                 copy_code(source, work)
             code = work/'code.txt'
             code.write_text((code.read_text() if code.exists() else '') + f'{stage}{attempt}{extra.get("variant", "")};')
-            copy_code(work, run/'submission')
+            if (stage, attempt) in self.timeouts:  # Abandoned: the starting code is the submission, the edits are kept aside.
+                copy_code(work, run/'interrupted-source')
+                copy_code(source, run/'submission')
+                (run/'timed-out').write_text('budget_exhausted')
+            else:
+                copy_code(work, run/'submission')
         elif spec.kind in ('review', 'qa'):
             (run/'answer.txt').write_text(f'report {len(self.calls)}\nVERDICT: {next(self.verdicts)}')
         else:
@@ -176,10 +202,13 @@ class Sim:
     def check(self, spec, n, code, feedback, visit, ctx):
         self.checks.append({'stage': ctx['role'], 'checker': spec.checker, 'phase': ctx['phase'], 'variant': ctx['variant'], 'code': code,
                             'feedback': feedback, 'prior': ctx['prior_code'], 'side': ctx['side_codes']})
+        text = (code/'code.txt').read_text() if code else ''
+        if ctx['phase'].startswith('final-smoke'):
+            return result('pass' if self.scores(text) > 0 else 'fail', score=self.scores(text))
         if ctx['phase'] != 'gate':
-            return result(score=self.scores((code/'code.txt').read_text() if code else ''))
+            return result(score=self.scores(text), details=self.details(text))
         verdict = next(self.verdicts)
-        return result(verdict, log=f'check log {len(self.checks)}')
+        return result(verdict, log=f'check log {len(self.checks)}', details=self.details(text))
 
     def sync(self, code):
         self.synced.append(code)
@@ -263,6 +292,133 @@ class FlowMechanismTests(unittest.TestCase):
         sim.run()
         self.assertIsNone(sim.trace[-1]['guard']['before'])
         self.assertFalse(sim.trace[-1]['guard']['rolled_back'])
+
+    def test_safe_guard_rolls_back_a_fix_that_breaks_a_passing_case_even_if_the_score_rises(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': True, 'failing': ['b', 'c', 'd'] if 'fix1' in t else ['a', 'b']}
+        sim = self.sim(text, verdicts=['FAIL'], scores=lambda t: 0.9 if 'fix1' in t else 0.8, details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;')  # Two cases newly fail and one was repaired.
+        self.assertTrue(sim.trace[-1]['guard']['rolled_back'])
+
+    def test_safe_guard_keeps_a_fix_that_repairs_as_many_as_it_breaks(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': True, 'failing': ['b', 'c'] if 'fix1' in t else ['a', 'b']}
+        sim = self.sim(text, verdicts=['FAIL'], details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;fix1;')
+
+    def test_safe_guard_keeps_a_fix_that_makes_a_non_starting_program_start(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': 'fix1' in t, 'failing': ['x', 'y'] if 'fix1' in t else []}
+        sim = self.sim(text, verdicts=['FAIL'], scores=lambda t: 0.5 if 'fix1' in t else 0.0, details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;fix1;')  # Its failing cases are not "new": the old code had no suite result.
+        self.assertFalse(sim.trace[-1]['guard']['rolled_back'])
+
+    def guarded_loop(self, **kwargs):
+        return self.sim((REAL/'configs/factories/luna-guarded-loop.factory').read_text(), start='base;', **kwargs)
+
+    def test_guarded_loop_clean_path(self):
+        sim = self.guarded_loop(verdicts=['pass', 'FAIL', 'pass', 'PASS'])  # fresh, qa fail, gate pass, qa pass
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['tests', 'build', 'qa', 'fix', 'qa'])
+        self.assertEqual(sim.text(), 'base;build1;fix1;')
+        self.assertEqual([(t['stage'], t['next']) for t in sim.trace][-3:], [('fix', 'gate'), ('gate', 'qa'), ('qa', 'done')])
+
+    def test_guarded_loop_rerolls_a_bail_out_then_stops_after_two_qa_fixes(self):
+        # fresh fails once (reroll), then passes; qa fails twice (two fixes, each followed by a passing gate), qa fails a third time: done.
+        sim = self.guarded_loop(verdicts=['fail', 'pass', 'FAIL', 'pass', 'FAIL', 'pass', 'FAIL'])
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['tests', 'build', 'build', 'qa', 'fix', 'qa', 'fix', 'qa'])
+        self.assertEqual(sim.trace[-1]['next'], 'done')  # The third QA failure has no fix left to go to.
+
+    def test_guarded_loop_gives_one_extra_fix_when_the_gate_still_fails_and_moved(self):
+        details = lambda t: {'smoke_ok': True, 'failing': ['x'] * t.count('fix')}  # Failures change with every fix.
+        sim = self.guarded_loop(verdicts=['pass', 'FAIL', 'fail', 'pass', 'PASS'], details=details)  # fresh, qa, gate fail, gate pass, qa pass
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['tests', 'build', 'qa', 'fix', 'fix', 'qa'])
+
+    def test_a_bail_out_is_rerolled_from_the_start_code(self):
+        text = ('build = luna6\nfresh = check changed\nbuild -> fresh\nfresh -[fail, max 2, reset]-> build')
+        sim = self.sim(text, verdicts=['fail', 'fail', 'pass'], start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['build'] * 3)
+        self.assertEqual([c['source'] for c in sim.calls], [sim.source] * 3)
+        self.assertEqual(sim.text(), 'base;build3;')  # Each reroll starts again from the checkpoint's start.
+        self.assertEqual([t.get('reset') for t in sim.trace], [None, True, None, True, None, None])
+
+    def test_a_spent_reroll_budget_ends_with_the_current_code(self):
+        text = ('build = luna6\nfresh = check changed\nbuild -> fresh\nfresh -[fail, max 1, reset]-> build')
+        sim = self.sim(text, verdicts=['fail', 'fail'], start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['build', 'build'])
+        self.assertEqual(sim.trace[-1]['next'], 'done')
+
+    def test_a_timed_out_fix_is_abandoned_and_the_run_goes_on(self):
+        text = 'build = luna6\nfix = luna6\ngate = check smoke\nbuild -> gate\ngate -[fail, max 2]-> fix -> gate\ngate -[pass]-> done'
+        sim = self.sim(text, verdicts=['fail', 'fail', 'pass'], timeouts={('fix', 1)}, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['build', 'fix', 'fix'])
+        self.assertEqual(sim.text(), 'base;build1;fix2;')  # The first fix's edits are gone; the second builds on the build.
+        self.assertTrue(sim.trace[2]['timed_out'])
+        self.assertEqual(hashes(sim.shared, exclude_generated=True), hashes(sim.final))
+        self.assertEqual(sim.calls[2]['source'], sim.calls[1]['source'])
+
+    def test_a_program_that_does_not_start_is_replaced_by_the_last_one_that_does(self):
+        text = 'build = luna6\nfix = luna6\ngate = check smoke\nbuild -> gate\ngate -[fail, max 2]-> fix -> gate\ngate -[pass]-> done'
+        sim = self.sim(text, verdicts=['fail', 'fail', 'fail'], scores=lambda t: 0.0 if 'fix2' in t else 1.0, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;fix1;')  # fix2 left a broken program; fix1 started.
+        last = sim.trace[-1]
+        self.assertEqual((last['stage'], last['fallback_to'], last['abandoned']),
+                         ('final-smoke', {'stage': 'fix', 'attempt': 1}, [{'stage': 'fix', 'attempt': 2, 'winner': None}]))
+        self.assertEqual(hashes(sim.shared, exclude_generated=True), hashes(sim.final))
+
+    def test_the_final_smoke_only_runs_in_factories_with_a_check_stage(self):
+        sim = self.sim('build = luna6\nfix = luna6\nqa = qa astra6\nbuild -> qa\nqa -[fail]-> fix', verdicts=['FAIL'], scores=lambda t: 0.0)
+        sim.run()
+        self.assertEqual([c for c in sim.checks if c['phase'].startswith('final-smoke')], [])
+        self.assertEqual(sim.text(), 'build1;fix1;')
+
+    def test_safe_guard_keeps_a_fix_that_only_repairs(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': True, 'failing': ['b'] if 'fix1' in t else ['a', 'b']}
+        sim = self.sim(text, verdicts=['FAIL'], details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;fix1;')
+        self.assertFalse(sim.trace[-1]['guard']['rolled_back'])
+
+    def test_safe_guard_rolls_back_a_fix_that_breaks_the_program(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nqa = qa astra6\nfix = luna6 guard safe\n'
+                'tests -> build -> qa\nqa -[fail]-> fix')
+        details = lambda t: {'smoke_ok': 'fix1' not in t, 'failing': []}
+        sim = self.sim(text, verdicts=['FAIL'], details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.text(), 'base;build1;')
+
+    def test_progress_arrow_stops_when_a_fix_changes_nothing(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nfix = luna6 guard safe\ngate = check safe\n'
+                'tests -> build -> gate\ngate -[fail, max 3, progress]-> fix -> gate\ngate -[pass]-> done')
+        same = lambda t: {'smoke_ok': True, 'failing': ['a']}  # The fix never changes what fails.
+        sim = self.sim(text, verdicts=['fail'] * 5, details=same, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages().count('fix'), 1)  # Second gate fails identically: no more fixes.
+        self.assertEqual([t.get('stalled') for t in sim.trace if t['stage'] == 'gate'], [None, True])
+        self.assertEqual(sim.trace[-1]['next'], 'done')
+
+    def test_progress_arrow_continues_while_failures_change(self):
+        text = ('tests = tester sol61:low\nbuild = luna6\nfix = luna6\ngate = check suite\n'
+                'tests -> build -> gate\ngate -[fail, max 3, progress]-> fix -> gate\ngate -[pass]-> done')
+        details = lambda t: {'regressions': [], 'failures': ['x' * t.count('fix')]}
+        sim = self.sim(text, verdicts=['fail', 'fail', 'fail', 'pass'], details=details, start='base;')
+        sim.run(2)
+        self.assertEqual(sim.stages().count('fix'), 3)
+        self.assertNotIn(True, [t.get('stalled') for t in sim.trace])
 
     def test_best_of_n_keeps_the_best_and_all_attempts_start_from_the_same_code(self):
         scores = {'build11': 0.2, 'build12': 0.9, 'build13': 0.9}
@@ -502,7 +658,7 @@ class ControllerExtensionTests(unittest.TestCase):
     def test_tester_suite_check_and_fix_loop(self):
         text = ('tests = tester sol61:low prompt tester-postcond\nbuild = luna6:low\nfix = luna6:low\ngate = check suite\n'
                 'tests -> build -> gate\ngate -[fail, max 2]-> fix -> gate\ngate -[pass]-> done\n')
-        root, base = self.run_main(text, [('fail', 0.5), ('pass', 1.0), ('pass', 1.0)])
+        root, base = self.run_main(text, [('fail', 0.5), ('pass', 1.0), ('pass', 1.0), ('pass', 1.0), ('pass', 1.0)])  # gates, and a final smoke per checkpoint
         self.assertEqual([(c[0], c[1]) for c in self.calls],
                          [('tests', 'checkpoint_1'), ('build', 'checkpoint_1'), ('fix', 'checkpoint_1'), ('tests', 'checkpoint_2'), ('build', 'checkpoint_2')])
         self.assertEqual(self.calls[0][2], ['suite'])  # A tester sees only the suite, no builder code.
@@ -518,7 +674,7 @@ class ControllerExtensionTests(unittest.TestCase):
         self.assertEqual((root/'gate/checkpoint_1/log.txt').read_text(), 'suite log')
         self.assertTrue((root/'gate/checkpoint_1-2/result.json').exists())
         self.assertTrue((root/'gate/checkpoint_2/result.json').exists())
-        first, second = self.contexts[0][1], self.contexts[2][1]
+        first, second = self.contexts[0][1], self.contexts[3][1]
         self.assertEqual((first.checkpoint, sorted(first.specs), first.prior_code, first.entry_file), (1, [1], None, 'code_search'))
         self.assertEqual((second.checkpoint, sorted(second.specs)), (2, [1, 2]))
         self.assertEqual(second.prior_code, base/'intermediate/runs/flow-test/gauntlet/training-fix/code_search/checkpoint_1/submission')  # The previous checkpoint's accepted code.
@@ -549,7 +705,7 @@ class ControllerExtensionTests(unittest.TestCase):
     def test_attempts_branch_and_reset_are_labelled_graded_and_flagged(self):
         text = ('build = luna6:low x2 by smoke\nalt = branch sol61:low\ngate = check smoke\n'
                 'build -> alt -> gate\ngate -[fail, max 1, reset]-> build\ngate -[pass]-> done')
-        outcomes = [('pass', 0.2), ('pass', 0.8), ('fail', 0.0), ('pass', 0.5), ('pass', 0.9), ('pass', 1.0)]
+        outcomes = [('pass', 0.2), ('pass', 0.8), ('fail', 0.0), ('pass', 0.5), ('pass', 0.9), ('pass', 1.0), ('pass', 1.0)]
         root, _ = self.run_main(text, outcomes, checkpoints=1)
         self.assertEqual([(c[0], c[1]) for c in self.calls][:3], [('build', 'checkpoint_1-attempt1'), ('build', 'checkpoint_1-attempt2'), ('alt', 'checkpoint_1')])
         self.assertEqual(len(set(c[:2] for c in self.calls)), len(self.calls))  # No directory collides.

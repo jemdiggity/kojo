@@ -1,0 +1,15 @@
+# like luna-guarded-fix, plus a bail-out reroll, up to 2 QA-driven fixes each guarded by the safe rule and followed by the smoke+suite gate (one extra fix if the gate still fails and moved)
+tests = tester sol61:low
+build = luna6:low
+fresh = check changed
+qa    = qa sol61:low
+fix   = luna6:low guard safe
+gate  = check safe
+
+tests -> build -> fresh
+fresh -[fail, max 2, reset]-> build
+fresh -> qa
+qa -[fail, max 2]-> fix -> gate
+gate -[fail, max 1, progress]-> fix
+gate -> qa
+qa -[pass]-> done

@@ -84,18 +84,25 @@ def node_compile_cache():
     return str(Path(os.environ.get("KOJO_NODE_COMPILE_CACHE", str(Path.home() / "Library/Caches/kojo/node-compile-cache"))).expanduser())
 
 
-def shell_environment(work):
+def shell_environment(work, runtime=None):
     """Tool-only overrides; do not change the controller's :tmpdir resolution."""
-    return {
+    env = {
         "TMPDIR": str(work), "TMP": str(work), "TEMP": str(work),
         # zsh uses TMPPREFIX for heredocs independently of TMPDIR.
         "TMPPREFIX": str(work / ".kojo-zsh"),
         "PYTHONDONTWRITEBYTECODE": "1",
         "NODE_COMPILE_CACHE": node_compile_cache(),
     }
+    if runtime:
+        # Bare `python`/`python3` must be the pinned 3.12 runtime, not the machine's (on macOS,
+        # the Xcode 3.9 stub). Tool shells run non-login (allow_login_shell=false in command())
+        # because /etc/zprofile's path_helper would move this entry behind /usr/bin.
+        env["PATH"] = f"{Path(runtime) / 'bin'}{os.pathsep}{os.environ.get('PATH', '')}"
+        env["VIRTUAL_ENV"] = str(runtime)
+    return env
 
 
-def audit_shell_writes(sandbox, work):
+def audit_shell_writes(sandbox, work, runtime=None):
     """Exercise actual zsh writes under the native sandbox, without inference."""
     with tempfile.TemporaryDirectory(prefix=".audit-shell-", dir=work) as directory:
         probe = Path(directory)
@@ -120,8 +127,8 @@ def audit_shell_writes(sandbox, work):
         # Apply overrides after Codex resolves :tmpdir from its parent environment,
         # exactly as shell_environment_policy.set applies to a tool subprocess.
         result = subprocess.run(
-            sandbox + ["/usr/bin/env", *[f"{k}={v}" for k, v in shell_environment(work).items()],
-                       "/bin/zsh", "-lc", script],
+            sandbox + ["/usr/bin/env", *[f"{k}={v}" for k, v in shell_environment(work, runtime).items()],
+                       "/bin/zsh", "-c", script],
             capture_output=True, text=True, timeout=30,
         )
         if result.returncode or result.stdout.strip() != "shell-write-smoke-ok" or result.stderr:
@@ -163,13 +170,16 @@ def command(run, instructions, runtime=None, skill=None, isolated_src=False, per
         "features.unified_exec=true",
         "-c",
         "features.code_mode_host=true",
+        # Non-login tool shells keep the PATH set by shell_environment().
+        "-c",
+        "allow_login_shell=false",
     ]
     if instructions is not None:
         args += ["-c", "model_instructions_file=" + json.dumps(str(instruction_path))]
     args += permission_args(work, runtime, skill is not None and not isolated_src, isolated_src, network_enabled)
     if isolated_src:
         args += ["-c",
-                 "shell_environment_policy.set=" + "{" + ",".join(json.dumps(k)+"="+json.dumps(v) for k,v in shell_environment(work).items()) + "}"]
+                 "shell_environment_policy.set=" + "{" + ",".join(json.dumps(k)+"="+json.dumps(v) for k,v in shell_environment(work, runtime).items()) + "}"]
     return [
         "codex",
         "exec",
@@ -357,7 +367,7 @@ def audit(run, instructions, runtime=None, skill=None, isolated_src=False, promp
                 if changed.returncode == 0:
                     raise RuntimeError("Solver can modify designated skill artifact")
             if isolated_src:
-                audit_shell_writes(sandbox, work)
+                audit_shell_writes(sandbox, work, runtime)
                 # Check representative private paths without returning file contents.
                 blocked = [BASE / "README.md", BASE / "results/runs/20260927-code-search-baseline-01/checkpoints/checkpoint_5/submission/code_search", Path.home() / ".codex/config.toml", run / "instructions.md"]
                 for path in blocked:

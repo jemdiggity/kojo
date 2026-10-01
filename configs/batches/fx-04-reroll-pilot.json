@@ -1,15 +1,15 @@
 {
-  "batch_id": "fx-02-factory-grid",
-  "max_parallel": 6,
-  "description": "Ten deterministic-check pipelines on circuit_eval (Luna builds; sol 6.1/astra for tester, plan, qa, review and branch stages), 3 seeds each, all under the sol 6.1 base prompt. Compare with pf-06 solfull-noskill (build only) and fx-01. (remainder after the pilot runs)",
+  "batch_id": "fx-04-reroll-pilot",
+  "max_parallel": 20,
+  "description": "Does a deterministic bail-out reroll (check changed) remove the build-only control spread? luna-low vs luna-low-reroll, 15 seeds each, circuit_eval, sol 6.1 base prompt, Codex 0.159.2, builder python 3.12.8. Cost about $0.08 per run.",
   "runs": [
     {
-      "run_id": "fx-02-luna-smoke-reroll-s1",
+      "run_id": "fx-04-luna-low-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-smoke-reroll",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -18,12 +18,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-examples-fix-s1",
+      "run_id": "fx-04-luna-low-reroll-s1",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-examples-fix",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -32,12 +32,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-guarded-fix-s1",
+      "run_id": "fx-04-luna-low-s2",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-guarded-fix",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -46,12 +46,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-postcond-s1",
+      "run_id": "fx-04-luna-low-reroll-s2",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-postcond",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -60,12 +60,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-planned-s1",
+      "run_id": "fx-04-luna-low-s3",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-planned",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -74,12 +74,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-regress-net-s1",
+      "run_id": "fx-04-luna-low-reroll-s3",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-regress-net",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -88,12 +88,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-smoke-reroll-s2",
+      "run_id": "fx-04-luna-low-s4",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-smoke-reroll",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -102,12 +102,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-examples-fix-s2",
+      "run_id": "fx-04-luna-low-reroll-s4",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-examples-fix",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -116,12 +116,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-tester-suite-s2",
+      "run_id": "fx-04-luna-low-s5",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-tester-suite",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -130,12 +130,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-best-of-3-s2",
+      "run_id": "fx-04-luna-low-reroll-s5",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-best-of-3",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -144,12 +144,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-guarded-fix-s2",
+      "run_id": "fx-04-luna-low-s6",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-guarded-fix",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -158,12 +158,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-postcond-s2",
+      "run_id": "fx-04-luna-low-reroll-s6",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-postcond",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -172,12 +172,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-vs-sol-diff-s2",
+      "run_id": "fx-04-luna-low-s7",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-vs-sol-diff",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -186,12 +186,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-verified-review-s2",
+      "run_id": "fx-04-luna-low-reroll-s7",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-verified-review",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -200,12 +200,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-planned-s2",
+      "run_id": "fx-04-luna-low-s8",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-planned",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -214,12 +214,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-regress-net-s2",
+      "run_id": "fx-04-luna-low-reroll-s8",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-regress-net",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -228,12 +228,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-smoke-reroll-s3",
+      "run_id": "fx-04-luna-low-s9",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-smoke-reroll",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -242,12 +242,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-examples-fix-s3",
+      "run_id": "fx-04-luna-low-reroll-s9",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-examples-fix",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -256,12 +256,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-tester-suite-s3",
+      "run_id": "fx-04-luna-low-s10",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-tester-suite",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -270,12 +270,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-best-of-3-s3",
+      "run_id": "fx-04-luna-low-reroll-s10",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-best-of-3",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -284,12 +284,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-guarded-fix-s3",
+      "run_id": "fx-04-luna-low-s11",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-guarded-fix",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -298,12 +298,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-postcond-s3",
+      "run_id": "fx-04-luna-low-reroll-s11",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-postcond",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -312,12 +312,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-vs-sol-diff-s3",
+      "run_id": "fx-04-luna-low-s12",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-vs-sol-diff",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -326,12 +326,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-verified-review-s3",
+      "run_id": "fx-04-luna-low-reroll-s12",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-verified-review",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -340,12 +340,12 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-planned-s3",
+      "run_id": "fx-04-luna-low-s13",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-planned",
+        "luna-low",
         "--seconds-per-session",
         "1800",
         "--monitor-only",
@@ -354,12 +354,68 @@
       ]
     },
     {
-      "run_id": "fx-02-luna-regress-net-s3",
+      "run_id": "fx-04-luna-low-reroll-s13",
       "factory_args": [
         "--problem",
         "circuit_eval",
         "--factory",
-        "luna-regress-net",
+        "luna-low-reroll",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-04-luna-low-s14",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-04-luna-low-reroll-s14",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low-reroll",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-04-luna-low-s15",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low",
+        "--seconds-per-session",
+        "1800",
+        "--monitor-only",
+        "--base-instructions",
+        "/Users/jeremyhale/.kanna/repos/kojo/.kanna-worktrees/task-712f0d9f/configs/base-instructions/gpt-6.1-sol-stock.md"
+      ]
+    },
+    {
+      "run_id": "fx-04-luna-low-reroll-s15",
+      "factory_args": [
+        "--problem",
+        "circuit_eval",
+        "--factory",
+        "luna-low-reroll",
         "--seconds-per-session",
         "1800",
         "--monitor-only",

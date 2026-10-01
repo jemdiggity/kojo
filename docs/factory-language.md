@@ -77,18 +77,28 @@ Any order after `MODEL[:EFFORT]`; they apply to code-changing stages (not `branc
 * `prompt NAME`: use `configs/factory-prompts/NAME.md` instead of `KIND.md` as this stage's request
   (review, qa, fix, revise, refactor, plan and tester stages; not `build`/`branch`).
 
-Scoring checkers (`by`, `guard`) are `smoke`, `examples` and `suite`: score is the fraction of checks
-passed, 1.0 when nothing was checked.
+Scoring checkers (`by`, `guard`) are `smoke`, `examples`, `suite` and `safe`: score is the fraction of checks
+passed, 1.0 when nothing was checked (0.0 for `safe` when the program does not start). `guard safe` is
+stricter than a score comparison: the stage is rolled back if the program no longer starts, if the suite
+score fell, or if more suite cases newly fail than newly pass (a fix that repairs as many cases as it breaks
+is kept). When the code before the stage did not start, it has no suite result to compare against, so a result
+that now starts is kept. The "before" score reuses the gate's result when the gate just ran on the same code.
 
 ## Flow
 
 `a -> b -> c` chains stages. An arrow may carry options: `-[fail]->`, `-[pass]->`,
-`-[max N]->`, `-[reset]->`, or a mix such as `-[fail, max 5, reset]->`. `done` ends the checkpoint.
+`-[max N]->`, `-[reset]->`, `-[progress]->`, or a mix such as `-[fail, max 5, reset]->`. `done` ends the checkpoint.
 
 * From a stage, the **first** arrow (in file order) whose condition holds and whose
   `max` is not spent is taken. `pass`/`fail` conditions need a `review`, `qa` or `check` source.
 * `max N` counts uses per checkpoint. If nothing is eligible, the checkpoint's
   factory ends with the current code.
+* `progress` (only on an arrow out of a `check` stage) is taken only while the check's failures differ from
+  the same check's previous visit in this checkpoint (the first visit always qualifies). When a fix changed
+  nothing, or was rolled back by `guard`, the same cases fail again and the loop ends with the current code
+  instead of spending the rest of its `max`. The trace marks such a visit `stalled`. For `suite` and `safe`
+  what is compared is the set of failing cases; for the other checks, the passed and total counts.
+  Worst-case session counts ignore `progress`.
 * `reset` restarts the destination stage (a code-changing stage that carries code) from the code the
   checkpoint started with, not the latest attempt, and without feedback text (a reroll). The shared
   builder workspace is made exactly equal to that code first (extra files removed, environment and
@@ -101,6 +111,21 @@ passed, 1.0 when nothing was checked.
 
 In the first example, `review -[fail, max 5]-> fix` allows at most five fix passes;
 a review that still fails afterwards falls through to `review -> qa`.
+
+Failure handling the runner applies without being asked:
+
+* A `fix`, `revise` or `refactor` session that runs out of time (`--seconds-per-session`) is abandoned: its
+  starting code carries on, the shared workspace is reset to it, the trace marks the stage `timed_out`, and the
+  abandoned session is graded but flagged `aside`. A timed-out `build` still stops the run, since it has no code to
+  fall back on.
+* If a checkpoint's factory contains any `check` stage, then after the flow ends the carried code is smoke-checked.
+  When it does not start, the runner carries the newest earlier state of that checkpoint (or the checkpoint's starting
+  code) that does start, records a `final-smoke` trace entry with `fallback_to` and the `abandoned` stages, and
+  flags the abandoned sessions `aside`. These final smoke checks are not counted in `max_checks`.
+* A tester suite over the size limits (2000 files, 5 MB) is rejected as a whole and the previous suite stays; a suite
+  is never truncated. The controller log says so, and the tester's trace entry carries `suite_rejected`.
+* A `suite` or `safe` check with an empty, missing or unreadable suite still passes (nothing ran), but the
+  controller log prints a `WARNING` and the details carry `suite_missing`.
 
 Session counting: `Factory.max_sessions()` is the worst-case number of MODEL sessions per checkpoint
 (checks cost none, `xN` costs N); `max_checks()` counts deterministic runs, scoring runs included.
@@ -121,7 +146,9 @@ third-party dependencies are not available to checks.
 |---|---|
 | `smoke` | Byte-compiles every `.py` and the entry file; runs `--help` (and `--version` if a spec mentions it). Fails on SyntaxError, IndentationError, Traceback, timeout or a non-zero exit. |
 | `examples` | Extracts runnable examples from public specs 1..N and compares stdout (trailing whitespace normalized; equal JSON in another layout counts as equal) and the stated exit code. Reports `spec example mismatch` with a diff. Finding nothing passes with total 0. |
+| `safe` | `smoke`; if the program starts, then `suite`. One gate for "runs at all, and passes the suite". Its details list the failing case names, and `guard safe` uses them (see Attributes). A program that does not start scores 0.0 and only the smoke log reaches the fixer. |
 | `suite` | Runs the accumulated suite; if the previous checkpoint's code exists, also runs it there and lists REGRESSIONS (passed before, fail now) first. Invalid cases are listed but never blamed on the code. |
+| `changed` | Fails when the build left the code byte-identical to the checkpoint's starting code (or wrote no program files at all): a bail-out. Ignores caches and environments. Pair it with `-[fail, max N, reset]-> build` to redo the build. |
 | `repro` | Parses repro cases (suite case schema, one fenced `json` block) from the previous stage's answer, runs them, and reports only CONFIRMED failures (the actual result does not meet the stated expectation). No parseable repros passes with total 0. |
 | `diff NAME` | Runs each `suite/fuzz/*.py` with `ENTRY_A` (this code) and `ENTRY_B` (branch `NAME`); exit 0 means agreement, and disagreements are logged. |
 
@@ -150,7 +177,11 @@ needed). Script cases `{"name": "...", "script": "checks/absorb.py", "args": []}
 Python and the env vars `ENTRY` (shell-quotable command) and `ENTRY_ARGV_JSON`; exit 0 passes.
 `fuzz/*.py` scripts get `ENTRY_A`/`ENTRY_B` (plus `*_ARGV_JSON`) for `check diff`. Malformed cases,
 missing or non-compiling scripts count as `invalid` (listed in the log for the tester, never a code failure).
-A script that fails at run time counts as a failure, including one that dies parsing the program's output.
+A script that fails at run time counts as a failure, including one that dies parsing the program's output, with
+one exception: a script that dies with `NameError`, `UnboundLocalError`, `SyntaxError`, `IndentationError`,
+`TabError`, `ImportError` or `ModuleNotFoundError` has a bug of its own, so it is listed as invalid and left out
+of the pass count. Other exceptions may be a tester's intended way of failing, or the program's fault, and still
+count against the program.
 
 ### Information rules
 
@@ -159,7 +190,7 @@ code, and what earlier stages wrote. Never hidden grader tests, official scores 
 A `tester` sees specs 1..N and the suite, never any builder code, and a `branch` builds from the spec
 alone, so both stay independent of the main builder. Checks read code and suite only.
 
-## Bundled factories (ten `luna-*` experiments)
+## Bundled factories (the ten `luna-*` experiments of `fx-02`, and three variants)
 
 | Factory | Idea |
 |---|---|
@@ -173,6 +204,17 @@ alone, so both stay independent of the main builder. Checks read code and suite 
 | `luna-verified-review` | astra reviews with repro cases; only program-confirmed failures reach the fix (max 2). |
 | `luna-planned` | sol plans; luna builds from the plan; spec examples gate a fix (max 2). |
 | `luna-regress-net` | regression-focused tester; two-stage gate (smoke, then suite) with fixes. Differs from `luna-tester-suite` by its tester prompt and the smoke stage ahead of the suite. |
+
+Variants built from the `fx-02` results (report `2026-09-30-fx-02-factory-sweep.md`, kept in the private kojo-results repo under `reports/`):
+
+| Factory | Change from its parent |
+|---|---|
+| `luna-postcond-safe` | `luna-postcond` with one `check safe` gate, `guard safe` on the fix (a fix that breaks the program or any passing case is discarded), and a `progress` arrow (stop when a fix changes nothing). |
+| `luna-tail-safe` | `luna-postcond-safe` with the `tester-tail` prompt: a systematic pass over every guarantee (routes to it, boundaries, output order, error classes, feature interactions) and scripts that report problems with an explicit exit 1. The prompt names no problem-specific behavior. |
+| `luna-verified-review-sol` | `luna-verified-review` with sol 6.1 as the reviewer instead of astra (the same `repro` check). |
+
+| `luna-low-reroll` | The build-only control plus `check changed`: a build that changed nothing is redone from the start code (max 2). |
+| `luna-postcond-safe-v2` | `luna-postcond-safe` plus the same bail-out reroll before the gate; the guard fix and the `progress` arrow apply. |
 
 `configs/batches/fx-02-factory-grid.json` runs all ten on `circuit_eval`, three seeds each.
 
