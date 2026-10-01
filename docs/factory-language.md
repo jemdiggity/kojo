@@ -79,9 +79,10 @@ Any order after `MODEL[:EFFORT]`; they apply to code-changing stages (not `branc
 
 Scoring checkers (`by`, `guard`) are `smoke`, `examples`, `suite` and `safe`: score is the fraction of checks
 passed, 1.0 when nothing was checked (0.0 for `safe` when the program does not start). `guard safe` is
-stricter than a score comparison: the stage is also rolled back if the program no longer compiles or starts,
-or if any suite case that passed before it now fails, even when other cases were repaired and the
-aggregate score rose.
+stricter than a score comparison: the stage is rolled back if the program no longer starts, if the suite
+score fell, or if more suite cases newly fail than newly pass (a fix that repairs as many cases as it breaks
+is kept). When the code before the stage did not start, it has no suite result to compare against, so a result
+that now starts is kept. The "before" score reuses the gate's result when the gate just ran on the same code.
 
 ## Flow
 
@@ -110,6 +111,21 @@ aggregate score rose.
 
 In the first example, `review -[fail, max 5]-> fix` allows at most five fix passes;
 a review that still fails afterwards falls through to `review -> qa`.
+
+Failure handling the runner applies without being asked:
+
+* A `fix`, `revise` or `refactor` session that runs out of time (`--seconds-per-session`) is abandoned: its
+  starting code carries on, the shared workspace is reset to it, the trace marks the stage `timed_out`, and the
+  abandoned session is graded but flagged `aside`. A timed-out `build` still stops the run, since it has no code to
+  fall back on.
+* If a checkpoint's factory contains any `check` stage, then after the flow ends the carried code is smoke-checked.
+  When it does not start, the runner carries the newest earlier state of that checkpoint (or the checkpoint's starting
+  code) that does start, records a `final-smoke` trace entry with `fallback_to` and the `abandoned` stages, and
+  flags the abandoned sessions `aside`. These final smoke checks are not counted in `max_checks`.
+* A tester suite over the size limits (2000 files, 5 MB) is rejected as a whole and the previous suite stays; a suite
+  is never truncated. The controller log says so, and the tester's trace entry carries `suite_rejected`.
+* A `suite` or `safe` check with an empty, missing or unreadable suite still passes (nothing ran), but the
+  controller log prints a `WARNING` and the details carry `suite_missing`.
 
 Session counting: `Factory.max_sessions()` is the worst-case number of MODEL sessions per checkpoint
 (checks cost none, `xN` costs N); `max_checks()` counts deterministic runs, scoring runs included.

@@ -124,8 +124,55 @@ class SafeTests(Base):
         self.assertTrue(checks.guard_rolls_back('safe', found(), found(smoke_ok=False)))
         self.assertTrue(checks.guard_rolls_back('safe', found(failing='a', score=.5), found(failing='ab', score=.9)))  # New failure, higher score.
         self.assertFalse(checks.guard_rolls_back('safe', found(failing='ab'), found(failing='a')))
+        self.assertFalse(checks.guard_rolls_back('safe', found(smoke_ok=False, score=0.0), found(failing='ab', score=.4)))  # Now it starts.
+        self.assertFalse(checks.guard_rolls_back('safe', found(failing='ab'), found(failing='bc')))  # One repaired, one broken.
+        self.assertTrue(checks.guard_rolls_back('safe', found(failing='a', score=.9), found(failing='b', score=.8)))  # Score fell.
         self.assertTrue(checks.guard_rolls_back('suite', found(score=.9), found(score=.8)))
         self.assertFalse(checks.guard_rolls_back('suite', found(score=.8), found(score=.8)))
+
+
+class SuiteCopyTests(Base):
+    def make(self, name, files):
+        directory = self.tmp/name
+        for relative, body in files.items():
+            (directory/relative).parent.mkdir(parents=True, exist_ok=True)
+            (directory/relative).write_text(body)
+        return directory
+
+    def test_an_oversized_suite_leaves_the_previous_one_untouched(self):
+        previous = self.make('previous', {'cases.json': '[1]', 'a.py': 'x'})
+        big = self.make('big', {'cases.json': '[2]', 'data.json': '0' * 100})
+        with patch.object(checks, 'SUITE_BYTES', 50), self.assertRaises(checks.SuiteTooLarge):
+            checks.copy_suite(big, previous)
+        self.assertEqual(sorted(p.name for p in previous.iterdir()), ['a.py', 'cases.json'])
+        self.assertEqual((previous/'cases.json').read_text(), '[1]')
+        self.assertFalse((self.tmp/'.previous.staging').exists())
+
+    def test_too_many_files_is_rejected_whole_not_truncated(self):
+        many = self.make('many', {f'f{i}.txt': 'x' for i in range(5)})
+        target = self.tmp/'target'
+        with patch.object(checks, 'SUITE_FILES', 3), self.assertRaises(checks.SuiteTooLarge):
+            checks.copy_suite(many, target)
+        self.assertFalse(target.exists())
+
+    def test_a_fitting_suite_replaces_the_old_one_completely(self):
+        target = self.make('target', {'old.txt': 'old'})
+        checks.copy_suite(self.make('new', {'cases.json': '[]'}), target)
+        self.assertEqual([p.name for p in target.iterdir()], ['cases.json'])
+
+    def test_a_missing_data_file_inside_the_suite_is_a_script_bug(self):
+        suite = self.tmp/'suite'
+        cases = [{'name': 'reads', 'script': 'checks/reads.py'}, {'name': 'other', 'script': 'checks/other.py'}]
+        files = {'checks/reads.py': 'import os\nopen(os.environ["SUITE_DIR"] + "/data.json")\n',
+                 'checks/other.py': 'open("/definitely/not/there.txt")\n'}
+        got = run_check('suite', self.ctx(suite_dir=self.suite(cases, files)))
+        self.assertEqual([e['name'] for e in got.details['invalid']], ['reads'])
+        self.assertEqual(got.details['failures'], ['other'])  # A path outside the suite stays the program's problem.
+
+    def test_an_empty_or_unreadable_suite_is_flagged(self):
+        self.assertTrue(run_check('suite', self.ctx(suite_dir=self.suite('{not json'))).details['suite_missing'])
+        self.assertTrue(run_check('safe', self.ctx(suite_dir=self.suite([]))).details['suite_missing'])
+        self.assertFalse(run_check('suite', self.ctx()).details.get('suite_missing'))  # No suite wanted at all.
 
 
 class SmokeTests(Base):
