@@ -9,7 +9,7 @@
     build -> refactor -> review
     review -[fail, max 5]-> fix -> review
 
-Stages are `NAME = [KIND] MODEL[:EFFORT] [xN] [by CHECKER] [guard CHECKER] [prompt NAME]`, or
+Stages are `NAME = [KIND] MODEL[:EFFORT] [xN] [by CHECKER] [guard CHECKER] [prompt NAME] [skill NAME]`, or
 `NAME = check CHECKER [ARG]` for a deterministic stage without a model; KIND defaults to NAME. A
 flow line chains stages with arrows, and an arrow may carry `[pass]`, `[fail]`, `[max N]` and
 `[reset]` and `[progress]` in any mix. See docs/factory-language.md.
@@ -49,7 +49,7 @@ SUITE_CHECKERS = ('suite', 'diff', 'safe')                # Need a tester to hav
 PROMPTLESS = ('build', 'branch')                          # Use the upstream prompt, not a role request.
 DONE = 'done'
 NAME = r'[a-z][a-z0-9_]*'
-ATTRIBUTE = r'x\d+|by|guard|prompt'
+ATTRIBUTE = r'x\d+|by|guard|prompt|skill'
 
 
 def vendor(model):
@@ -70,6 +70,7 @@ class Stage:
     by: str = None         # checker that scores attempts
     guard: str = None      # checker that vetoes a stage that lowers the score
     prompt: str = None     # configs/factory-prompts/NAME.md instead of KIND.md
+    skill: str = None      # configs/skill-sets/NAME: a native skill set installed for this stage only
     checker: str = None    # for kind `check`
     arg: str = None
 
@@ -155,7 +156,7 @@ class Factory:
         def stage(s):
             row = {'kind': s.kind, 'model': s.model, 'effort': s.effort}
             row.update({k: v for k, v in (('attempts', s.attempts if s.attempts > 1 else None), ('by', s.by), ('guard', s.guard),
-                                          ('prompt', s.prompt), ('checker', s.checker), ('arg', s.arg)) if v})
+                                          ('prompt', s.prompt), ('skill', s.skill), ('checker', s.checker), ('arg', s.arg)) if v})
             return row
         return {'name': self.name, 'sha256': self.sha256, 'start': self.start,
                 'stages': {n: stage(s) for n, s in self.stages.items()},
@@ -240,15 +241,18 @@ def parse(text, name='factory', base=BASE):
                 key, value = 'attempts', int(m[1])
                 if not 2 <= value <= 10:
                     fail('xN takes 2 to 10 attempts')
-            elif word in ('by', 'guard', 'prompt') and words:
+            elif word in ('by', 'guard', 'prompt', 'skill') and words:
                 key, value = word, words.pop(0)
                 if word == 'prompt':
                     if not re.fullmatch(r'[a-z][a-z0-9_\-]*', value) or not (base / 'configs/factory-prompts' / f'{value}.md').is_file():
                         fail(f'unknown prompt {value!r}; expected configs/factory-prompts/NAME.md')
+                elif word == 'skill':
+                    if not re.fullmatch(r'[a-z0-9][a-z0-9\-]*', value) or not (base / 'configs/skill-sets' / value).is_dir():
+                        fail(f'unknown skill set {value!r}; expected a directory configs/skill-sets/NAME')
                 elif value not in SCORING:
                     fail(f'{word} needs a scoring checker ({", ".join(SCORING)}), got {value!r}')
             else:
-                fail(f'unexpected {word!r}; attributes are xN, by CHECKER, guard CHECKER, prompt NAME')
+                fail(f'unexpected {word!r}; attributes are xN, by CHECKER, guard CHECKER, prompt NAME, skill NAME')
             if key in attrs:
                 fail(f'{key} is given twice')
             attrs[key] = value

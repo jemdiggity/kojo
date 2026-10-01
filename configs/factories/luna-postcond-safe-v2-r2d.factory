@@ -1,0 +1,12 @@
+# luna-postcond-safe-v2 with the r2d postcondition-fidelity skill installed for the build and fix stages only
+tests = tester sol61:low prompt tester-postcond
+build = luna6:low skill r2d-postcondition-fidelity
+fresh = check changed
+fix   = luna6:low guard safe skill r2d-postcondition-fidelity
+gate  = check safe
+
+tests -> build -> fresh
+fresh -[fail, max 2, reset]-> build
+fresh -> gate
+gate -[fail, max 3, progress]-> fix -> gate
+gate -[pass]-> done

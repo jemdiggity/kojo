@@ -22,7 +22,7 @@ qa -[pass]-> done
 
 ## Stages
 
-`NAME = [KIND] MODEL[:EFFORT] [xN] [by CHECKER] [guard CHECKER] [prompt NAME]`, or
+`NAME = [KIND] MODEL[:EFFORT] [xN] [by CHECKER] [guard CHECKER] [prompt NAME] [skill NAME]`, or
 `NAME = check CHECKER [ARG]` for a deterministic stage that runs no model. `MODEL` is a
 suite alias (`luna6`, `astra6`, `sol61`, `sonnet55`, `opus55`, ...; run
 `scripts/scb_suite.sh -h` for the list) or an exact provider ID. `EFFORT` defaults to
@@ -74,6 +74,11 @@ Any order after `MODEL[:EFFORT]`; they apply to code-changing stages (not `branc
   (`STAGE/checkpoint_N-attemptK`); the winner is recorded in the trace.
 * `guard CHECKER`: score the code before and after the stage; if the after-score is lower, the stage's
   result is discarded and the earlier code carries on. Recorded in the trace.
+* `skill NAME`: install the native skill set `configs/skill-sets/NAME` (a directory with `SKILL.md`, or one
+  subdirectory per skill) for this stage only. Other stages, including the tester and QA, get none, and a stage that
+  runs in the shared builder workspace never inherits an earlier stage's skills. Each skill set is recorded with its
+  hash under `stage_skills` in `manifest.json` and frozen under `skill-sets/` in the run output. It cannot be combined
+  with the run-level `--skill-set` option.
 * `prompt NAME`: use `configs/factory-prompts/NAME.md` instead of `KIND.md` as this stage's request
   (review, qa, fix, revise, refactor, plan and tester stages; not `build`/`branch`).
 

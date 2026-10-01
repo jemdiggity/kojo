@@ -262,6 +262,8 @@ def parse_args(argv=None):
             args.flow = factory_spec.load(args.factory)
         except factory_spec.FactoryError as error:
             parser.error(str(error))
+        if args.skill_set and any(stage.skill for stage in args.flow.stages.values()):
+            parser.error('--skill-set installs one skill set for every stage; remove it or the stage `skill` attributes')
     args.build_model = args.build_model or 'gpt-6-luna'
     args.review_model = args.review_model or 'gpt-6-luna'
     args.claude_effort = args.claude_effort or 'low'
@@ -368,7 +370,7 @@ def main(argv=None):
             first = kind in ('build', 'branch')
             probe = root / 'offline-audit' / role
             adapter(models[role])[0](probe, base_for(models[role]), backend.runtime, None, True,
-                  stage_prompt(experiment, kind, 1 if first else checkpoint_count, None if first else 'Offline review placeholder.', problem=args.problem, verdict=bool(args.factory), **({'prompt':stage.prompt} if stage.prompt else {})), persist=True, model=models[role], network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
+                  stage_prompt(experiment, kind, 1 if first else checkpoint_count, None if first else 'Offline review placeholder.', problem=args.problem, verdict=bool(args.factory), **({'prompt':stage.prompt} if stage.prompt else {})), persist=True, model=models[role], network_enabled=not args.no_network, native_skill_set=(BASE/'configs/skill-sets'/stage.skill if stage.skill else args.skill_set), **adapter_options[role])
         print('Selected role requests and native isolation verified without inference.', flush=True)
         return
     data.mkdir(parents=True, exist_ok=True)
@@ -401,9 +403,15 @@ def main(argv=None):
                 'sequence':f'{checkpoint_count} incremental checkpoints, each run through factory {args.flow.name}; review and qa verdicts steer loops, each arrow limit applies per checkpoint',
                 'grading':'All calls finish or stop before grading; no stage receives official results.'})
             (output/'factory.txt').write_text(args.flow.text)
+            stage_skills={name:stage.skill for name,stage in args.flow.stages.items() if stage.skill}
+            if stage_skills:
+                from kojo.skill_sets import describe
+                record['stage_skills']={name:describe(BASE/'configs/skill-sets'/skill) for name,skill in stage_skills.items()}
         save(output / 'manifest.json', record)
         if args.skill_set:
             shutil.copytree(args.skill_set, output/'skill-set')
+        for skill in sorted({stage.skill for stage in args.flow.stages.values() if stage.skill}) if args.factory else []:
+            shutil.copytree(BASE/'configs/skill-sets'/skill, output/'skill-sets'/skill)  # Frozen evidence of what each stage was given.
         ledger=[]; frozen=[]; trace=[]; previous=None; failure=None
         first_checkpoint=1
         if args.resume_run:
@@ -444,8 +452,11 @@ def main(argv=None):
             kind, edits = stage.kind, stage.edits
             name = label(n, attempt, variant)  # Later visits in a loop, and xN attempts, get their own directory.
             from kojo.skill_sets import describe
+            skill_dir = BASE/'configs/skill-sets'/stage.skill if stage.skill else args.skill_set
             if args.skill_set and describe(args.skill_set)['sha256'] != args.skill_manifest['sha256']:
                 raise RuntimeError('Skill set changed during experiment')
+            if stage.skill and describe(skill_dir)['sha256'] != record['stage_skills'][role]['sha256']:
+                raise RuntimeError('Stage skill set changed during experiment')
             if protocol_digest() != backend.protocol:
                 raise RuntimeError('Protocol changed during run')
             run = data / f'training-{role}/{args.problem}/{name}'
@@ -456,6 +467,10 @@ def main(argv=None):
             work = data/'builder-workspace/src' if shared_work else run/'src'
             if shared_work:
                 work.mkdir(parents=True,exist_ok=True)
+                if any(other.skill for other in args.flow.stages.values()):
+                    # Stage-level skills: whatever an earlier stage installed here must not leak into this one.
+                    for leftover in (work/'.agents/skills', work/'.claude/skills'):
+                        shutil.rmtree(leftover, ignore_errors=True)
                 if source is None and hashes(work, exclude_generated=True):
                     raise RuntimeError('First builder workspace must be empty')
                 if source is not None and hashes(work, exclude_generated=True) != hashes(source):
@@ -476,7 +491,7 @@ def main(argv=None):
             prior=[sample for p in session_paths(data) if (p.parent/'quota.json').exists() for sample in read(p.parent/'quota.json')]
             print(f'Starting {role} checkpoint {n}' + (f' (visit {attempt})' if attempt > 1 else '') + (f' (attempt {variant})' if variant else ''), flush=True)
             adapter(models[role])[1](run, base_for(models[role]), prompt, args.seconds_per_session, backend.runtime,
-                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work, network_enabled=not args.no_network, native_skill_set=args.skill_set, **adapter_options[role])
+                        None, prior, isolated_src=True, model=models[role], monitor_only=args.monitor_only, work_path=work, network_enabled=not args.no_network, native_skill_set=skill_dir, **adapter_options[role])
             for filename in ['run.json','quota.json','verification.json','transcript-verification.json','answer.txt','stock-instructions.md']:
                 if filename == 'answer.txt' and not (run/filename).exists():
                     continue  # A timed-out session may have no final answer; preserve its code/receipts.
@@ -486,7 +501,7 @@ def main(argv=None):
             if args.base_text is not None and models[role] not in claude_execution.MODELS:
                 (dest/'base-instructions.md').write_text(args.base_text)  # the override this session actually ran with
             from kojo.skill_sets import install
-            install(work, args.skill_set, 'claude' if models[role] in claude_execution.MODELS else 'codex')
+            install(work, skill_dir, 'claude' if models[role] in claude_execution.MODELS else 'codex')
             state=read(run/'run.json')
             timed_out = state['status']!='complete'
             if timed_out:

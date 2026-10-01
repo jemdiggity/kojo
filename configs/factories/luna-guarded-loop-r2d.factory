@@ -1,0 +1,15 @@
+# luna-guarded-loop with the r2d postcondition-fidelity skill installed for the build and fix stages only (the tester and QA get none)
+tests = tester sol61:low
+build = luna6:low skill r2d-postcondition-fidelity
+fresh = check changed
+qa    = qa sol61:low
+fix   = luna6:low guard safe skill r2d-postcondition-fidelity
+gate  = check safe
+
+tests -> build -> fresh
+fresh -[fail, max 2, reset]-> build
+fresh -> qa
+qa -[fail, max 2]-> fix -> gate
+gate -[fail, max 1, progress]-> fix
+gate -> qa
+qa -[pass]-> done
