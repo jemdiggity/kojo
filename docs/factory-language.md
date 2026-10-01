@@ -188,7 +188,7 @@ alone, so both stay independent of the main builder. Checks read code and suite 
 | `luna-planned` | sol plans; luna builds from the plan; spec examples gate a fix (max 2). |
 | `luna-regress-net` | regression-focused tester; two-stage gate (smoke, then suite) with fixes. Differs from `luna-tester-suite` by its tester prompt and the smoke stage ahead of the suite. |
 
-Variants built from the `fx-02` results (`docs/reports/2026-09-30-fx-02-factory-sweep.md`):
+Variants built from the `fx-02` results (report `2026-09-30-fx-02-factory-sweep.md`, kept in the private kojo-results repo under `reports/`):
 
 | Factory | Change from its parent |
 |---|---|
