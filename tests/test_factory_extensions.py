@@ -319,6 +319,29 @@ class FlowMechanismTests(unittest.TestCase):
         self.assertEqual(sim.text(), 'base;build1;fix1;')  # Its failing cases are not "new": the old code had no suite result.
         self.assertFalse(sim.trace[-1]['guard']['rolled_back'])
 
+    def guarded_loop(self, **kwargs):
+        return self.sim((REAL/'configs/factories/luna-guarded-loop.factory').read_text(), start='base;', **kwargs)
+
+    def test_guarded_loop_clean_path(self):
+        sim = self.guarded_loop(verdicts=['pass', 'FAIL', 'pass', 'PASS'])  # fresh, qa fail, gate pass, qa pass
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['tests', 'build', 'qa', 'fix', 'qa'])
+        self.assertEqual(sim.text(), 'base;build1;fix1;')
+        self.assertEqual([(t['stage'], t['next']) for t in sim.trace][-3:], [('fix', 'gate'), ('gate', 'qa'), ('qa', 'done')])
+
+    def test_guarded_loop_rerolls_a_bail_out_then_stops_after_two_qa_fixes(self):
+        # fresh fails once (reroll), then passes; qa fails twice (two fixes, each followed by a passing gate), qa fails a third time: done.
+        sim = self.guarded_loop(verdicts=['fail', 'pass', 'FAIL', 'pass', 'FAIL', 'pass', 'FAIL'])
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['tests', 'build', 'build', 'qa', 'fix', 'qa', 'fix', 'qa'])
+        self.assertEqual(sim.trace[-1]['next'], 'done')  # The third QA failure has no fix left to go to.
+
+    def test_guarded_loop_gives_one_extra_fix_when_the_gate_still_fails_and_moved(self):
+        details = lambda t: {'smoke_ok': True, 'failing': ['x'] * t.count('fix')}  # Failures change with every fix.
+        sim = self.guarded_loop(verdicts=['pass', 'FAIL', 'fail', 'pass', 'PASS'], details=details)  # fresh, qa, gate fail, gate pass, qa pass
+        sim.run(2)
+        self.assertEqual(sim.stages(), ['tests', 'build', 'qa', 'fix', 'fix', 'qa'])
+
     def test_a_bail_out_is_rerolled_from_the_start_code(self):
         text = ('build = luna6\nfresh = check changed\nbuild -> fresh\nfresh -[fail, max 2, reset]-> build')
         sim = self.sim(text, verdicts=['fail', 'fail', 'pass'], start='base;')
